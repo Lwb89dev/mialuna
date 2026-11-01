@@ -6,20 +6,20 @@ Mialuna implementa e con quali convenzioni.
 | NIP | Argomento | Stato | Note |
 |---|---|---|---|
 | NIP-01 | Eventi, filtri, relay | ✅ | Pool multi-relay, dedup, backoff, verifica firme BIP-340 |
-| NIP-02 | Follow list (kind 3) | 🔶 | Modello dati; UI in Fase 4 |
+| NIP-02 | Follow list (kind 3) | ✅ | Lettura/scrittura, conserva i tag esistenti |
 | NIP-19 | npub/nsec/note | ✅ | Codec bech32 interno, testato su vettori noti |
-| NIP-22 | Commenti (kind 1111) | 🔶 | Modello dati; UI in Fase 4 |
-| NIP-25 | Reazioni (kind 7) | 🔶 | Modello dati; UI in Fase 4 |
-| NIP-36 | Content warning | ✅ | Overlay "contenuto sensibile" nel feed |
+| NIP-22 | Commenti (kind 1111) | ✅ | Thread bottom sheet, risposte annidate |
+| NIP-25 | Reazioni (kind 7) | ✅ | Like con conteggio live |
+| NIP-36/56 | Content warning, report | ✅ | Overlay contenuti sensibili; kind 1984 | Overlay "contenuto sensibile" nel feed |
 | NIP-40 | Expiration | ✅ | Eventi scaduti filtrati ovunque; base delle Storie |
 | NIP-32 | Label (Storie) | ✅ | `mialuna.story` per identificare le Storie |
 | NIP-55 | Amber signer | ✅ | Android, intent `nostrsigner:` |
 | NIP-46 | Bunker | ⏳ | Previsto dall'astrazione `Signer` |
 | NIP-68 | Foto (kind 20) | ✅ | Lettura + pubblicazione, caroselli, `imeta` |
 | NIP-71 | Video (kind 21/22) | ✅ | Lettura + pubblicazione (kind 21/22), player e Reels viewer |
-| NIP-65 | Relay list | ⏳ | Fase 4 |
+| NIP-65 | Relay list | ⏳ | Iterazione successiva |
 | NIP-50 | Search | ✅ | Ricerca testuale in Esplora (dipende dal supporto dei relay) |
-| NIP-57 | Zaps | ⏳ | Opzionale, Fase 4 |
+| NIP-57 | Zaps | ⏳ | Opzionale, iterazione successiva |
 | Blossom | Media server | ✅ | PUT /upload, auth kind 24242, indirizzamento sha256 |
 
 ✅ implementato · 🔶 parziale · ⏳ pianificato

@@ -3,6 +3,26 @@
 Tutte le modifiche rilevanti a Mialuna sono documentate qui.
 Formato basato su [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.0] — 2026-11-01 — Fase 4 (social polish)
+
+### Aggiunto
+- Like NIP-25 (kind 7) con conteggio live per post; commenti NIP-22
+  (kind 1111) con bottom sheet, risposte annidate a modello e invio.
+- Condivisione: copia link `nostr:note1…` (NIP-19/NIP-21).
+- Follow NIP-02 (kind 3): lettura/scrittura conservando i tag esistenti,
+  pulsante Segui nei Reels e conteggio nel profilo.
+- Profilo: metadata kind 0 (nome, bio, avatar, NIP-05), modifica profilo,
+  griglia dei propri post, copia npub.
+- Notifiche: reazioni, commenti e nuovi follower (schermata dedicata,
+  con avviso sui limiti dei relay).
+- Bookmark locali (salvataggio post) e autori silenziati locali;
+  segnalazioni NIP-56 (kind 1984).
+- Il feed filtra gli autori silenziati.
+
+### Note
+- Zaps NIP-57 e bunker NIP-46 restano pianificati (interfaccia Signer pronta).
+- Sync NIP-51 di bookmark/mute list: iterazione successiva (ora locali).
+
 ## [0.3.0] — 2026-11-01 — Fase 3 (Storie e scoperta)
 
 ### Aggiunto

@@ -1,31 +1,31 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/auth/auth_controller.dart';
 import '../../../core/nostr/models/media_event.dart';
+import '../../../core/nostr/nip19.dart';
+import '../../comments/comments_sheet.dart';
+import '../../social/interactions_controller.dart';
+import '../../social/moderation_controller.dart';
 import '../../reels/widgets/video_player_screen.dart';
 
 /// Renders a single media post: header, carousel, caption beneath the media
 /// (Instagram-style), action row. Hashtags are clickable.
-class PostCard extends StatelessWidget {
+class PostCard extends ConsumerWidget {
   final MediaPost post;
-  final VoidCallback? onLike;
-  final VoidCallback? onComment;
-  final VoidCallback? onShare;
   final ValueChanged<String>? onHashtagTap;
 
-  const PostCard({
-    super.key,
-    required this.post,
-    this.onLike,
-    this.onComment,
-    this.onShare,
-    this.onHashtagTap,
-  });
+  const PostCard({super.key, required this.post, this.onHashtagTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final interactions = ref.watch(interactionsProvider(post));
+    final isGuest = ref.watch(authProvider).isGuest;
+    final saved = ref.watch(bookmarksProvider).contains(post.id);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Column(
@@ -47,6 +47,20 @@ class PostCard extends StatelessWidget {
               _formatTime(post.createdAt),
               style: theme.textTheme.bodySmall,
             ),
+            trailing: PopupMenuButton<String>(
+              onSelected: (value) => _onMenu(context, ref, value),
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'save',
+                  child: Text(saved ? 'Rimuovi dai salvati' : 'Salva'),
+                ),
+                const PopupMenuItem(
+                  value: 'mute',
+                  child: Text('Silenzia autore'),
+                ),
+                const PopupMenuItem(value: 'report', child: Text('Segnala')),
+              ],
+            ),
           ),
           if (post.isSensitive)
             _SensitiveOverlay(reason: post.sensitiveReason)
@@ -57,19 +71,48 @@ class PostCard extends StatelessWidget {
             child: Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.favorite_border),
-                  onPressed: onLike,
+                  icon: Icon(
+                    interactions.likedByMe
+                        ? Icons.favorite
+                        : Icons.favorite_border,
+                    color: interactions.likedByMe
+                        ? theme.colorScheme.secondary
+                        : null,
+                  ),
+                  onPressed: isGuest
+                      ? null
+                      : () => ref
+                            .read(interactionsProvider(post).notifier)
+                            .like(post),
                   tooltip: 'Mi piace',
                 ),
+                if (interactions.likeCount > 0)
+                  Text(
+                    '${interactions.likeCount}',
+                    style: theme.textTheme.labelMedium,
+                  ),
                 IconButton(
                   icon: const Icon(Icons.chat_bubble_outline),
-                  onPressed: onComment,
+                  onPressed: () => CommentsSheet.show(context, post),
                   tooltip: 'Commenti',
                 ),
+                if (interactions.comments.isNotEmpty)
+                  Text(
+                    '${interactions.comments.length}',
+                    style: theme.textTheme.labelMedium,
+                  ),
                 IconButton(
                   icon: const Icon(Icons.share_outlined),
-                  onPressed: onShare,
                   tooltip: 'Condividi',
+                  onPressed: () {
+                    final note = Nip19.encodeNote(post.id);
+                    Clipboard.setData(ClipboardData(text: 'nostr:$note'));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Link Nostr copiato negli appunti'),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -95,6 +138,39 @@ class PostCard extends StatelessWidget {
     if (diff.inDays < 1) return '${diff.inHours} h fa';
     if (diff.inDays < 7) return '${diff.inDays} g fa';
     return '${dt.day}/${dt.month}/${dt.year}';
+  }
+
+  Future<void> _onMenu(
+    BuildContext context,
+    WidgetRef ref,
+    String value,
+  ) async {
+    switch (value) {
+      case 'save':
+        await ref.read(bookmarksProvider.notifier).toggle(post.id);
+      case 'mute':
+        await ref.read(muteProvider.notifier).mute(post.author);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text('Autore silenziato')));
+        }
+      case 'report':
+        final ok = await reportEvent(
+          ref,
+          eventId: post.id,
+          authorPubkey: post.author,
+          reason: 'other',
+        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                ok ? 'Segnalazione inviata (NIP-56)' : 'Accedi per segnalare',
+              ),
+            ),
+          );
+        }
+    }
   }
 }
 

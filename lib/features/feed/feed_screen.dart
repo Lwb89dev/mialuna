@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../feed/feed_controller.dart';
 import '../feed/widgets/post_card.dart';
+import '../notifications/notifications_screen.dart';
 import '../stories/stories_rail.dart';
 
 class FeedScreen extends ConsumerWidget {
@@ -18,6 +19,15 @@ class FeedScreen extends ConsumerWidget {
           style: Theme.of(context).textTheme.headlineSmall
               ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.5),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            tooltip: 'Notifiche',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            ),
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: () => ref.read(feedProvider.notifier).refresh(),
