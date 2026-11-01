@@ -27,7 +27,20 @@ Future<void> showZapSheet(
     return;
   }
 
-  final amountController = TextEditingController(text: '21');
+  final LnurlPayInfo payInfo;
+  try {
+    payInfo = await ZapService().fetchPayInfo(address);
+  } catch (e) {
+    if (!context.mounted) return;
+    messenger.showSnackBar(SnackBar(content: Text('$e')));
+    return;
+  }
+  if (!context.mounted) return;
+
+  final initial = (21 >= payInfo.minSats && 21 <= payInfo.maxSats)
+      ? '21'
+      : '${payInfo.minSats}';
+  final amountController = TextEditingController(text: initial);
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
@@ -35,9 +48,10 @@ Future<void> showZapSheet(
       content: TextField(
         controller: amountController,
         keyboardType: TextInputType.number,
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
           labelText: 'Importo in sat',
-          border: OutlineInputBorder(),
+          hintText: 'min ${payInfo.minSats} – max ${payInfo.maxSats}',
+          border: const OutlineInputBorder(),
         ),
       ),
       actions: [
