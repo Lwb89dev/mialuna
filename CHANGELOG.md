@@ -3,6 +3,20 @@
 All notable changes to Mialuna are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.9.0] — 2026-11-01 — Profile tabs, alt text, NIP-65 read
+
+### Added
+- Profile tabs: Post, Reels (kind 22) and Saved (bookmarked posts resolved
+  from the relays by id).
+- Composer: alt text per media (tap a thumbnail, ALT badge when set) and a
+  sensitive-content toggle publishing the NIP-36 `content-warning` tag.
+- NIP-65 read: on sign-in the newest kind 10002 relay list is fetched from
+  the bootstrap relays and adopted automatically — unless the user has
+  customized relays manually, in which case their choice always wins.
+
+### Tests
+- NIP-65 `r`-tag parsing: read/write markers, deduplication, wrong kinds.
+
 ## [0.8.0] — 2026-11-01 — Onboarding, Amber fix, Nostr Wallet Connect
 
 ### Added

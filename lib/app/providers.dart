@@ -34,3 +34,13 @@ final profileRepositoryProvider = Provider(
 final profileMetadataProvider = FutureProvider.family<ProfileMetadata?, String>(
   (ref, pubkey) => ref.watch(profileRepositoryProvider).fetch(pubkey),
 );
+
+/// Triggers a NIP-65 relay-list sync whenever a user is (or becomes)
+/// signed in. No-op for guests and for users with customized relays.
+final nip65SyncProvider = Provider<void>((ref) {
+  final pub = ref.watch(authProvider).publicKey;
+  if (pub == null) return;
+  Future.microtask(
+    () => ref.read(settingsProvider.notifier).syncFromNip65(pub),
+  );
+});
