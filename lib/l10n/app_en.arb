@@ -1,0 +1,635 @@
+{
+  "@@locale": "en",
+  "syncUpToDate": "Up to date",
+  "syncFailed": "Sync failed",
+  "relaysUpdatedFromProfile": "Relays updated from your profile (NIP-65)",
+  "relayListPublished": "Relay list published",
+  "mediaServersUpdatedFromProfile": "Media servers updated from your profile",
+  "tabHome": "Home",
+  "tabDiscover": "Discover",
+  "tabCreate": "Create",
+  "tabReels": "Reels",
+  "tabProfile": "Profile",
+  "signInToUploadMedia": "Sign in to upload media.",
+  "noMediaServer": "No media server configured. Add one in Settings.",
+  "serverNoResponse": "{server}: no response",
+  "@serverNoResponse": {
+    "placeholders": {
+      "server": {}
+    }
+  },
+  "serverUnreachable": "{server}: unreachable ({error})",
+  "@serverUnreachable": {
+    "placeholders": {
+      "server": {},
+      "error": {}
+    }
+  },
+  "uploadRejected": "Upload rejected — {reason}",
+  "@uploadRejected": {
+    "placeholders": {
+      "reason": {}
+    }
+  },
+  "noServerAcceptedFile": "No server accepted the file — {reasons}",
+  "@noServerAcceptedFile": {
+    "placeholders": {
+      "reasons": {}
+    }
+  },
+  "blossomInvalidResponse": "invalid response",
+  "blossomInvalidFileUrl": "invalid file address",
+  "blossomServerAlteredFile": "the server modified the file",
+  "blossomBadRequest": "invalid request",
+  "blossomUnauthorized": "authorization denied",
+  "blossomPaymentRequired": "payment required",
+  "blossomForbidden": "not allowed",
+  "blossomLengthRequired": "missing size",
+  "blossomTooLarge": "file too large",
+  "blossomUnsupportedType": "format not accepted",
+  "blossomTooManyRequests": "too many requests",
+  "blossomServerError": "server error",
+  "cipherInvalidKey": "Invalid key",
+  "cipherTruncated": "Encrypted file is truncated",
+  "cipherMismatch": "The file does not match the key: modified or corrupted",
+  "sanitizeHeifNeedsAsync": "HEIC/AVIF format: conversion requires sanitizeAsync",
+  "sanitizeWebmUnsupported": "WebM/MKV video is not supported: use MP4 or MOV so the metadata can be removed before uploading.",
+  "sanitizeUnknownFormat": "Unrecognized file format: JPEG/PNG/WebP/GIF photos or MP4/MOV videos.",
+  "sanitizeLeftovers": "Could not remove all the metadata ({items}): file not uploaded.",
+  "@sanitizeLeftovers": {
+    "placeholders": {
+      "items": {}
+    }
+  },
+  "sanitizeProcessingFailed": "Could not process the file: {error}",
+  "@sanitizeProcessingFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "sanitizeJpegInvalid": "Invalid JPEG",
+  "sanitizeJpegTruncated": "Truncated JPEG",
+  "sanitizeJpegNoSize": "JPEG without dimensions",
+  "sanitizeJpegUndecodable": "JPEG cannot be decoded",
+  "sanitizePngTruncated": "Truncated PNG",
+  "sanitizePngInvalid": "Invalid PNG",
+  "sanitizeGifInvalid": "Invalid GIF",
+  "sanitizeGifTruncated": "Truncated GIF",
+  "sanitizeWebpTruncated": "Truncated WebP",
+  "sanitizeWebpInvalid": "Invalid WebP",
+  "sanitizeMp4Invalid": "Invalid MP4/MOV video",
+  "sanitizeConversionFailed": "Conversion failed",
+  "sanitizeHeifUnsupported": "This format (HEIC/AVIF) cannot be converted on this device. Choose a JPEG or PNG photo.",
+  "privateMediaNotEncrypted": "Media is not encrypted",
+  "serverReplied": "The server replied {status}",
+  "@serverReplied": {
+    "placeholders": {
+      "status": {}
+    }
+  },
+  "fileTooLarge": "File too large",
+  "serverFileNotOriginal": "The file on the server is not the original",
+  "contentMismatch": "The content does not match",
+  "mediaUnreachable": "Media unreachable",
+  "amberInvalidKey": "Amber returned an invalid key",
+  "amberNoKey": "Amber did not return a key",
+  "amberRequestRejected": "Request rejected in Amber",
+  "amberAndroidOnly": "Amber is only available on Android",
+  "amberEmptySignature": "Amber returned an empty signature",
+  "amberSignRejected": "Signature rejected in Amber",
+  "amberTimeout": "Amber did not answer in time",
+  "amberEmptyResponse": "Amber returned an empty response",
+  "bunkerInvalidUrl": "Invalid bunker URL",
+  "bunkerNoRelay": "The bunker does not list any relay",
+  "bunkerWebAuth": "The bunker requires web authorization (auth_url is not supported)",
+  "bunkerInvalidKey": "The bunker did not return a valid key",
+  "bunkerTimeout": "Bunker timed out",
+  "nwcInvalidUri": "Invalid NWC URI",
+  "nwcNoRelay": "The NWC URI does not list any relay",
+  "nwcNoSecret": "The NWC URI does not contain a valid secret",
+  "nwcTimeout": "Wallet timed out",
+  "signerNoPrivateMessages": "This sign-in method does not support private messages",
+  "zapNotSupported": "This address does not support Nostr zaps",
+  "zapAmountOutOfRange": "Amount out of range ({min}–{max} sats)",
+  "@zapAmountOutOfRange": {
+    "placeholders": {
+      "min": {},
+      "max": {}
+    }
+  },
+  "commentNotSent": "Comment not sent. Try again later.",
+  "comments": "Comments",
+  "noCommentsYet": "No comments yet.",
+  "signInToComment": "Sign in to comment.",
+  "addComment": "Add a comment…",
+  "signInToPublish": "Sign in to publish.",
+  "addMediaFirst": "Add at least one photo or video before publishing.",
+  "removingMetadata": "Removing metadata…",
+  "uploadingProgress": "Uploading {current} of {total}…",
+  "@uploadingProgress": {
+    "placeholders": {
+      "current": {},
+      "total": {}
+    }
+  },
+  "creatingPreview": "Creating the preview…",
+  "uploadFailed": "Upload failed: {error}",
+  "@uploadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "publishing": "Publishing…",
+  "noRelayAcceptedPost": "No relay accepted the post{reason}. The content stays in your drafts.",
+  "@noRelayAcceptedPost": {
+    "placeholders": {
+      "reason": {}
+    }
+  },
+  "privateNeedsKeySigner": "This sign-in method does not support private content. Use Amber, a bunker or the local key.",
+  "closeFriendsListEmptyAddSomeone": "Your close friends list is empty: add someone.",
+  "fileOver100Mb": "The file is over 100 MB: that is the limit for close friends (it is encrypted whole on your phone).",
+  "encryptingOnPhone": "Encrypting on your phone…",
+  "noServerAcceptedEncrypted": "None of your media servers accepted the encrypted file. It is not published in the clear. Add a server that accepts encrypted files in Settings (for example cdn.hzrd149.com). {details}",
+  "@noServerAcceptedEncrypted": {
+    "placeholders": {
+      "details": {}
+    }
+  },
+  "sendingToFriends": "Sending to friends…",
+  "sendingToFriendsProgress": "Sending to friends {done}/{total}…",
+  "@sendingToFriendsProgress": {
+    "placeholders": {
+      "done": {},
+      "total": {}
+    }
+  },
+  "noFriendReceivedPost": "No friend received the post{reason}. The content stays in your drafts.",
+  "@noFriendReceivedPost": {
+    "placeholders": {
+      "reason": {}
+    }
+  },
+  "sentToCloseFriends": "{count, plural, =1{Sent to 1 close friend 🔒} other{Sent to {count} close friends 🔒}}",
+  "@sentToCloseFriends": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sentToFriendsWithMisses": "{delivered, plural, =1{Sent to 1 friend.} other{Sent to {delivered} friends.}} {missed} did not receive it (private messages are off).",
+  "@sentToFriendsWithMisses": {
+    "placeholders": {
+      "delivered": {
+        "type": "int"
+      },
+      "missed": {}
+    }
+  },
+  "altText": "Alt text",
+  "altTextHint": "Describe the content for people who cannot see it…",
+  "cancel": "Cancel",
+  "save": "Save",
+  "momentPublished": "Moment published ✨",
+  "newMoment": "New moment",
+  "publish": "Publish",
+  "guestMode": "Guest mode",
+  "signInToPostMoments": "Sign in to publish your moments.",
+  "signIn": "Sign in",
+  "kindPhoto": "Photo",
+  "kindVideo": "Video",
+  "kindReel": "Reel",
+  "kindStory": "Story",
+  "storyExpiryNote": "Stories expire after 24 hours on relays that honour NIP-40, but others can still save or archive them.",
+  "fromGallery": "From gallery",
+  "galleryLongPressVideo": "Gallery (long-press for video)",
+  "addVideo": "Add video",
+  "camera": "Camera",
+  "exifRemovedNote": "Location metadata (EXIF) is removed automatically.",
+  "writeCaption": "Write a caption…",
+  "privatePostNote": "Private post: no public hashtags, it cannot be found through search.",
+  "willPublishAs": "It will be published as: \"{caption}\"",
+  "@willPublishAs": {
+    "placeholders": {
+      "caption": {}
+    }
+  },
+  "tapThumbnailForAlt": "Tap a thumbnail to add alt text.",
+  "sensitiveContent": "Sensitive content",
+  "sensitiveContentNote": "The post will be hidden behind a warning (NIP-36).",
+  "uploadingMedia": "Uploading media…",
+  "audiencePublic": "Public",
+  "closeFriends": "Close friends",
+  "signerCannotPublishCloseFriends": "With this sign-in method you cannot publish for close friends: use Amber, a bunker or the local key.",
+  "closeFriendsEmptyPrompt": "Your list is empty: add the people who can see this post.",
+  "onlyYourCloseFriendsSee": "{count, plural, =1{Only your 1 close friend will see this. Photos and videos are encrypted on your phone before they are uploaded.} other{Only your {count} close friends will see this. Photos and videos are encrypted on your phone before they are uploaded.}}",
+  "@onlyYourCloseFriendsSee": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addFriends": "Add friends",
+  "manageList": "Manage the list",
+  "edit": "Edit",
+  "reset": "Reset",
+  "apply": "Apply",
+  "cropFree": "Free",
+  "cropOriginal": "Original",
+  "rotate": "Rotate",
+  "flip": "Flip",
+  "brightness": "Brightness",
+  "contrast": "Contrast",
+  "saturation": "Saturation",
+  "postsByAuthor": "Posts by {author}…",
+  "@postsByAuthor": {
+    "placeholders": {
+      "author": {}
+    }
+  },
+  "searchHint": "Search people, hashtags or words…",
+  "clear": "Clear",
+  "recent": "Recent",
+  "searchDependsOnRelays": "Search depends on the configured relays: results may be partial.",
+  "recentPostsEverywhere": "Recent posts from the whole network, including people you do not follow.",
+  "noResultsOnRelays": "No results on the configured relays.",
+  "noRecentPostsFromFollowed": "No recent posts from the people you follow.",
+  "noMomentsFound": "No moments found on the relays. Check your connection.",
+  "loadFailed": "Loading failed",
+  "notifications": "Notifications",
+  "messages": "Messages",
+  "homeEmptyFollowsNobody": "Posts from the people you follow appear here.\nYou do not follow anyone yet: discover interesting people and profiles.",
+  "discoverPeople": "Discover people",
+  "homeEmpty": "No moments yet.\nPull down to refresh or publish your first shot.",
+  "retry": "Try again",
+  "seenEverything": "You have seen everything for now ✨",
+  "discoverMoreProfiles": "Discover more profiles",
+  "feedFollowing": "Following",
+  "signInToSeeFollowed": "Sign in to see posts from the people you follow",
+  "videoPreview": "Video preview",
+  "cannotOpenPrivateVideo": "Cannot open the private video",
+  "cannotPlayVideo": "Cannot play the video",
+  "pauseVideo": "Pause the video",
+  "playVideo": "Play the video",
+  "errorTapToRetry": "{error} — tap to retry",
+  "@errorTapToRetry": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "soundOn": "Turn the sound on",
+  "soundOff": "Turn the sound off",
+  "postImage": "Post image",
+  "imageUnavailable": "Image not available",
+  "errorTapToRetryNewline": "{message}\nTap to retry",
+  "@errorTapToRetryNewline": {
+    "placeholders": {
+      "message": {}
+    }
+  },
+  "cannotOpenPrivateContent": "Cannot open this private content",
+  "privateImage": "Private image",
+  "invalidImage": "Invalid image",
+  "more": "More",
+  "removeFromSaved": "Remove from saved",
+  "copyLink": "Copy link",
+  "muteAuthor": "Mute author",
+  "blockAuthor": "Block author",
+  "report": "Report",
+  "like": "Like",
+  "sendInMessage": "Send in a message",
+  "zapOptional": "Zap (optional)",
+  "closeFriendsOnlyNote": "Visible only to close friends. Likes and replies go only to the author.",
+  "likeFailed": "Could not send the like",
+  "nostrLinkCopied": "Nostr link copied to the clipboard",
+  "authorMuted": "Author muted",
+  "authorBlocked": "Author blocked",
+  "reportSent": "Report sent (NIP-56)",
+  "signInToReport": "Sign in to report",
+  "minutesAgo": "{minutes} min ago",
+  "@minutesAgo": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "show": "Show",
+  "chatEmptyHint": "Write the first message.\nIt is encrypted: only the two of you can see it.",
+  "messageHint": "Message…",
+  "send": "Send",
+  "notSentSuffix": " not sent",
+  "contentUnavailable": "Content not available (expired or not found on the relays)",
+  "signInToSendPrivateMessages": "Sign in to send private messages.",
+  "cannotMessageYourself": "You cannot write to yourself.",
+  "recipientNoPrivateMessages": "This person has not turned on private messages yet.",
+  "noRecipientRelayAccepted": "No recipient relay accepted the message{reason}.",
+  "@noRecipientRelayAccepted": {
+    "placeholders": {
+      "reason": {}
+    }
+  },
+  "sendFailed": "Sending failed: {error}",
+  "@sendFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "signInToReadMessages": "Sign in to read and send private messages.",
+  "signerNoPrivateMessagesLong": "Private messages cannot be used with this sign-in method. Sign in with Amber, a bunker or the local key.",
+  "inboxEmpty": "No conversations.\nTap the pencil to write to someone, or forward a moment with the ✈ icon under every post.",
+  "newMessage": "New message",
+  "privateMessagesEnabled": "Private messages turned on",
+  "enableMessagesFailed": "Could not turn them on. Try again.",
+  "enablePrivateMessages": "Turn on private messages",
+  "enablePrivateMessagesExplain": "To receive messages you need to say which relays they should arrive on. A small list (NIP-17) is published with {count} default relays: you can change it later. Messages stay encrypted: relays see neither who writes nor the text.",
+  "@enablePrivateMessagesExplain": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "turnOn": "Turn on",
+  "searchByNameOrUsername": "Search by name or username",
+  "searching": "Searching…",
+  "noOneWithNameHint": "Nobody with this name. Try fewer letters or an address like name@domain.com.",
+  "sent": "Sent",
+  "sentToPeople": "{count, plural, =1{Sent to 1 person} other{Sent to {count} people}}",
+  "@sentToPeople": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sentToPeopleWithFailure": "{count, plural, =1{Sent to 1 person. {failure}} other{Sent to {count} people. {failure}}}",
+  "@sentToPeopleWithFailure": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "failure": {}
+    }
+  },
+  "signerNoPrivateMessagesShort": "You cannot use private messages with this sign-in method.",
+  "followToStartOrSearch": "Follow someone to start, or search by name.",
+  "addMessage": "Add a message…",
+  "sendWithCount": "Send ({count})",
+  "@sendWithCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "linkCopied": "Link copied to the clipboard",
+  "noNotifications": "No notifications right now.",
+  "notificationsDependOnRelays": "Notifications depend on relays: they may be incomplete.",
+  "reactedToYourMoment": "reacted to your moment",
+  "commentedText": "commented: {text}",
+  "@commentedText": {
+    "placeholders": {
+      "text": {}
+    }
+  },
+  "sentYouSats": "sent you {sats} sats{comment}",
+  "@sentYouSats": {
+    "placeholders": {
+      "sats": {},
+      "comment": {}
+    }
+  },
+  "sentYouZap": "sent you a zap",
+  "startedFollowingYou": "started following you",
+  "amberNotFound": "Amber not found",
+  "amberExplain": "Amber is a Nostr signer that keeps your private key outside Mialuna. Install it and try again.",
+  "downloadFromFdroid": "Download from F-Droid",
+  "continueWithAmber": "Continue with Amber",
+  "amberRecommended": "Recommended: your private key stays safe in Amber.",
+  "amberNotDetected": "Amber not detected: install it for the recommended sign-in.",
+  "exploreWithoutAccount": "Explore without an account",
+  "remoteBunker": "Remote bunker (NIP-46)",
+  "invalidBunkerUrlDot": "Invalid bunker URL.",
+  "connectBunker": "Connect bunker",
+  "advancedNsec": "Advanced sign-in (nsec)",
+  "nsecWarning": "Warning: pasting your private key is risky. Never share it with anyone. On Android prefer Amber.",
+  "invalidNsec": "Invalid nsec key.",
+  "signInWithNsec": "Sign in with nsec",
+  "tagline": "Your moments, under the same moon.",
+  "skip": "Skip",
+  "permissionsAndWallet": "Permissions and wallet",
+  "permissionsExplain": "They only let you publish and receive notifications. You can change them at any time in the system settings.",
+  "photosAndVideos": "Photos and videos",
+  "toUploadYourMoments": "To upload your moments",
+  "allow": "Allow",
+  "reactionsCommentsZaps": "Reactions, comments and zaps",
+  "lightningWalletOptional": "Lightning wallet (optional)",
+  "nwcExplain": "Connect a Nostr Wallet Connect wallet to send zaps without leaving the app.",
+  "walletConnected": "Wallet connected",
+  "disconnect": "Disconnect",
+  "connectWallet": "Connect wallet",
+  "getStarted": "Get started",
+  "welcome1": "Mialuna is a visual social network: photos, videos, Reels and Stories — never text-only posts.",
+  "welcome2": "It runs on Nostr, an open protocol: your identity is a key you own, not an account a company can take away. No ads, no trackers, no central servers.",
+  "welcome3": "Share your light with people everywhere, from any app that speaks the same open language.",
+  "publicAndPrivate": "Public and private",
+  "publicAndPrivateIntro": "Mialuna is built on Nostr, an open network. What you publish is public: posts, photos and videos stay visible to anyone with the link, even outside Mialuna.",
+  "closeFriendsExplain1": "Only the people on this list receive your \"Close friends\" posts, stories and videos. The list is inside the post; you do not have to pick it every time.",
+  "closeFriendsExplain2": "Photos and videos are encrypted on your phone before they are uploaded. File servers (Blossom) do not encrypt anything by themselves: that is why Mialuna does it, and the server only sees unreadable data. Whoever finds the file address cannot open it.",
+  "closeFriendsExplain3": "It is not an absolute guarantee: whoever receives a post can take a screenshot, and removing a friend only applies to future posts.",
+  "closeFriendsExplain4": "Every friend must use Mialuna with private messages turned on. Other Nostr clients do not show these posts.",
+  "closeFriendsExplain5": "Public posts stay public: their files are visible to anyone with the link.",
+  "closeFriendsExplain6": "If none of your servers accepts encrypted files, the post is not published: never in the clear.",
+  "addToCloseFriends": "Add to close friends",
+  "maxFriendsReached": "Limit of {max} friends: {added} added.",
+  "@maxFriendsReached": {
+    "placeholders": {
+      "max": {},
+      "added": {}
+    }
+  },
+  "add": "Add",
+  "signInToCreateList": "Sign in to create your list.",
+  "signerNoCloseFriends": "Close friends cannot be used with this sign-in method. Sign in with Amber, a bunker or the local key.",
+  "peopleOfMax": "{count} / {max} people",
+  "@peopleOfMax": {
+    "placeholders": {
+      "count": {},
+      "max": {}
+    }
+  },
+  "noOneYet": "Nobody yet.",
+  "addPeople": "Add people",
+  "friendNoPrivateMessagesWarning": "They have not turned on private messages: they will not receive your posts",
+  "removeFromList": "Remove from the list",
+  "noOneWithThisName": "Nobody with this name.",
+  "signInToSendPrivateContent": "Sign in to send private content.",
+  "reasonNoPrivateMessages": "has not turned on private messages",
+  "reasonNoRelayAnswered": "no relay answered",
+  "profileUpdated": "Profile updated",
+  "noRelayAcceptedRetry": "No relay accepted it. Try again later.",
+  "editProfile": "Edit profile",
+  "fieldName": "Name",
+  "fieldBio": "Bio",
+  "fieldAvatarUrl": "Avatar URL",
+  "fieldNip05": "NIP-05 (e.g. you@example.com)",
+  "browsingAsGuest": "You are browsing as a guest",
+  "signInToInteract": "Sign in to publish, follow and interact.",
+  "settings": "Settings",
+  "signOut": "Sign out",
+  "npubCopied": "npub copied",
+  "copyNpub": "Copy npub",
+  "mute": "Mute",
+  "block": "Block",
+  "posts": "Posts",
+  "saved": "Saved",
+  "nothingPublishedYet": "You have not published anything yet.",
+  "noPostsOnRelays": "No posts found on the relays.",
+  "noReelsPublished": "No reels published.",
+  "noReelsOnRelays": "No reels found on the relays.",
+  "noSavedPosts": "No saved posts.",
+  "followingButton": "Following",
+  "follow": "Follow",
+  "messageButton": "Message",
+  "loginLocalKey": "Local key",
+  "loginGuest": "Guest",
+  "followUpdateFailed": "Could not update your follows right now. Try again.",
+  "noReelsComeBack": "No reels found on the relays.\nCome back soon!",
+  "followUpdateFailedShort": "Could not update your follows right now",
+  "needOneReadRelay": "At least one read relay is required.",
+  "listSavedLocally": "List saved on this device, not published.",
+  "noRelayAcceptedList": "No relay accepted the list: it will be retried later.",
+  "relayListPublishedTo": "{count, plural, =1{Relay list published to 1 relay} other{Relay list published to {count} relays}}",
+  "@relayListPublishedTo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mediaServersUpdated": "Media servers updated",
+  "appearance": "Appearance",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "themeSystem": "System",
+  "relays": "Relays",
+  "relaysExplainSignedOut": "Relays store and distribute content. Sign in to use your own list automatically (NIP-65).",
+  "relaysExplainSynced": "The list is synced with your Nostr profile (NIP-65): every change is published and applies to all your apps.",
+  "syncing": "Syncing…",
+  "waitingFirstSync": "Waiting for the first sync",
+  "syncNow": "Sync now",
+  "addRelay": "Add relay",
+  "restoreDefaultRelays": "Restore default relays",
+  "createYourList": "Create your list",
+  "peopleCount": "{count, plural, =1{1 person} other{{count} people}}",
+  "@peopleCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "closeFriendsSettingsNote": "Posts, stories and videos visible only to them, with encrypted photos and videos.",
+  "mediaServersBlossom": "Media servers (Blossom)",
+  "mediaServersExplain": "Photos and videos are uploaded only to these servers, in the order shown: the first one that accepts them wins. EXIF and location are removed before uploading.",
+  "primary": "Primary",
+  "makePrimary": "Make primary",
+  "remove": "Remove",
+  "addServer": "Add server",
+  "moderation": "Moderation",
+  "moderationExplain": "Muted authors and hidden hashtags are synced via NIP-51. Blocked authors stay only on this device.",
+  "mutedAuthors": "Muted authors",
+  "noMutedAuthors": "No muted authors",
+  "blockedAuthors": "Blocked authors",
+  "noBlockedAuthors": "No blocked authors",
+  "hiddenHashtags": "Hidden hashtags",
+  "noHiddenHashtags": "No hidden hashtags",
+  "hashtagToHide": "#hashtag to hide",
+  "storage": "Storage",
+  "clearCache": "Clear event cache and drafts",
+  "cacheCleared": "Cache cleared",
+  "reviewIntro": "Review the introduction",
+  "reviewIntroSubtitle": "What is public, what is private, and the limits of close friends.",
+  "noLightningWalletCopied": "No Lightning wallet found: address copied ({address})",
+  "@noLightningWalletCopied": {
+    "placeholders": {
+      "address": {}
+    }
+  },
+  "about": "About",
+  "aboutText": "Mialuna {version} — Your moments, under the same moon.\nOpen source (MIT). github.com/Lwb89dev/mialuna",
+  "@aboutText": {
+    "placeholders": {
+      "version": {}
+    }
+  },
+  "invalidRelayAddress": "Invalid address: use wss://…",
+  "relayRead": "Read",
+  "relayWrite": "Write",
+  "support": "Support",
+  "supportText": "Mialuna is free, has no ads and does not track you. If you like it, you can send a few sats over the Lightning Network.",
+  "donateWithLightning": "Donate with Lightning",
+  "authorNoZaps": "This author does not accept zaps",
+  "sendZap": "Send a zap ⚡",
+  "amountInSats": "Amount in sats",
+  "minMaxSats": "min {min} – max {max}",
+  "@minMaxSats": {
+    "placeholders": {
+      "min": {},
+      "max": {}
+    }
+  },
+  "zap": "Zap",
+  "signInToZap": "Sign in to send zaps",
+  "zapSent": "Zap of {sats} sats sent ⚡",
+  "@zapSent": {
+    "placeholders": {
+      "sats": {}
+    }
+  },
+  "nwcPaymentFailed": "NWC payment failed: {error}",
+  "@nwcPaymentFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "noLightningWallet": "No Lightning wallet found",
+  "storiesRailLabel": "Stories, {state}",
+  "@storiesRailLabel": {
+    "placeholders": {
+      "state": {}
+    }
+  },
+  "close": "Close",
+  "hoursAgo": "{hours} h ago",
+  "@hoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "daysAgo": "{days} d ago",
+  "@daysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "now": "now",
+  "youPrefix": "You: ",
+  "storiesStateUnseen": "new",
+  "storiesStateSeen": "seen",
+  "weekdayShort": "{day, select, mon{Mon} tue{Tue} wed{Wed} thu{Thu} fri{Fri} sat{Sat} sun{Sun} other{}}",
+  "@weekdayShort": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "sharedAMoment": "Shared a moment",
+  "blossomOtherError": "error",
+  "languageTitle": "Language",
+  "languageSystem": "System",
+  "languageEnglish": "English",
+  "languageItalian": "Italiano"
+}

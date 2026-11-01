@@ -1,57 +1,59 @@
-# Mialuna — Architecture & Compatibility Plan
+# Mialuna — Architecture
 
 ## Stack
 
-- Flutter 3.47 (Dart 3.13), Material 3, `flutter_riverpod` for state, `go_router` for navigation.
-- No centralized backend. Nostr relays over WebSocket (`web_socket_channel`), media on Blossom servers (`http`).
-- Local persistence: JSON file cache (`path_provider`) for events/profiles in Phase 1; Drift/SQLite is the planned replacement when query complexity grows (tracked in CHANGELOG).
+- Flutter 3.47 (Dart 3.13), Material 3, `flutter_riverpod`, `go_router`.
+- No backend. Nostr relays over WebSocket (`web_socket_channel`), media on
+  Blossom servers (`http`). Native code only where Flutter has no answer: the
+  NIP-55 (Amber) bridge and video-frame extraction (Kotlin; Swift untested).
+- Local persistence: JSON files in the app's private storage (`LocalCache`),
+  preferences in `shared_preferences`, secrets in `flutter_secure_storage`.
 
-## Module map
+## Layers
 
-```
+```text
 lib/
-  app/            MaterialApp, router (5 tabs via StatefulShellRoute), theme wiring
+  app/        providers (one relay pool, profiles, outbox, signals), router,
+              relay/blossom list sync
   core/
-    nostr/        event, keys+NIP-19 (bech32), signer abstraction, filter,
-                  relay (single socket), relay_pool (dedup/backoff/publish),
-                  event_store (in-memory dedup), models/ (NIP-68/71 parsing+building)
-    branding/     #mialuna hashtag policy (single source of truth, unit-tested)
-    media/        blossom client (kind 24242 auth, sha256 addressing, progress)
-    auth/         session controller, nsec secure storage, guest mode
-    theme/        Mialuna palette, light/dark ThemeData
-    routing/      go_router config
+    nostr/    event, filter, relay, relay_pool, signer(+amber, bunker),
+              nip19/44/59/65/05/51, outbox, profile_repository, models/
+    media/    media_sanitizer (metadata removal), media_cipher (AES-GCM),
+              private_media (download + decrypt), blossom, video_frames
+    storage/  local_cache
+    branding/ the #mialuna rule
+    theme/
   features/
-    onboarding/   login (Amber / bunker / nsec / guest)
-    feed/         Home: stories rail (Phase 3), kind 20/21 feed, likes/comments
-    explore/      discovery grid, #mialuna feed, hashtag search
-    create/       unified composer (photo/carousel/video/reel/story)
-    reels/        vertical viewer (Phase 2 placeholder)
-    stories/      (Phase 3)
-    profile/      profile page, edit, follow lists
-    comments/     NIP-22 threads
-    settings/     relays, blossom servers, signer, storage
+    feed/ stories/ reels/ explore/(Scopri) profile/ create/ comments/
+    messages/ (NIP-17 inbox, chat, forwarding)
+    private/  (close friends: list, delivery, private posts store, screens)
+    search/ settings/ social/ notifications/ onboarding/
 ```
 
-## Protocol coverage (Phase 1)
+Rules that keep it testable: networking lives in `core/nostr` and the
+controllers; widgets only watch providers; every relay conversation can be
+replayed against `test/support/fake_relay.dart` (a real local WebSocket relay)
+and every upload against `test/support/fake_blossom.dart`.
 
-- NIP-01 events, filters, subscriptions; BIP-340 signing via `bip340` (pure Dart).
-- NIP-19 npub/nsec/note encode-decode (own bech32 implementation, tested against vectors).
-- NIP-68 kind 20 (pictures + carousels) — read & publish.
-- NIP-71 kind 21/22 — parsing model now, playback/publish UI in Phase 2.
-- NIP-02 kind 3 follow lists (read/write, preserve unknown entries).
-- NIP-25 kind 7 reactions, NIP-22 kind 1111 comments.
-- NIP-40 expiration tags (used by Stories in Phase 3; filtering honored now).
-- Blossom: PUT /upload with kind 24242 authorization, sha256 addressing.
-- Signing: `Signer` interface → `NsecSigner` (local), `AmberSigner` (NIP-55 intent,
-  Android), `BunkerSigner` (NIP-46). Guest mode = read-only pubkey-less session.
+## Decisions worth knowing
 
-## Key decisions
+- **One `RelayPool`** for the whole app, never recreated: settings changes go
+  through `updateRelays`, subscriptions are deduplicated per subscription,
+  EOSE is reported only after queued events were verified and delivered, and
+  signatures are verified off the UI isolate.
+- **NIP-65 both ways**: the user's list (read/write) is adopted when newer and
+  edits are published back; other authors are read from *their* write relays
+  (outbox model).
+- **Home vs Discover**: Home is the people you follow (queried in chunks, on
+  your relays and theirs) plus private posts addressed to you; Discover is the
+  rest.
+- **Fail closed**: nothing is uploaded unless metadata was removed and, for
+  close-friends posts, the bytes are encrypted.
+- **Private store**: gift-wrapped rumors (messages, posts, likes, replies) are
+  decrypted once by the inbox pump and kept locally; the signer does the NIP-44
+  (Amber requests are serialised and use its content provider first).
+- Kind 1 is never requested or rendered as a post.
 
-- **Media-first filter**: every feed query uses `kinds: [20, 21, 22, 34235, 34236]`.
-  Kind 1 is never requested nor rendered as a post.
-- **#mialuna policy** lives in `core/branding/mialuna_tag.dart`, applied at publish
-  time only (caption + `t` tag), never to comments/reactions.
-- **External content** from other clients is accepted without Mialuna metadata.
-- **Drafts** are kept in memory + local cache; failed uploads block publishing.
-- Relay set defaults: `wss://relay.damus.io`, `wss://nos.lol`, `wss://relay.nostr.band`,
-  `wss://nostr.mom`. User overrides are never silently replaced.
+See [nostr-compatibility.md](nostr-compatibility.md) for the NIPs and Mialuna's
+own conventions, [ROADMAP.md](ROADMAP.md) for what is done and what is not,
+and [release.md](release.md) for builds.

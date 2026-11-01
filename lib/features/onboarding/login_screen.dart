@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/strings.dart';
 import 'login_panel.dart';
 
 /// Standalone login route (e.g. from the profile tab after onboarding).
@@ -34,7 +35,7 @@ class LoginScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Your moments, under the same moon.',
+              context.l10n.tagline,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: theme.colorScheme.outline,

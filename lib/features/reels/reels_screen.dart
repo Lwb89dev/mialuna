@@ -3,9 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../app/providers.dart';
+import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/models/media_event.dart';
-import '../../core/nostr/nip19.dart';
+import '../../l10n/strings.dart';
 import '../comments/comments_sheet.dart';
+import '../feed/widgets/inline_video.dart';
+import '../messages/send_to_sheet.dart';
+import '../profile/profile_widgets.dart';
 import '../settings/settings_controller.dart';
 import '../social/follow_controller.dart';
 import '../social/interactions_controller.dart';
@@ -33,23 +38,45 @@ class _ReelsScreenState extends ConsumerState<ReelsScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(reelsProvider);
+    // Reels live in an IndexedStack: they keep running when another tab is
+    // open, so playback follows the visible tab.
+    final tabActive = ref.watch(currentTabProvider) == 3;
+    ref.listen(tabReselectProvider, (_, event) {
+      if (event != null && event.branch == 3) {
+        if (_pageController.hasClients) _pageController.jumpToPage(0);
+        ref.read(reelsProvider.notifier).refresh();
+      }
+    });
     return Scaffold(
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
-        title: const Text('Reels'),
+        title: Text(context.l10n.tabReels),
       ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : state.reels.isEmpty
           ? Center(
-              child: Text(
-                'Nessun reel trovato sui relay.\nTorna presto!',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge
-                    ?.copyWith(color: Colors.white70),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    context.l10n.noReelsComeBack,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyLarge
+                        ?.copyWith(color: Colors.white70),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: () => ref.read(reelsProvider.notifier).refresh(),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text(context.l10n.retry),
+                  ),
+                ],
               ),
             )
           : PageView.builder(
@@ -60,7 +87,7 @@ class _ReelsScreenState extends ConsumerState<ReelsScreen> {
               itemBuilder: (context, i) => _ReelPage(
                 key: ValueKey(state.reels[i].id),
                 reel: state.reels[i],
-                active: i == _currentPage,
+                active: tabActive && i == _currentPage,
               ),
             ),
     );
@@ -76,14 +103,17 @@ class _ReelPage extends ConsumerStatefulWidget {
   ConsumerState<_ReelPage> createState() => _ReelPageState();
 }
 
-class _ReelPageState extends ConsumerState<_ReelPage> {
+class _ReelPageState extends ConsumerState<_ReelPage>
+    with WidgetsBindingObserver {
   VideoPlayerController? _controller;
   bool _failed = false;
   bool _expanded = false;
+  bool _disposed = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Data-saver: off-screen reels are not downloaded at all; they start
     // loading only when the user swipes to them.
     final dataSaver = ref.read(settingsProvider).dataSaver;
@@ -91,17 +121,23 @@ class _ReelPageState extends ConsumerState<_ReelPage> {
   }
 
   Future<void> _init() async {
+    setState(() => _failed = false);
     final c = VideoPlayerController.networkUrl(
       Uri.parse(widget.reel.media.first.url),
     );
     try {
-      await c.initialize();
-      c.setLooping(true);
+      await c.initialize().timeout(const Duration(seconds: 20));
+      await c.setLooping(true);
+      await c.setVolume(ref.read(videoMutedProvider) ? 0 : 1);
+      if (_disposed) {
+        await c.dispose();
+        return;
+      }
       if (widget.active) c.play();
-      if (mounted) setState(() => _controller = c);
+      setState(() => _controller = c);
     } catch (_) {
+      await c.dispose();
       if (mounted) setState(() => _failed = true);
-      c.dispose();
     }
   }
 
@@ -110,19 +146,26 @@ class _ReelPageState extends ConsumerState<_ReelPage> {
     super.didUpdateWidget(old);
     final c = _controller;
     if (c == null || !c.value.isInitialized) {
-      if (widget.active && !old.active && c == null) _init();
+      if (widget.active && !old.active && c == null && !_failed) _init();
       return;
     }
     if (widget.active && !old.active) {
       c.play();
     } else if (!widget.active && old.active) {
       c.pause();
-      c.seekTo(Duration.zero);
+      if (ref.read(currentTabProvider) == 3) c.seekTo(Duration.zero);
     }
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) _controller?.pause();
+  }
+
+  @override
   void dispose() {
+    _disposed = true;
+    WidgetsBinding.instance.removeObserver(this);
     _controller?.dispose();
     super.dispose();
   }
@@ -131,24 +174,52 @@ class _ReelPageState extends ConsumerState<_ReelPage> {
   Widget build(BuildContext context) {
     final c = _controller;
     final reel = widget.reel;
+    final interactions = ref.watch(interactionsProvider(reel));
+    final following = ref.watch(followListProvider).contains(reel.author);
+    final isMe = ref.watch(authProvider).publicKey == reel.author;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     return Stack(
       fit: StackFit.expand,
       children: [
         if (_failed)
-          const Center(
-            child: Icon(
-              Icons.broken_image_outlined,
-              color: Colors.white38,
-              size: 64,
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.videocam_off_outlined,
+                  color: Colors.white38,
+                  size: 64,
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: _init,
+                  child: Text(
+                    context.l10n.retry,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
             ),
           )
         else if (c == null || !c.value.isInitialized)
-          const Center(child: CircularProgressIndicator())
+          Stack(
+            fit: StackFit.expand,
+            children: [
+              VideoPoster(item: reel.media.first, postId: reel.id),
+              const Center(child: CircularProgressIndicator()),
+            ],
+          )
         else
           GestureDetector(
             onTap: () => c.value.isPlaying ? c.pause() : c.play(),
+            onDoubleTap: () {
+              HapticFeedback.mediumImpact();
+              ref.read(interactionsProvider(reel).notifier).like(reel);
+            },
             child: FittedBox(
               fit: BoxFit.cover,
+              clipBehavior: Clip.hardEdge,
               child: SizedBox(
                 width: c.value.size.width,
                 height: c.value.size.height,
@@ -160,43 +231,53 @@ class _ReelPageState extends ConsumerState<_ReelPage> {
         Positioned(
           left: 16,
           right: 80,
-          bottom: 24,
+          bottom: 24 + bottomInset,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 18,
-                    child: Text(reel.author.substring(0, 2).toUpperCase()),
-                  ),
+                  ProfileAvatar(pubkey: reel.author, radius: 18),
                   const SizedBox(width: 8),
                   Flexible(
-                    child: Text(
-                      '${reel.author.substring(0, 8)}…',
+                    child: AuthorName(
+                      pubkey: reel.author,
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
+                        shadows: [Shadow(blurRadius: 4, color: Colors.black54)],
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  OutlinedButton(
-                    onPressed: () => ref
-                        .read(followListProvider.notifier)
-                        .toggleFollow(reel.author),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white70),
-                      minimumSize: const Size(0, 32),
+                  if (!isMe) ...[
+                    const SizedBox(width: 8),
+                    OutlinedButton(
+                      onPressed: () async {
+                        final ok = await ref
+                            .read(followListProvider.notifier)
+                            .toggleFollow(reel.author);
+                        if (!ok && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                context.l10n.followUpdateFailedShort,
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.white70),
+                        minimumSize: const Size(0, 32),
+                      ),
+                      child: Text(
+                        following
+                            ? context.l10n.followingButton
+                            : context.l10n.follow,
+                      ),
                     ),
-                    child: Text(
-                      ref.watch(followListProvider).contains(reel.author)
-                          ? 'Segui già'
-                          : 'Segui',
-                    ),
-                  ),
+                  ],
                 ],
               ),
               if (reel.caption.isNotEmpty) ...[
@@ -207,7 +288,10 @@ class _ReelPageState extends ConsumerState<_ReelPage> {
                     reel.caption,
                     maxLines: _expanded ? 20 : 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      shadows: [Shadow(blurRadius: 4, color: Colors.black87)],
+                    ),
                   ),
                 ),
               ],
@@ -217,45 +301,70 @@ class _ReelPageState extends ConsumerState<_ReelPage> {
         // Action rail.
         Positioned(
           right: 8,
-          bottom: 24,
+          bottom: 24 + bottomInset,
           child: Column(
             children: [
-              IconButton(
-                icon: const Icon(
-                  Icons.favorite_border,
-                  color: Colors.white,
-                  size: 30,
-                ),
+              _RailButton(
+                icon: interactions.likedByMe
+                    ? Icons.favorite
+                    : Icons.favorite_border,
+                color: interactions.likedByMe
+                    ? Theme.of(context).colorScheme.secondary
+                    : Colors.white,
+                label: interactions.likeCount > 0
+                    ? '${interactions.likeCount}'
+                    : null,
                 onPressed: () =>
                     ref.read(interactionsProvider(reel).notifier).like(reel),
               ),
-              IconButton(
-                icon: const Icon(
-                  Icons.chat_bubble_outline,
-                  color: Colors.white,
-                  size: 30,
-                ),
+              _RailButton(
+                icon: Icons.chat_bubble_outline,
+                label: interactions.comments.isNotEmpty
+                    ? '${interactions.comments.length}'
+                    : null,
                 onPressed: () => CommentsSheet.show(context, reel),
               ),
-              IconButton(
-                icon: const Icon(
-                  Icons.share_outlined,
-                  color: Colors.white,
-                  size: 30,
-                ),
-                onPressed: () {
-                  final note = Nip19.encodeNote(reel.id);
-                  Clipboard.setData(ClipboardData(text: 'nostr:$note'));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Link Nostr copiato negli appunti'),
-                    ),
-                  );
-                },
+              _RailButton(
+                icon: Icons.send_outlined,
+                onPressed: () => SendToSheet.show(context, reel),
               ),
             ],
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _RailButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String? label;
+  final VoidCallback onPressed;
+  const _RailButton({
+    required this.icon,
+    required this.onPressed,
+    this.color = Colors.white,
+    this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        IconButton(
+          icon: Icon(icon, color: color, size: 30),
+          onPressed: onPressed,
+        ),
+        if (label != null)
+          Text(
+            label!,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              shadows: [Shadow(blurRadius: 4, color: Colors.black87)],
+            ),
+          ),
       ],
     );
   }

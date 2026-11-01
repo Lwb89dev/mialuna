@@ -5,10 +5,13 @@ import 'package:go_router/go_router.dart';
 import '../features/create/create_screen.dart';
 import '../features/explore/explore_screen.dart';
 import '../features/feed/feed_screen.dart';
+import '../features/feed/widgets/inline_video.dart';
 import '../features/onboarding/login_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/reels/reels_screen.dart';
+import '../l10n/strings.dart';
+import 'providers.dart';
 
 /// Whether the first-run onboarding has been completed. Overridden in
 /// `main()` with the persisted value before the app starts.
@@ -64,43 +67,84 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-class MialunaShell extends StatelessWidget {
+class MialunaShell extends ConsumerStatefulWidget {
   final StatefulNavigationShell shell;
   const MialunaShell({super.key, required this.shell});
 
   @override
+  ConsumerState<MialunaShell> createState() => _MialunaShellState();
+}
+
+class _MialunaShellState extends ConsumerState<MialunaShell> {
+  @override
+  void initState() {
+    super.initState();
+    _syncTab();
+  }
+
+  @override
+  void didUpdateWidget(MialunaShell old) {
+    super.didUpdateWidget(old);
+    _syncTab();
+  }
+
+  /// Keeps [currentTabProvider] right however the tab changed (tap, or
+  /// `context.go` after publishing) and stops feed videos on a tab change.
+  void _syncTab() {
+    final index = widget.shell.currentIndex;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (ref.read(currentTabProvider) != index) {
+        ref.read(currentTabProvider.notifier).state = index;
+        ref.read(activeVideoProvider.notifier).state = null;
+      }
+    });
+  }
+
+  void _onTap(int i) {
+    final shell = widget.shell;
+    final reselect = i == shell.currentIndex;
+    if (reselect) {
+      // Same tab again: screens scroll to top and refresh.
+      final tick = (ref.read(tabReselectProvider)?.tick ?? 0) + 1;
+      ref.read(tabReselectProvider.notifier).state = TabReselect(i, tick);
+    }
+    shell.goBranch(i, initialLocation: reselect);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final shell = widget.shell;
     return Scaffold(
       body: shell,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: shell.currentIndex,
-        onTap: (i) =>
-            shell.goBranch(i, initialLocation: i == shell.currentIndex),
-        items: const [
+        onTap: _onTap,
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            activeIcon: const Icon(Icons.home),
+            label: context.l10n.tabHome,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.explore_outlined),
-            activeIcon: Icon(Icons.explore),
-            label: 'Esplora',
+            icon: const Icon(Icons.explore_outlined),
+            activeIcon: const Icon(Icons.explore),
+            label: context.l10n.tabDiscover,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.add_circle_outline),
-            activeIcon: Icon(Icons.add_circle),
-            label: 'Crea',
+            icon: const Icon(Icons.add_circle_outline),
+            activeIcon: const Icon(Icons.add_circle),
+            label: context.l10n.tabCreate,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.play_circle_outline),
-            activeIcon: Icon(Icons.play_circle),
-            label: 'Reels',
+            icon: const Icon(Icons.play_circle_outline),
+            activeIcon: const Icon(Icons.play_circle),
+            label: context.l10n.tabReels,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profilo',
+            icon: const Icon(Icons.person_outline),
+            activeIcon: const Icon(Icons.person),
+            label: context.l10n.tabProfile,
           ),
         ],
       ),

@@ -1,3 +1,5 @@
+import 'event.dart';
+
 /// NIP-01 subscription filter.
 class NostrFilter {
   final List<String>? ids;
@@ -20,6 +22,26 @@ class NostrFilter {
     this.search,
   });
 
+  NostrFilter copyWith({
+    List<String>? ids,
+    List<String>? authors,
+    List<int>? kinds,
+    Map<String, List<String>>? tagFilters,
+    int? since,
+    int? until,
+    int? limit,
+    String? search,
+  }) => NostrFilter(
+    ids: ids ?? this.ids,
+    authors: authors ?? this.authors,
+    kinds: kinds ?? this.kinds,
+    tagFilters: tagFilters ?? this.tagFilters,
+    since: since ?? this.since,
+    until: until ?? this.until,
+    limit: limit ?? this.limit,
+    search: search ?? this.search,
+  );
+
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
     if (ids != null) map['ids'] = ids;
@@ -33,17 +55,18 @@ class NostrFilter {
     return map;
   }
 
-  bool matches(dynamic event) {
-    final e = event as dynamic;
-    if (ids != null && !ids!.contains(e.id as String)) return false;
-    if (authors != null && !authors!.contains(e.pubkey as String)) return false;
-    if (kinds != null && !kinds!.contains(e.kind as int)) return false;
-    if (since != null && (e.createdAt as int) < since!) return false;
-    if (until != null && (e.createdAt as int) > until!) return false;
+  /// Client-side check mirroring what a relay does. `limit` and `search` are
+  /// relay-side only and ignored here.
+  bool matches(NostrEvent e) {
+    if (ids != null && !ids!.contains(e.id)) return false;
+    if (authors != null && !authors!.contains(e.pubkey)) return false;
+    if (kinds != null && !kinds!.contains(e.kind)) return false;
+    if (since != null && e.createdAt < since!) return false;
+    if (until != null && e.createdAt > until!) return false;
     if (tagFilters != null) {
       for (final entry in tagFilters!.entries) {
         final name = entry.key.substring(1); // strip '#'
-        final values = (e.tags as List<List<String>>)
+        final values = e.tags
             .where((t) => t.isNotEmpty && t[0] == name)
             .map((t) => t.length > 1 ? t[1] : '')
             .toSet();

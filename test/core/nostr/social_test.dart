@@ -4,12 +4,12 @@ import 'package:mialuna/core/nostr/models/comment.dart';
 import 'package:mialuna/core/nostr/signer.dart';
 
 void main() {
-  final rootEvent = NostrEvent(
+  final rootEvent = const NostrEvent(
     id: 'rootid',
     pubkey: 'author1',
     createdAt: 1700000000,
     kind: NostrKinds.picture,
-    tags: const [],
+    tags: [],
     content: 'foto',
     sig: '',
   );
@@ -25,12 +25,12 @@ void main() {
     });
 
     test('reply points to the parent comment, not the root', () {
-      final parent = NostrEvent(
+      final parent = const NostrEvent(
         id: 'comment1',
         pubkey: 'other',
         createdAt: 1700000001,
         kind: NostrKinds.comment,
-        tags: const [],
+        tags: [],
         content: 'bello',
         sig: '',
       );

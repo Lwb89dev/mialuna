@@ -23,16 +23,22 @@ centralized platform.
   Reels viewer with autoplay and preloading
 - **Stories** — 24-hour visual moments via NIP-40 expiration, grouped by
   creator, with a full-screen viewer
-- **Explore** — media grid, hashtag search, account search, official
-  `#mialuna` feed, optional NIP-50 relay search
+- **Home & Discover** — Home shows the people you follow; Discover shows
+  everything else (media grid, hashtag and words search, official
+  `#mialuna` feed) and finds people by name (NIP-50 relays, NIP-05)
 - **Social** — NIP-25 reactions, NIP-22 comments with nested replies,
-  NIP-02 follow lists, bookmarks, NIP-57 Lightning zaps, notifications
+  NIP-02 follow lists, bookmarks, NIP-57 Lightning zaps, notifications,
+  profiles of anyone, pinch-to-zoom and inline video in the feed
+- **Private messages** — NIP-17 (gift-wrapped, NIP-44), with one-tap
+  forwarding of photos, videos, reels and stories from Home
 - **Authentication** — Amber (NIP-55, Android), remote signers (NIP-46
   bunker), nsec advanced fallback, read-only guest mode
 - **Media uploads** — Blossom (kind 24242 authorization, SHA-256 content
-  addressing), NIP-96 alternative, automatic EXIF/GPS stripping
+  addressing, ordered server fallback), automatic removal of every metadata
+  trace before upload (fail-closed)
 - **Relays** — multi-relay pool with reconnect/backoff, NIP-65 relay lists
-  (kind 10002), partial publication reporting, offline cache
+  synced automatically (read/write roles, outbox model), NIP-42 AUTH,
+  per-relay publication reports, offline cache
 - **Privacy & moderation** — mute, block, sensitive-content warnings (NIP-36),
   reporting, secure credential storage
 - **Branding** — every post published from Mialuna carries `#mialuna`,

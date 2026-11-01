@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,78 +10,164 @@ import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/event.dart';
 import '../../core/nostr/filter.dart';
 import '../../core/nostr/models/media_event.dart';
+import '../../core/nostr/nip05.dart';
+import '../../core/nostr/nip19.dart';
+import '../../core/nostr/profile_repository.dart';
+import '../../core/nostr/relay_pool.dart';
 import '../../core/nostr/signer.dart';
+import '../../l10n/strings.dart';
+import '../explore/explore_screen.dart';
+import '../feed/widgets/post_card.dart';
+import '../messages/chat_screen.dart';
+import '../messages/dm_controller.dart';
+import '../private/private_posts.dart';
+import '../settings/settings_screen.dart';
 import '../social/follow_controller.dart';
 import '../social/moderation_controller.dart';
-import '../settings/settings_screen.dart';
 import 'edit_profile_screen.dart';
+import 'profile_widgets.dart';
 
-/// Own media posts grid data.
-final ownPostsProvider = StreamProvider<List<MediaPost>>((ref) {
-  final pub = ref.watch(authProvider).publicKey;
-  if (pub == null) return const Stream.empty();
-  final pool = ref.watch(relayPoolProvider)..connect();
-  final (:id, :stream) = pool.subscribe([
-    NostrFilter(kinds: NostrKinds.mediaKinds, authors: [pub], limit: 90),
-  ]);
-  ref.onDispose(() => pool.unsubscribe(id));
-  final seen = <String>{};
-  final posts = <MediaPost>[];
-  final controller = StreamController<List<MediaPost>>();
-  final sub = stream.listen((event) {
-    if (seen.contains(event.id)) return;
-    final post = MediaPost.tryParse(event);
-    if (post == null || post.isStory || post.isExpired()) return;
-    seen.add(event.id);
-    posts.add(post);
-    posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    controller.add(List.of(posts));
-  });
-  ref.onDispose(() {
-    sub.cancel();
-    controller.close();
-  });
-  return controller.stream;
-});
+/// Media posts of [pubkey], read from the author's own relays (NIP-65
+/// outbox) as well as the user's. Items show up as they arrive; an empty
+/// list is only reported once the relays have answered.
+final userPostsProvider = StreamProvider.autoDispose
+    .family<List<MediaPost>, String>((ref, pubkey) {
+      final controller = StreamController<List<MediaPost>>();
+      final posts = <String, MediaPost>{};
+      PoolSubscription? sub;
+      StreamSubscription<NostrEvent>? listener;
+      var closed = false;
+      Timer? throttle;
+
+      void emit() {
+        if (closed) return;
+        final list = posts.values.toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        controller.add(list);
+      }
+
+      ref.onDispose(() {
+        closed = true;
+        throttle?.cancel();
+        listener?.cancel();
+        sub?.close();
+        controller.close();
+      });
+
+      () async {
+        final outbox = ref.read(outboxProvider);
+        try {
+          await outbox.ensure([pubkey]).timeout(const Duration(seconds: 5));
+        } catch (_) {}
+        if (closed) return;
+        sub = ref
+            .read(relayPoolProvider)
+            .subscribe(
+              [
+                NostrFilter(
+                  kinds: NostrKinds.mediaKinds,
+                  authors: [pubkey],
+                  limit: 90,
+                ),
+              ],
+              extraRelays: outbox.writeRelays(pubkey),
+              eoseTimeout: const Duration(seconds: 12),
+            );
+        listener = sub!.events.listen((event) {
+          final post = MediaPost.tryParse(event);
+          if (post == null || post.isStory || post.isExpired()) return;
+          if (posts.containsKey(post.id)) return;
+          posts[post.id] = post;
+          throttle ??= Timer(const Duration(milliseconds: 250), () {
+            throttle = null;
+            emit();
+          });
+        });
+        await sub!.eose;
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+        emit(); // also reports "no posts" once the relays answered
+      }();
+      return controller.stream;
+    });
 
 /// Bookmarked posts, resolved from the relays by event id.
-final savedPostsProvider = StreamProvider<List<MediaPost>>((ref) {
+final savedPostsProvider = StreamProvider.autoDispose<List<MediaPost>>((ref) {
   final ids = ref.watch(bookmarksProvider);
   if (ids.isEmpty) return Stream.value(const <MediaPost>[]);
-  final pool = ref.watch(relayPoolProvider)..connect();
-  final (:id, :stream) = pool.subscribe([
-    NostrFilter(kinds: NostrKinds.mediaKinds, ids: ids.toList()),
-  ]);
-  ref.onDispose(() => pool.unsubscribe(id));
-  final seen = <String>{};
-  final posts = <MediaPost>[];
   final controller = StreamController<List<MediaPost>>();
-  final sub = stream.listen((event) {
-    if (seen.contains(event.id)) return;
+  final posts = <String, MediaPost>{};
+  final sub = ref.read(relayPoolProvider).subscribe([
+    NostrFilter(kinds: NostrKinds.mediaKinds, ids: ids.toList()),
+  ], eoseTimeout: const Duration(seconds: 12));
+  final listener = sub.events.listen((event) {
     final post = MediaPost.tryParse(event);
-    if (post == null || post.isExpired()) return;
-    seen.add(event.id);
-    posts.add(post);
-    controller.add(List.of(posts));
+    if (post == null || post.isExpired() || posts.containsKey(post.id)) return;
+    posts[post.id] = post;
+    if (!controller.isClosed) controller.add(posts.values.toList());
+  });
+  sub.eose.then((_) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    if (!controller.isClosed && posts.isEmpty) controller.add(const []);
   });
   ref.onDispose(() {
-    sub.cancel();
+    listener.cancel();
+    sub.close();
     controller.close();
   });
   return controller.stream;
 });
 
+/// How many accounts [pubkey] follows, from their newest kind 3.
+final followingCountProvider = FutureProvider.autoDispose.family<int?, String>((
+  ref,
+  pubkey,
+) async {
+  final sub = ref
+      .read(relayPoolProvider)
+      .subscribe(
+        [
+          NostrFilter(
+            kinds: const [NostrKinds.followList],
+            authors: [pubkey],
+            limit: 3,
+          ),
+        ],
+        extraRelays: ref.read(indexerRelaysProvider),
+        eoseTimeout: const Duration(seconds: 7),
+      );
+  NostrEvent? newest;
+  final listener = sub.events.listen((e) {
+    if (newest == null || e.createdAt > newest!.createdAt) newest = e;
+  });
+  await sub.eose;
+  await Future<void>.delayed(const Duration(milliseconds: 250));
+  await listener.cancel();
+  sub.close();
+  final event = newest;
+  if (event == null) return null;
+  return event.tags.where((t) => t.length > 1 && t[0] == 'p').length;
+});
+
+/// NIP-05: true only when the domain really maps the name to [pubkey].
+final nip05VerifiedProvider = FutureProvider.autoDispose
+    .family<bool, ({String pubkey, String nip05})>(
+      (ref, args) => Nip05.verify(args.nip05, args.pubkey),
+    );
+
+/// A profile: your own (bottom tab, [pubkey] null) or anyone else's.
 class ProfileScreen extends ConsumerWidget {
-  const ProfileScreen({super.key});
+  final String? pubkey;
+  const ProfileScreen({super.key, this.pubkey});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
     final theme = Theme.of(context);
+    final target = pubkey ?? auth.publicKey;
 
-    if (auth.isGuest) {
+    if (target == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Profilo')),
+        appBar: AppBar(title: Text(context.l10n.tabProfile)),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -94,12 +179,12 @@ class ProfileScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Stai navigando come ospite',
+                context.l10n.browsingAsGuest,
                 style: theme.textTheme.titleLarge,
               ),
               const SizedBox(height: 8),
               Text(
-                'Accedi per pubblicare, seguire e interagire.',
+                context.l10n.signInToInteract,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.outline,
                 ),
@@ -107,7 +192,7 @@ class ProfileScreen extends ConsumerWidget {
               const SizedBox(height: 24),
               FilledButton(
                 onPressed: () => context.go('/login'),
-                child: const Text('Accedi'),
+                child: Text(context.l10n.signIn),
               ),
             ],
           ),
@@ -115,208 +200,368 @@ class ProfileScreen extends ConsumerWidget {
       );
     }
 
-    final pub = auth.publicKey!;
-    final metadata = ref.watch(profileMetadataProvider(pub));
-    final posts = ref.watch(ownPostsProvider);
-    final saved = ref.watch(savedPostsProvider);
-    final following = ref.watch(followListProvider);
+    final isSelf = target == auth.publicKey;
+    final meta = ref.watch(profileProvider(target));
+    final posts = ref.watch(userPostsProvider(target));
+    final saved = isSelf ? ref.watch(savedPostsProvider) : null;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(metadata.value?.label ?? 'Profilo'),
+        title: Text(meta?.label ?? ProfileMetadata.shortPubkey(target)),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Impostazioni',
-            onPressed: () => Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
-          ),
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Modifica profilo',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => EditProfileScreen(current: metadata.value),
-              ),
+          if (isSelf) ...[
+            IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: context.l10n.settings,
+              onPressed: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Esci',
-            onPressed: () async {
-              await ref.read(authProvider.notifier).logout();
-              if (context.mounted) context.go('/login');
-            },
-          ),
+            IconButton(
+              icon: const Icon(Icons.logout),
+              tooltip: context.l10n.signOut,
+              onPressed: () async {
+                // Close-friends posts and decrypted videos leave with you.
+                await ref.read(privatePostsProvider.notifier).clear();
+                await ref.read(privateMediaProvider).cleanUp(everything: true);
+                await ref.read(authProvider.notifier).logout();
+                if (context.mounted) context.go('/login');
+              },
+            ),
+          ] else
+            PopupMenuButton<String>(
+              onSelected: (v) async {
+                final messenger = ScaffoldMessenger.of(context);
+                final l10n = context.l10n;
+                switch (v) {
+                  case 'copy':
+                    await Clipboard.setData(
+                      ClipboardData(text: Nip19.encodeNpub(target)),
+                    );
+                    messenger.showSnackBar(
+                      SnackBar(content: Text(l10n.npubCopied)),
+                    );
+                  case 'mute':
+                    await ref
+                        .read(muteControllerProvider.notifier)
+                        .mute(target);
+                    messenger.showSnackBar(
+                      SnackBar(content: Text(l10n.authorMuted)),
+                    );
+                  case 'block':
+                    await ref.read(blockProvider.notifier).block(target);
+                    messenger.showSnackBar(
+                      SnackBar(content: Text(l10n.authorBlocked)),
+                    );
+                }
+              },
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'copy',
+                  child: Text(context.l10n.copyNpub),
+                ),
+                PopupMenuItem(value: 'mute', child: Text(context.l10n.mute)),
+                PopupMenuItem(value: 'block', child: Text(context.l10n.block)),
+              ],
+            ),
         ],
       ),
       body: DefaultTabController(
-        length: 3,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundImage: metadata.value?.picture != null
-                            ? CachedNetworkImageProvider(
-                                metadata.value!.picture!,
-                              )
-                            : null,
-                        child: metadata.value?.picture == null
-                            ? Text(
-                                pub.substring(0, 2).toUpperCase(),
-                                style: theme.textTheme.headlineSmall,
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _Stat(
-                              label: 'Post',
-                              value: '${posts.value?.length ?? 0}',
-                            ),
-                            _Stat(
-                              label: 'Seguiti',
-                              value: '${following.length}',
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  if (metadata.value?.label != null)
-                    Text(
-                      metadata.value!.label,
-                      style: theme.textTheme.titleMedium,
-                    ),
-                  if (metadata.value?.nip05 != null)
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.verified,
-                          size: 16,
-                          color: theme.colorScheme.secondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          metadata.value!.nip05!,
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  if (metadata.value?.about != null) ...[
-                    const SizedBox(height: 4),
-                    Text(metadata.value!.about!),
-                  ],
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SelectableText(
-                          auth.npub ?? '',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.outline,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.copy, size: 18),
-                        tooltip: 'Copia npub',
-                        onPressed: () {
-                          Clipboard.setData(
-                            ClipboardData(text: auth.npub ?? ''),
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('npub copiato')),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                  Center(
-                    child: Chip(
-                      avatar: const Icon(Icons.key, size: 16),
-                      label: Text(switch (auth.signer.type) {
-                        SignerType.amber => 'Amber (NIP-55)',
-                        SignerType.nsec => 'Chiave locale',
-                        SignerType.bunker => 'Bunker (NIP-46)',
-                        SignerType.guest => 'Ospite',
-                      }),
-                    ),
-                  ),
-                ],
+        length: isSelf ? 3 : 2,
+        child: NestedScrollView(
+          headerSliverBuilder: (context, _) => [
+            SliverToBoxAdapter(
+              child: _ProfileHeader(
+                pubkey: target,
+                isSelf: isSelf,
+                meta: meta,
+                postCount: posts.valueOrNull?.length,
               ),
             ),
-            const TabBar(
-              tabs: [
-                Tab(text: 'Post'),
-                Tab(text: 'Reels'),
-                Tab(text: 'Salvati'),
-              ],
-            ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  _MediaGrid(
-                    posts: posts,
-                    reelsOnly: false,
-                    emptyMessage: 'Non hai ancora pubblicato nulla.',
+            SliverToBoxAdapter(
+              child: TabBar(
+                tabs: [
+                  Tab(
+                    icon: const Icon(Icons.grid_on_outlined),
+                    text: context.l10n.posts,
                   ),
-                  _MediaGrid(
-                    posts: posts,
-                    reelsOnly: true,
-                    emptyMessage: 'Nessun reel pubblicato.',
+                  Tab(
+                    icon: const Icon(Icons.play_circle_outline),
+                    text: context.l10n.tabReels,
                   ),
-                  _MediaGrid(
-                    posts: saved,
-                    reelsOnly: null,
-                    emptyMessage: 'Nessun post salvato.',
-                  ),
+                  if (isSelf)
+                    Tab(
+                      icon: const Icon(Icons.bookmark_border),
+                      text: context.l10n.saved,
+                    ),
                 ],
               ),
             ),
           ],
+          body: TabBarView(
+            children: [
+              _MediaGrid(
+                posts: posts,
+                reelsOnly: false,
+                emptyMessage: isSelf
+                    ? context.l10n.nothingPublishedYet
+                    : context.l10n.noPostsOnRelays,
+                onRefresh: () async =>
+                    ref.invalidate(userPostsProvider(target)),
+              ),
+              _MediaGrid(
+                posts: posts,
+                reelsOnly: true,
+                emptyMessage: isSelf
+                    ? context.l10n.noReelsPublished
+                    : context.l10n.noReelsOnRelays,
+                onRefresh: () async =>
+                    ref.invalidate(userPostsProvider(target)),
+              ),
+              if (isSelf)
+                _MediaGrid(
+                  posts: saved!,
+                  reelsOnly: null,
+                  emptyMessage: context.l10n.noSavedPosts,
+                  onRefresh: () async => ref.invalidate(savedPostsProvider),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
+class _ProfileHeader extends ConsumerWidget {
+  final String pubkey;
+  final bool isSelf;
+  final ProfileMetadata? meta;
+  final int? postCount;
+
+  const _ProfileHeader({
+    required this.pubkey,
+    required this.isSelf,
+    required this.meta,
+    required this.postCount,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final auth = ref.watch(authProvider);
+    final follows = ref.watch(followListProvider);
+    final following = follows.contains(pubkey);
+    final followingCount = isSelf
+        ? follows.length
+        : ref.watch(followingCountProvider(pubkey)).valueOrNull;
+    final nip05 = meta?.nip05;
+    final verified = nip05 == null
+        ? false
+        : ref
+                  .watch(nip05VerifiedProvider((pubkey: pubkey, nip05: nip05)))
+                  .valueOrNull ??
+              false;
+    final npub = Nip19.encodeNpub(pubkey);
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              ProfileAvatar(pubkey: pubkey, radius: 40, tappable: false),
+              const SizedBox(width: 24),
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: _Stat(
+                        label: context.l10n.posts,
+                        value: postCount?.toString() ?? '–',
+                      ),
+                    ),
+                    Expanded(
+                      child: _Stat(
+                        label: context.l10n.feedFollowing,
+                        value: followingCount?.toString() ?? '–',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            meta?.label ?? ProfileMetadata.shortPubkey(pubkey),
+            style: theme.textTheme.titleMedium,
+          ),
+          if (meta?.handle != null)
+            Text(
+              meta!.handle!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          if (nip05 != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Row(
+                children: [
+                  if (verified) ...[
+                    Icon(
+                      Icons.verified,
+                      size: 16,
+                      color: theme.colorScheme.secondary,
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                  Flexible(
+                    child: Text(
+                      nip05,
+                      style: theme.textTheme.bodySmall,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (meta?.about != null) ...[
+            const SizedBox(height: 6),
+            SelectableText(meta!.about!),
+          ],
+          if (meta?.website != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              meta!.website!,
+              style: TextStyle(color: theme.colorScheme.secondary),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              if (isSelf)
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => EditProfileScreen(current: meta),
+                      ),
+                    ),
+                    child: Text(context.l10n.editProfile),
+                  ),
+                )
+              else ...[
+                Expanded(
+                  child: following
+                      ? OutlinedButton(
+                          onPressed: auth.isGuest
+                              ? null
+                              : () => _toggle(context, ref),
+                          child: Text(context.l10n.followingButton),
+                        )
+                      : FilledButton(
+                          onPressed: auth.isGuest
+                              ? null
+                              : () => _toggle(context, ref),
+                          child: Text(context.l10n.follow),
+                        ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: auth.isGuest || !ref.watch(dmProvider).supported
+                        ? null
+                        : () => ChatScreen.open(context, pubkey),
+                    child: Text(context.l10n.messageButton),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(
+                '${npub.substring(0, 14)}…${npub.substring(npub.length - 6)}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.copy, size: 18),
+                tooltip: context.l10n.copyNpub,
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: npub));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(context.l10n.npubCopied)),
+                  );
+                },
+              ),
+              if (isSelf)
+                Chip(
+                  avatar: const Icon(Icons.key, size: 16),
+                  label: Text(switch (auth.signer.type) {
+                    SignerType.amber => 'Amber (NIP-55)',
+                    SignerType.nsec => context.l10n.loginLocalKey,
+                    SignerType.bunker => 'Bunker (NIP-46)',
+                    SignerType.guest => context.l10n.loginGuest,
+                  }),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _toggle(BuildContext context, WidgetRef ref) async {
+    final ok = await ref.read(followListProvider.notifier).toggleFollow(pubkey);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.followUpdateFailed)));
+    }
+  }
+}
+
 /// Media grid for a profile tab. [reelsOnly] true keeps only short videos
 /// (kind 22), false keeps everything else, null keeps all.
-class _MediaGrid extends StatelessWidget {
+class _MediaGrid extends ConsumerWidget {
   final AsyncValue<List<MediaPost>> posts;
   final bool? reelsOnly;
   final String emptyMessage;
+  final Future<void> Function() onRefresh;
 
   const _MediaGrid({
     required this.posts,
     required this.reelsOnly,
     required this.emptyMessage,
+    required this.onRefresh,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final broken = ref.watch(brokenMediaProvider);
     return posts.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, _) => const SizedBox.shrink(),
+      error: (_, _) => Center(
+        child: TextButton(
+          onPressed: onRefresh,
+          child: Text(context.l10n.retry),
+        ),
+      ),
       data: (list) {
         final filtered = [
           for (final p in list)
-            if (reelsOnly == null ||
-                (p.event.kind == NostrKinds.shortVideo) == reelsOnly!)
+            if (!broken.contains(p.id) &&
+                (reelsOnly == null ||
+                    (p.event.kind == NostrKinds.shortVideo) == reelsOnly!))
               p,
         ];
         if (filtered.isEmpty) {
@@ -341,24 +586,10 @@ class _MediaGrid extends StatelessWidget {
             crossAxisSpacing: 2,
           ),
           itemCount: filtered.length,
-          itemBuilder: (context, i) {
-            final item = filtered[i].media.first;
-            return item.isVideo
-                ? Container(
-                    color: Colors.black,
-                    child: const Icon(
-                      Icons.play_circle_outline,
-                      color: Colors.white70,
-                    ),
-                  )
-                : CachedNetworkImage(
-                    imageUrl: item.previewUrl ?? item.url,
-                    fit: BoxFit.cover,
-                    errorWidget: (_, _, _) => Container(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                    ),
-                  );
-          },
+          itemBuilder: (context, i) => PostThumbnail(
+            post: filtered[i],
+            onTap: () => PostScreen.open(context, filtered[i]),
+          ),
         );
       },
     );
@@ -373,11 +604,14 @@ class _Stat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      children: [
-        Text(value, style: theme.textTheme.titleLarge),
-        Text(label, style: theme.textTheme.bodySmall),
-      ],
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Column(
+        children: [
+          Text(value, style: theme.textTheme.titleLarge),
+          Text(label, style: theme.textTheme.bodySmall),
+        ],
+      ),
     );
   }
 }

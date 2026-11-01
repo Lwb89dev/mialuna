@@ -5,11 +5,14 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/nostr/nwc_controller.dart';
+import '../../l10n/strings.dart';
+import '../private/close_friends_screen.dart' show CloseFriendsExplainer;
 import 'login_panel.dart';
 
 const onboardingDoneKey = 'onboarding_done';
 
-/// First-run onboarding: 1) welcome, 2) sign-in, 3) permissions and
+/// First-run onboarding: 1) welcome, 2) public vs. private (what close
+/// friends protects and what it cannot), 3) sign-in, 4) permissions and
 /// optional Nostr Wallet Connect link.
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -86,16 +89,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 onPageChanged: (i) => setState(() => _page = i),
                 children: [
                   _WelcomePage(theme: theme),
+                  const _PublicPrivatePage(),
                   ListView(
                     padding: const EdgeInsets.all(24),
                     children: [
                       Text(
-                        'Accedi',
+                        context.l10n.signIn,
                         style: theme.textTheme.headlineSmall,
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 24),
-                      LoginPanel(onLoggedIn: () => _goTo(2)),
+                      LoginPanel(onLoggedIn: () => _goTo(3)),
                     ],
                   ),
                   _buildPermissionsPage(theme),
@@ -109,7 +113,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 children: [
                   Row(
                     children: List.generate(
-                      3,
+                      4,
                       (i) => Container(
                         width: 8,
                         height: 8,
@@ -123,8 +127,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       ),
                     ),
                   ),
-                  if (_page < 2)
-                    TextButton(onPressed: _finish, child: const Text('Salta')),
+                  if (_page < 3)
+                    TextButton(
+                      onPressed: _finish,
+                      child: Text(context.l10n.skip),
+                    ),
                 ],
               ),
             ),
@@ -140,14 +147,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       padding: const EdgeInsets.all(24),
       children: [
         Text(
-          'Permessi e wallet',
+          context.l10n.permissionsAndWallet,
           style: theme.textTheme.headlineSmall,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
         Text(
-          'Servono solo a farti pubblicare e ricevere notifiche. '
-          'Puoi cambiarli in qualsiasi momento dalle impostazioni di sistema.',
+          context.l10n.permissionsExplain,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.outline,
           ),
@@ -156,8 +162,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         const SizedBox(height: 24),
         ListTile(
           leading: const Icon(Icons.photo_library_outlined),
-          title: const Text('Foto e video'),
-          subtitle: const Text('Per caricare i tuoi momenti'),
+          title: Text(context.l10n.photosAndVideos),
+          subtitle: Text(context.l10n.toUploadYourMoments),
           trailing: _photosGranted
               ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
               : FilledButton.tonal(
@@ -166,13 +172,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     await Permission.videos.request();
                     await _refreshPermissions();
                   },
-                  child: const Text('Consenti'),
+                  child: Text(context.l10n.allow),
                 ),
         ),
         ListTile(
           leading: const Icon(Icons.notifications_outlined),
-          title: const Text('Notifiche'),
-          subtitle: const Text('Reazioni, commenti e zap'),
+          title: Text(context.l10n.notifications),
+          subtitle: Text(context.l10n.reactionsCommentsZaps),
           trailing: _notificationsGranted
               ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
               : FilledButton.tonal(
@@ -180,17 +186,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     await Permission.notification.request();
                     await _refreshPermissions();
                   },
-                  child: const Text('Consenti'),
+                  child: Text(context.l10n.allow),
                 ),
         ),
         const SizedBox(height: 24),
         const Divider(),
         const SizedBox(height: 16),
-        Text('Wallet Lightning (opzionale)', style: theme.textTheme.titleSmall),
+        Text(
+          context.l10n.lightningWalletOptional,
+          style: theme.textTheme.titleSmall,
+        ),
         const SizedBox(height: 8),
         Text(
-          'Collega un wallet Nostr Wallet Connect per inviare zap '
-          'senza lasciare l\'app.',
+          context.l10n.nwcExplain,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.outline,
           ),
@@ -199,14 +207,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         if (nwc != null)
           ListTile(
             leading: Icon(Icons.bolt, color: theme.colorScheme.primary),
-            title: const Text('Wallet collegato'),
+            title: Text(context.l10n.walletConnected),
             subtitle: Text(
               '${nwc.walletPubkey.substring(0, 12)}…',
               style: theme.textTheme.bodySmall,
             ),
             trailing: TextButton(
               onPressed: () => ref.read(nwcProvider.notifier).disconnect(),
-              child: const Text('Scollega'),
+              child: Text(context.l10n.disconnect),
             ),
           )
         else ...[
@@ -222,7 +230,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           const SizedBox(height: 12),
           FilledButton.tonal(
             onPressed: _saveNwc,
-            child: const Text('Collega wallet'),
+            child: Text(context.l10n.connectWallet),
           ),
           if (_nwcError != null) ...[
             const SizedBox(height: 8),
@@ -234,7 +242,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ],
         ],
         const SizedBox(height: 32),
-        FilledButton(onPressed: _finish, child: const Text('Inizia')),
+        FilledButton(onPressed: _finish, child: Text(context.l10n.getStarted)),
       ],
     );
   }
@@ -264,7 +272,7 @@ class _WelcomePage extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Your moments, under the same moon.',
+          context.l10n.tagline,
           textAlign: TextAlign.center,
           style: theme.textTheme.titleMedium?.copyWith(
             color: theme.colorScheme.secondary,
@@ -272,26 +280,52 @@ class _WelcomePage extends StatelessWidget {
         ),
         const SizedBox(height: 32),
         Text(
-          'Mialuna is a visual social network: photos, videos, Reels and '
-          'Stories — never text-only posts.',
+          context.l10n.welcome1,
           style: theme.textTheme.bodyLarge,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
         Text(
-          'It runs on Nostr, an open protocol: your identity is a key you '
-          'own, not an account a company can take away. No ads, no '
-          'trackers, no central servers.',
+          context.l10n.welcome2,
           style: theme.textTheme.bodyLarge,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
         Text(
-          'Share your light with people everywhere, from any app that '
-          'speaks the same open language.',
+          context.l10n.welcome3,
           style: theme.textTheme.bodyLarge,
           textAlign: TextAlign.center,
         ),
+      ],
+    );
+  }
+}
+
+/// What is public, what is private, and where the limits are — before the
+/// user publishes anything.
+class _PublicPrivatePage extends StatelessWidget {
+  const _PublicPrivatePage();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        Text(
+          context.l10n.publicAndPrivate,
+          style: theme.textTheme.headlineSmall,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          context.l10n.publicAndPrivateIntro,
+          style: theme.textTheme.bodyLarge,
+        ),
+        const SizedBox(height: 16),
+        Text(context.l10n.closeFriends, style: theme.textTheme.titleMedium),
+        const SizedBox(height: 4),
+        const CloseFriendsExplainer(),
       ],
     );
   }

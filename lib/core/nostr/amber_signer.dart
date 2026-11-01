@@ -2,18 +2,55 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 
+import '../../l10n/strings.dart';
 import '../nostr/event.dart';
+import '../nostr/nip19.dart';
 import '../nostr/signer.dart';
 
 /// NIP-55 signer backed by Amber (Android). All signing happens inside
 /// Amber; the private key never enters this process.
+///
+/// Requests are served by the native side in two ways: first silently
+/// through Amber's content provider (works once the user ticked "remember my
+/// choice" in Amber — no UI, which is what makes reading many private
+/// messages bearable), then through the regular intent flow with Amber's
+/// approval screen.
 class AmberSigner extends Signer {
   static const _channel = MethodChannel('app.mialuna.social/amber');
+
+  /// The native bridge handles one request at a time; everything is queued.
+  static Future<void> _lock = Future<void>.value();
+
+  static Future<T> _serial<T>(Future<T> Function() op) {
+    final completer = Completer<T>();
+    _lock = _lock.then((_) async {
+      try {
+        completer.complete(await op());
+      } catch (e, s) {
+        completer.completeError(e, s);
+      }
+    });
+    return completer.future;
+  }
 
   @override
   final String publicKey;
 
   AmberSigner._(this.publicKey);
+
+  /// Rebuilds a signer from the stored public key, without opening Amber.
+  /// Amber is only contacted when something actually has to be signed.
+  factory AmberSigner.restore(String publicKey) =>
+      AmberSigner._(normalizePubkey(publicKey));
+
+  /// Amber returns the public key as hex or as an `npub…` string depending on
+  /// the version; the app only ever works with lowercase hex.
+  static String normalizePubkey(String raw) {
+    final v = raw.trim();
+    if (v.startsWith('npub1')) return Nip19.decodeNpub(v);
+    if (RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(v)) return v.toLowerCase();
+    throw SignerException(AppStrings.current.amberInvalidKey);
+  }
 
   /// Returns true when Amber (or another NIP-55 signer) is installed.
   static Future<bool> isAvailable() async {
@@ -25,19 +62,21 @@ class AmberSigner extends Signer {
   }
 
   /// Asks Amber for the current user's public key (permission prompt).
-  static Future<AmberSigner> connect() async {
+  static Future<AmberSigner> connect() => _serial(() async {
     try {
       final pubkey = await _channel.invokeMethod<String>('getPublicKey');
       if (pubkey == null || pubkey.isEmpty) {
-        throw const SignerException('Amber returned no public key');
+        throw SignerException(AppStrings.current.amberNoKey);
       }
-      return AmberSigner._(pubkey);
+      return AmberSigner._(normalizePubkey(pubkey));
     } on PlatformException catch (e) {
-      throw SignerException(e.message ?? 'Amber request rejected');
+      throw SignerException(
+        e.message ?? AppStrings.current.amberRequestRejected,
+      );
     } on MissingPluginException {
-      throw const SignerException('Amber is only available on Android');
+      throw SignerException(AppStrings.current.amberAndroidOnly);
     }
-  }
+  });
 
   @override
   SignerType get type => SignerType.amber;
@@ -46,12 +85,20 @@ class AmberSigner extends Signer {
   bool get canSign => true;
 
   @override
+  bool get canEncrypt => true;
+
+  Map<String, Object?> get _userArgs => {
+    'current_user': publicKey,
+    'current_user_npub': Nip19.encodeNpub(publicKey),
+  };
+
+  @override
   Future<NostrEvent> signEvent({
     required int kind,
     required List<List<String>> tags,
     required String content,
     int? createdAt,
-  }) async {
+  }) {
     final ts = createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final id = NostrEvent.computeId(
       pubkey: publicKey,
@@ -60,33 +107,69 @@ class AmberSigner extends Signer {
       tags: tags,
       content: content,
     );
-    try {
-      final sig = await _channel
-          .invokeMethod<String>('signEvent', {
-            'id': id,
-            'pubkey': publicKey,
-            'created_at': ts,
-            'kind': kind,
-            'tags': tags,
-            'content': content,
-          })
-          .timeout(const Duration(seconds: 60));
-      if (sig == null || sig.isEmpty) {
-        throw const SignerException('Amber returned an empty signature');
+    return _serial(() async {
+      try {
+        final sig = await _channel
+            .invokeMethod<String>('signEvent', {
+              'id': id,
+              'pubkey': publicKey,
+              'created_at': ts,
+              'kind': kind,
+              'tags': tags,
+              'content': content,
+              ..._userArgs,
+            })
+            .timeout(const Duration(seconds: 90));
+        if (sig == null || sig.isEmpty) {
+          throw SignerException(AppStrings.current.amberEmptySignature);
+        }
+        return NostrEvent(
+          id: id,
+          pubkey: publicKey,
+          createdAt: ts,
+          kind: kind,
+          tags: tags,
+          content: content,
+          sig: sig,
+        );
+      } on PlatformException catch (e) {
+        throw SignerException(
+          e.message ?? AppStrings.current.amberSignRejected,
+        );
+      } on TimeoutException {
+        throw SignerException(AppStrings.current.amberTimeout);
       }
-      return NostrEvent(
-        id: id,
-        pubkey: publicKey,
-        createdAt: ts,
-        kind: kind,
-        tags: tags,
-        content: content,
-        sig: sig,
-      );
-    } on PlatformException catch (e) {
-      throw SignerException(e.message ?? 'Amber signing failed');
-    } on TimeoutException {
-      throw const SignerException('Amber signing timed out');
-    }
+    });
   }
+
+  Future<String> _crypto(String method, String peer, String text) =>
+      _serial(() async {
+        try {
+          final out = await _channel
+              .invokeMethod<String>(method, {
+                'pubkey': peer,
+                'text': text,
+                ..._userArgs,
+              })
+              .timeout(const Duration(seconds: 90));
+          if (out == null) {
+            throw SignerException(AppStrings.current.amberEmptyResponse);
+          }
+          return out;
+        } on PlatformException catch (e) {
+          throw SignerException(
+            e.message ?? AppStrings.current.amberRequestRejected,
+          );
+        } on TimeoutException {
+          throw SignerException(AppStrings.current.amberTimeout);
+        }
+      });
+
+  @override
+  Future<String> nip44Encrypt(String peerPubkey, String plaintext) =>
+      _crypto('nip44Encrypt', peerPubkey, plaintext);
+
+  @override
+  Future<String> nip44Decrypt(String peerPubkey, String ciphertext) =>
+      _crypto('nip44Decrypt', peerPubkey, ciphertext);
 }

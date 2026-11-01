@@ -14,22 +14,21 @@ import '../../core/nostr/relay_pool.dart';
 Future<NostrEvent?> _fetchNewestList(
   RelayPool pool,
   int kind,
-  String pubkey, {
-  Duration timeout = const Duration(seconds: 4),
-}) async {
-  pool.connect();
-  final (:id, :stream) = pool.subscribe([
+  String pubkey,
+) async {
+  final sub = pool.subscribe([
     NostrFilter(kinds: [kind], authors: [pubkey], limit: 3),
-  ]);
+  ], eoseTimeout: const Duration(seconds: 6));
   NostrEvent? newest;
-  final sub = stream.listen((event) {
+  final listener = sub.events.listen((event) {
     if (newest == null || event.createdAt > newest!.createdAt) {
       newest = event;
     }
   });
-  await Future<void>.delayed(timeout);
-  await sub.cancel();
-  pool.unsubscribe(id);
+  await sub.eose;
+  await Future<void>.delayed(const Duration(milliseconds: 250));
+  await listener.cancel();
+  sub.close();
   return newest;
 }
 

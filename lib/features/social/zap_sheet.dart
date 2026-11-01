@@ -9,6 +9,7 @@ import '../../core/nostr/nwc_controller.dart';
 import '../../core/nostr/nwc_service.dart';
 import '../../core/nostr/zap_service.dart';
 import '../../features/settings/settings_controller.dart';
+import '../../l10n/strings.dart';
 
 /// Zap flow (NIP-57): fetch recipient lightning address, choose amount,
 /// build the signed zap request and open the wallet with the BOLT-11
@@ -19,13 +20,12 @@ Future<void> showZapSheet(
   MediaPost post,
 ) async {
   final messenger = ScaffoldMessenger.of(context);
+  final l10n = context.l10n;
   final metadata = await ref.read(profileRepositoryProvider).fetch(post.author);
   final address = metadata?.lud16 ?? metadata?.lud06;
   if (!context.mounted) return;
   if (address == null) {
-    messenger.showSnackBar(
-      const SnackBar(content: Text('Questo autore non accetta zap')),
-    );
+    messenger.showSnackBar(SnackBar(content: Text(context.l10n.authorNoZaps)));
     return;
   }
 
@@ -46,24 +46,24 @@ Future<void> showZapSheet(
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Invia uno zap ⚡'),
+      title: Text(context.l10n.sendZap),
       content: TextField(
         controller: amountController,
         keyboardType: TextInputType.number,
         decoration: InputDecoration(
-          labelText: 'Importo in sat',
-          hintText: 'min ${payInfo.minSats} – max ${payInfo.maxSats}',
+          labelText: context.l10n.amountInSats,
+          hintText: context.l10n.minMaxSats(payInfo.minSats, payInfo.maxSats),
           border: const OutlineInputBorder(),
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Annulla'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
-          child: const Text('Zap'),
+          child: Text(context.l10n.zap),
         ),
       ],
     ),
@@ -75,9 +75,7 @@ Future<void> showZapSheet(
   try {
     final signer = ref.read(authProvider).signer;
     if (!signer.canSign) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Accedi per inviare zap')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(l10n.signInToZap)));
       return;
     }
     final invoice = await ZapService().requestInvoice(
@@ -86,7 +84,10 @@ Future<void> showZapSheet(
       recipientPubkey: post.author,
       amountSats: sats,
       eventId: post.id,
-      relays: ref.read(settingsProvider).relays,
+      relays: [
+        for (final r in ref.read(settingsProvider).relays)
+          if (r.write) r.url,
+      ],
     );
     // Nostr Wallet Connect pays in-app; otherwise hand the invoice to an
     // external Lightning wallet.
@@ -94,13 +95,11 @@ Future<void> showZapSheet(
     if (nwc != null) {
       try {
         await NwcService().payInvoice(nwc, invoice.bolt11);
-        messenger.showSnackBar(
-          SnackBar(content: Text('Zap da $sats sats inviato ⚡')),
-        );
+        messenger.showSnackBar(SnackBar(content: Text(l10n.zapSent(sats))));
         return;
       } catch (e) {
         messenger.showSnackBar(
-          SnackBar(content: Text('Pagamento NWC fallito: $e')),
+          SnackBar(content: Text(l10n.nwcPaymentFailed(e))),
         );
         // Fall through to the external wallet handoff.
       }
@@ -109,9 +108,7 @@ Future<void> showZapSheet(
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Nessun wallet Lightning trovato')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(l10n.noLightningWallet)));
     }
   } catch (e) {
     messenger.showSnackBar(SnackBar(content: Text('$e')));

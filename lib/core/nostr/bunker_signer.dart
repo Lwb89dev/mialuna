@@ -4,11 +4,13 @@ import 'dart:math';
 
 import 'package:bip340/bip340.dart' as bip340;
 
+import '../../l10n/strings.dart';
 import 'bech32.dart';
 import 'event.dart';
 import 'filter.dart';
 import 'nip04.dart';
 import 'nip44.dart';
+import 'relay.dart';
 import 'relay_pool.dart';
 import 'signer.dart';
 
@@ -35,7 +37,7 @@ class BunkerSigner extends Signer {
 
   final _pendingRequests = <String, Completer<Map<String, dynamic>>>{};
   StreamSubscription? _sub;
-  String? _subId;
+  PoolSubscription? _poolSub;
   bool _useNip44 = true;
 
   BunkerSigner._({
@@ -52,11 +54,14 @@ class BunkerSigner extends Signer {
   }) async {
     final uri = Uri.tryParse(bunkerUrl.trim());
     if (uri == null || uri.scheme != 'bunker' || uri.host.length != 64) {
-      throw const BunkerException('URL bunker non valido');
+      throw BunkerException(AppStrings.current.bunkerInvalidUrl);
     }
-    final relays = uri.queryParametersAll['relay'] ?? const [];
+    final relays = [
+      for (final r in uri.queryParametersAll['relay'] ?? const <String>[])
+        ?normalizeRelayUrl(r),
+    ];
     if (relays.isEmpty) {
-      throw const BunkerException('Il bunker non indica alcun relay');
+      throw BunkerException(AppStrings.current.bunkerNoRelay);
     }
     final secret = uri.queryParameters['secret'];
 
@@ -65,7 +70,7 @@ class BunkerSigner extends Signer {
       List<int>.generate(32, (_) => rng.nextInt(256)),
     );
     final localPub = bip340.getPublicKey(localPriv);
-    final pool = RelayPool(relays);
+    final pool = RelayPool([for (final r in relays) RelayConfig(r)]);
     pool.connect();
 
     final signer = BunkerSigner._(
@@ -73,7 +78,7 @@ class BunkerSigner extends Signer {
       remotePubkey: uri.host,
       pool: pool,
     );
-    final (:id, :stream) = pool.subscribe([
+    final poolSub = pool.subscribe([
       NostrFilter(
         kinds: const [24133],
         tagFilters: {
@@ -81,8 +86,8 @@ class BunkerSigner extends Signer {
         },
       ),
     ]);
-    signer._subId = id;
-    signer._sub = stream.listen((event) {
+    signer._poolSub = poolSub;
+    signer._sub = poolSub.events.listen((event) {
       if (event.kind != 24133 || event.pubkey != uri.host) return;
       final p = event.firstTagValue('p');
       if (p != localPub) return;
@@ -100,16 +105,12 @@ class BunkerSigner extends Signer {
         ?secret,
       ], timeout);
       if (connectResp['result'] == 'auth_url') {
-        throw const BunkerException(
-          'Il bunker richiede un\'autorizzazione web (auth_url non supportata)',
-        );
+        throw BunkerException(AppStrings.current.bunkerWebAuth);
       }
       final pubkeyResp = await signer._rpc('get_public_key', [], timeout);
       final remoteUserPubkey = pubkeyResp['result'] as String?;
       if (remoteUserPubkey == null || remoteUserPubkey.length != 64) {
-        throw const BunkerException(
-          'Il bunker non ha restituito una chiave valida',
-        );
+        throw BunkerException(AppStrings.current.bunkerInvalidKey);
       }
       signer.publicKey = remoteUserPubkey;
       return signer;
@@ -182,7 +183,8 @@ class BunkerSigner extends Signer {
     try {
       final response = await completer.future.timeout(
         timeout,
-        onTimeout: () => throw const BunkerException('Timeout dal bunker'),
+        onTimeout: () =>
+            throw BunkerException(AppStrings.current.bunkerTimeout),
       );
       if (response['error'] != null) {
         throw BunkerException('${response['error']}');
@@ -203,7 +205,7 @@ class BunkerSigner extends Signer {
     try {
       return await _rpc(method, params, timeout);
     } on BunkerException catch (e) {
-      if (!_useNip44 || e.message != 'Timeout dal bunker') rethrow;
+      if (!_useNip44 || e.message != AppStrings.current.bunkerTimeout) rethrow;
       _useNip44 = false;
       return _rpc(method, params, timeout);
     }
@@ -214,6 +216,27 @@ class BunkerSigner extends Signer {
 
   @override
   bool get canSign => true;
+
+  @override
+  bool get canEncrypt => true;
+
+  @override
+  Future<String> nip44Encrypt(String peerPubkey, String plaintext) async {
+    final response = await _rpc('nip44_encrypt', [
+      peerPubkey,
+      plaintext,
+    ], const Duration(seconds: 60));
+    return response['result'] as String;
+  }
+
+  @override
+  Future<String> nip44Decrypt(String peerPubkey, String ciphertext) async {
+    final response = await _rpc('nip44_decrypt', [
+      peerPubkey,
+      ciphertext,
+    ], const Duration(seconds: 60));
+    return response['result'] as String;
+  }
 
   @override
   Future<NostrEvent> signEvent({
@@ -241,7 +264,7 @@ class BunkerSigner extends Signer {
   @override
   Future<void> dispose() async {
     await _sub?.cancel();
-    if (_subId != null) _pool.unsubscribe(_subId!);
+    _poolSub?.close();
     await _pool.dispose();
   }
 }

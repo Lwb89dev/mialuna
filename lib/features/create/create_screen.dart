@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../l10n/strings.dart';
+import '../private/close_friends.dart';
+import '../private/close_friends_screen.dart';
 import 'create_controller.dart';
 import 'editor/image_editor_screen.dart';
 
@@ -46,24 +49,24 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
     final saved = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Testo alternativo'),
+        title: Text(context.l10n.altText),
         content: TextField(
           controller: controller,
           maxLines: 3,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Descrivi il contenuto per chi non può vederlo…',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            hintText: context.l10n.altTextHint,
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annulla'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Salva'),
+            child: Text(context.l10n.save),
           ),
         ],
       ),
@@ -77,9 +80,11 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
     final ok = await ref.read(composerProvider.notifier).publish();
     if (!mounted) return;
     if (ok) {
+      final notice = ref.read(composerProvider).notice;
       _captionController.clear();
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Momento pubblicato ✨')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(notice ?? context.l10n.momentPublished)),
+      );
       context.go('/home');
     }
   }
@@ -88,6 +93,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(composerProvider);
     final auth = ref.watch(authProvider);
+    final friends = ref.watch(closeFriendsProvider);
     final theme = Theme.of(context);
 
     if (_captionController.text != state.caption &&
@@ -98,17 +104,23 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nuovo momento'),
+        title: Text(context.l10n.newMoment),
         actions: [
           TextButton(
-            onPressed: state.canPublish && !auth.isGuest ? _publish : null,
+            onPressed:
+                state.canPublish &&
+                    !auth.isGuest &&
+                    (state.audience == Audience.public ||
+                        friends.members.isNotEmpty)
+                ? _publish
+                : null,
             child: state.isPublishing
                 ? const SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Pubblica'),
+                : Text(context.l10n.publish),
           ),
         ],
       ),
@@ -119,35 +131,35 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
             Card(
               child: ListTile(
                 leading: const Icon(Icons.lock_outline),
-                title: const Text('Modalità ospite'),
-                subtitle: const Text('Accedi per pubblicare i tuoi momenti.'),
+                title: Text(context.l10n.guestMode),
+                subtitle: Text(context.l10n.signInToPostMoments),
                 trailing: TextButton(
                   onPressed: () => context.go('/login'),
-                  child: const Text('Accedi'),
+                  child: Text(context.l10n.signIn),
                 ),
               ),
             ),
           SegmentedButton<ComposerMode>(
-            segments: const [
+            segments: [
               ButtonSegment(
                 value: ComposerMode.photo,
-                icon: Icon(Icons.photo_outlined),
-                label: Text('Foto'),
+                icon: const Icon(Icons.photo_outlined),
+                label: Text(context.l10n.kindPhoto),
               ),
               ButtonSegment(
                 value: ComposerMode.video,
-                icon: Icon(Icons.videocam_outlined),
-                label: Text('Video'),
+                icon: const Icon(Icons.videocam_outlined),
+                label: Text(context.l10n.kindVideo),
               ),
               ButtonSegment(
                 value: ComposerMode.reel,
-                icon: Icon(Icons.play_circle_outline),
-                label: Text('Reel'),
+                icon: const Icon(Icons.play_circle_outline),
+                label: Text(context.l10n.kindReel),
               ),
               ButtonSegment(
                 value: ComposerMode.story,
-                icon: Icon(Icons.auto_stories_outlined),
-                label: Text('Storia'),
+                icon: const Icon(Icons.auto_stories_outlined),
+                label: Text(context.l10n.kindStory),
               ),
             ],
             selected: {state.mode},
@@ -157,92 +169,66 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
           if (state.mode == ComposerMode.story) ...[
             const SizedBox(height: 8),
             Text(
-              'Le Storie scadono dopo 24 ore sui relay che rispettano NIP-40, '
-              'ma possono comunque essere salvate o archiviate da altri.',
+              context.l10n.storyExpiryNote,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.outline,
               ),
             ),
           ],
+          const SizedBox(height: 12),
+          _AudienceSelector(
+            audience: state.audience,
+            friendCount: friends.members.length,
+            onChanged: ref.read(composerProvider.notifier).setAudience,
+            onManage: () => CloseFriendsScreen.open(context),
+            canEncrypt: auth.signer.canEncrypt,
+          ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => switch (state.mode) {
-                    ComposerMode.photo || ComposerMode.story =>
-                      ref.read(composerProvider.notifier).pickImages(),
-                    _ => ref.read(composerProvider.notifier).pickVideo(),
-                  },
-                  onLongPress: state.mode == ComposerMode.story
-                      ? () => ref.read(composerProvider.notifier).pickVideo()
-                      : null,
-                  child: Container(
-                    height: 140,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: theme.colorScheme.outline),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            switch (state.mode) {
-                              ComposerMode.photo =>
-                                Icons.add_photo_alternate_outlined,
-                              ComposerMode.story => Icons.auto_stories_outlined,
-                              _ => Icons.video_library_outlined,
-                            },
-                            size: 40,
-                            color: theme.colorScheme.primary,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(switch (state.mode) {
-                            ComposerMode.photo => 'Dalla galleria',
-                            ComposerMode.story =>
-                              'Galleria (tieni premuto per video)',
-                            _ => 'Aggiungi video',
-                          }),
-                        ],
-                      ),
-                    ),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _PickerTile(
+                    icon: switch (state.mode) {
+                      ComposerMode.photo => Icons.add_photo_alternate_outlined,
+                      ComposerMode.story => Icons.auto_stories_outlined,
+                      _ => Icons.video_library_outlined,
+                    },
+                    label: switch (state.mode) {
+                      ComposerMode.photo => context.l10n.fromGallery,
+                      ComposerMode.story => context.l10n.galleryLongPressVideo,
+                      _ => context.l10n.addVideo,
+                    },
+                    onTap: () => switch (state.mode) {
+                      ComposerMode.photo || ComposerMode.story =>
+                        ref.read(composerProvider.notifier).pickImages(),
+                      _ => ref.read(composerProvider.notifier).pickVideo(),
+                    },
+                    onLongPress: state.mode == ComposerMode.story
+                        ? () => ref.read(composerProvider.notifier).pickVideo()
+                        : null,
                   ),
                 ),
-              ),
-              if (state.mode != ComposerMode.video &&
-                  state.mode != ComposerMode.reel) ...[
-                const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: () =>
-                      ref.read(composerProvider.notifier).capturePhoto(),
-                  child: Container(
-                    height: 140,
+                if (state.mode != ComposerMode.video &&
+                    state.mode != ComposerMode.reel) ...[
+                  const SizedBox(width: 12),
+                  SizedBox(
                     width: 110,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: theme.colorScheme.outline),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.photo_camera_outlined,
-                          size: 40,
-                          color: theme.colorScheme.primary,
-                        ),
-                        const SizedBox(height: 8),
-                        const Text('Fotocamera'),
-                      ],
+                    child: _PickerTile(
+                      icon: Icons.photo_camera_outlined,
+                      label: context.l10n.camera,
+                      onTap: () =>
+                          ref.read(composerProvider.notifier).capturePhoto(),
                     ),
                   ),
-                ),
+                ],
               ],
-            ],
+            ),
           ),
           const SizedBox(height: 4),
           Text(
-            'I metadati di posizione (EXIF) vengono rimossi automaticamente.',
+            context.l10n.exifRemovedNote,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.outline,
             ),
@@ -348,20 +334,28 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
             controller: _captionController,
             maxLines: 4,
             maxLength: 2200,
-            decoration: const InputDecoration(
-              hintText: 'Scrivi una didascalia…',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              hintText: context.l10n.writeCaption,
+              border: const OutlineInputBorder(),
             ),
             onChanged: ref.read(composerProvider.notifier).setCaption,
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.tag, size: 16, color: theme.colorScheme.secondary),
+              Icon(
+                state.audience == Audience.closeFriends
+                    ? Icons.lock_outline
+                    : Icons.tag,
+                size: 16,
+                color: theme.colorScheme.secondary,
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'Verrà pubblicato come: "${state.finalCaption}"',
+                  state.audience == Audience.closeFriends
+                      ? context.l10n.privatePostNote
+                      : context.l10n.willPublishAs(state.finalCaption),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.outline,
                   ),
@@ -374,7 +368,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
           if (state.media.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
-              'Tocca una miniatura per aggiungere il testo alternativo.',
+              context.l10n.tapThumbnailForAlt,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.outline,
               ),
@@ -383,10 +377,8 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             secondary: const Icon(Icons.visibility_off_outlined),
-            title: const Text('Contenuto sensibile'),
-            subtitle: const Text(
-              'Il post sarà oscurato da un avviso (NIP-36).',
-            ),
+            title: Text(context.l10n.sensitiveContent),
+            subtitle: Text(context.l10n.sensitiveContentNote),
             value: state.sensitive,
             onChanged: ref.read(composerProvider.notifier).setSensitive,
           ),
@@ -395,7 +387,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
             LinearProgressIndicator(value: state.uploadProgress),
             const SizedBox(height: 8),
             Text(
-              'Caricamento media…',
+              context.l10n.uploadingMedia,
               style: theme.textTheme.bodySmall,
               textAlign: TextAlign.center,
             ),
@@ -409,6 +401,135 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Big tappable tile to pick media. Grows with the text instead of
+/// overflowing a fixed height when the user enlarges the font.
+class _PickerTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+
+  const _PickerTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.onLongPress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 140),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            border: Border.all(color: theme.colorScheme.outline),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 40, color: theme.colorScheme.primary),
+              const SizedBox(height: 8),
+              Text(label, textAlign: TextAlign.center),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Public or close friends — remembered, so the list does not have to be
+/// picked for every post.
+class _AudienceSelector extends StatelessWidget {
+  final Audience audience;
+  final int friendCount;
+  final bool canEncrypt;
+  final ValueChanged<Audience> onChanged;
+  final VoidCallback onManage;
+
+  const _AudienceSelector({
+    required this.audience,
+    required this.friendCount,
+    required this.canEncrypt,
+    required this.onChanged,
+    required this.onManage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final closeFriends = audience == Audience.closeFriends;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: SegmentedButton<Audience>(
+            showSelectedIcon: false,
+            segments: [
+              ButtonSegment(
+                value: Audience.public,
+                icon: const Icon(Icons.public),
+                label: Text(context.l10n.audiencePublic),
+              ),
+              ButtonSegment(
+                value: Audience.closeFriends,
+                icon: const Icon(Icons.star_outline),
+                label: Text(context.l10n.closeFriends),
+              ),
+            ],
+            selected: {audience},
+            onSelectionChanged: (s) => onChanged(s.first),
+          ),
+        ),
+        if (closeFriends) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2EB872).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  !canEncrypt
+                      ? context.l10n.signerCannotPublishCloseFriends
+                      : friendCount == 0
+                      ? context.l10n.closeFriendsEmptyPrompt
+                      : context.l10n.onlyYourCloseFriendsSee(friendCount),
+                  style: theme.textTheme.bodySmall,
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: onManage,
+                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    label: Text(
+                      friendCount == 0
+                          ? context.l10n.addFriends
+                          : context.l10n.manageList,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

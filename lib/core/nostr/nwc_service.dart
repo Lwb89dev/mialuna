@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:bip340/bip340.dart' as bip340;
 
+import '../../l10n/strings.dart';
 import 'event.dart';
 import 'filter.dart';
 import 'nip04.dart';
@@ -40,15 +41,15 @@ class NwcConnection {
         (parsed.scheme != 'nostr+walletconnect' &&
             parsed.scheme != 'nostrwalletconnect') ||
         parsed.host.length != 64) {
-      throw const NwcException('URI NWC non valido');
+      throw NwcException(AppStrings.current.nwcInvalidUri);
     }
     final relays = parsed.queryParametersAll['relay'] ?? const [];
     if (relays.isEmpty) {
-      throw const NwcException('L\'URI NWC non indica alcun relay');
+      throw NwcException(AppStrings.current.nwcNoRelay);
     }
     final secret = parsed.queryParameters['secret'];
     if (secret == null || !RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(secret)) {
-      throw const NwcException('L\'URI NWC non contiene un secret valido');
+      throw NwcException(AppStrings.current.nwcNoSecret);
     }
     return NwcConnection(
       walletPubkey: parsed.host.toLowerCase(),
@@ -117,7 +118,7 @@ class NwcService {
     try {
       return await _pay(conn, bolt11, useNip44: true, timeout: timeout);
     } on NwcException catch (e) {
-      if (e.message != 'Timeout dal wallet') rethrow;
+      if (e.message != AppStrings.current.nwcTimeout) rethrow;
       return _pay(conn, bolt11, useNip44: false, timeout: timeout);
     }
   }
@@ -128,7 +129,7 @@ class NwcService {
     required bool useNip44,
     required Duration timeout,
   }) async {
-    final pool = RelayPool(conn.relays);
+    final pool = RelayPool([for (final r in conn.relays) RelayConfig(r)]);
     pool.connect();
     try {
       final request = await buildPayInvoiceRequest(
@@ -136,7 +137,7 @@ class NwcService {
         bolt11,
         useNip44: useNip44,
       );
-      final (:id, :stream) = pool.subscribe([
+      final poolSub = pool.subscribe([
         NostrFilter(
           kinds: const [responseKind],
           tagFilters: {
@@ -146,7 +147,7 @@ class NwcService {
         ),
       ]);
       final completer = Completer<String>();
-      final sub = stream.listen((event) {
+      final sub = poolSub.events.listen((event) {
         if (event.pubkey != conn.walletPubkey) return;
         try {
           final plaintext = useNip44 && !event.content.contains('?iv=')
@@ -179,11 +180,11 @@ class NwcService {
       try {
         return await completer.future.timeout(
           timeout,
-          onTimeout: () => throw const NwcException('Timeout dal wallet'),
+          onTimeout: () => throw NwcException(AppStrings.current.nwcTimeout),
         );
       } finally {
         await sub.cancel();
-        pool.unsubscribe(id);
+        poolSub.close();
       }
     } finally {
       await pool.dispose();

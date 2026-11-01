@@ -37,7 +37,8 @@ class AuthController extends Notifier<AuthState> {
       }
       final amberPub = await _secureStorage.read(key: _amberPubkeyKey);
       if (amberPub != null && await AmberSigner.isAvailable()) {
-        state = AuthState(await AmberSigner.connect());
+        // No Amber screen at startup: it is only opened when signing.
+        state = AuthState(AmberSigner.restore(amberPub));
         return;
       }
       final bunkerUrl = await _secureStorage.read(key: _bunkerUrlKey);
