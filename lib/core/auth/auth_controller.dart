@@ -2,11 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../nostr/amber_signer.dart';
+import '../nostr/bunker_signer.dart';
 import '../nostr/nip19.dart';
 import '../nostr/signer.dart';
 
 const _nsecStorageKey = 'mialuna_nsec';
 const _amberPubkeyKey = 'mialuna_amber_pubkey';
+const _bunkerUrlKey = 'mialuna_bunker_url';
 
 class AuthState {
   final Signer signer;
@@ -36,6 +38,11 @@ class AuthController extends Notifier<AuthState> {
       final amberPub = await _secureStorage.read(key: _amberPubkeyKey);
       if (amberPub != null && await AmberSigner.isAvailable()) {
         state = AuthState(await AmberSigner.connect());
+        return;
+      }
+      final bunkerUrl = await _secureStorage.read(key: _bunkerUrlKey);
+      if (bunkerUrl != null) {
+        state = AuthState(await BunkerSigner.connect(bunkerUrl));
       }
     } catch (_) {
       state = AuthState(GuestSigner());
@@ -64,6 +71,13 @@ class AuthController extends Notifier<AuthState> {
     state = AuthState(signer);
   }
 
+  /// NIP-46 remote signer login (bunker:// URL).
+  Future<void> loginWithBunker(String bunkerUrl) async {
+    final signer = await BunkerSigner.connect(bunkerUrl);
+    await _secureStorage.write(key: _bunkerUrlKey, value: bunkerUrl.trim());
+    state = AuthState(signer);
+  }
+
   void loginAsGuest() {
     state = AuthState(GuestSigner());
   }
@@ -72,6 +86,7 @@ class AuthController extends Notifier<AuthState> {
   Future<void> logout() async {
     await _secureStorage.delete(key: _nsecStorageKey);
     await _secureStorage.delete(key: _amberPubkeyKey);
+    await _secureStorage.delete(key: _bunkerUrlKey);
     await state.signer.dispose();
     state = AuthState(GuestSigner());
   }

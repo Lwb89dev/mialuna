@@ -3,6 +3,18 @@
 Tutte le modifiche rilevanti a Mialuna sono documentate qui.
 Formato basato su [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.5.0] — 2026-11-01 — Accesso esteso, zap e impostazioni
+
+### Aggiunto
+- Login bunker NIP-46 (NIP-04 legacy, il più supportato dai bunker):
+  connessione, firma remota, ripristino sessione; UI nella schermata di accesso.
+- Zap NIP-57: indirizzo lud16/lud06 dal profilo, zap request kind 9734 firmata,
+  fattura BOLT-11 via LNURL, apertura del wallet Lightning. Opzionale.
+- Impostazioni: gestione relay (aggiungi/rimuovi, persistita, mai sovrascritta),
+  server Blossom configurabile, svuotamento cache, info app.
+- Metadata profilo: parsing lud16/lud06.
+- Metadati F-Droid (fastlane, en/it) e THIRD_PARTY_NOTICES.md.
+
 ## [0.4.0] — 2026-11-01 — Fase 4 (social polish)
 
 ### Aggiunto

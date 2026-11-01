@@ -10,6 +10,7 @@ import '../../../core/nostr/nip19.dart';
 import '../../comments/comments_sheet.dart';
 import '../../social/interactions_controller.dart';
 import '../../social/moderation_controller.dart';
+import '../../social/zap_sheet.dart';
 import '../../reels/widgets/video_player_screen.dart';
 
 /// Renders a single media post: header, carousel, caption beneath the media
@@ -113,6 +114,13 @@ class PostCard extends ConsumerWidget {
                       ),
                     );
                   },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.bolt_outlined),
+                  tooltip: 'Zap (opzionale)',
+                  onPressed: isGuest
+                      ? null
+                      : () => showZapSheet(context, ref, post),
                 ),
               ],
             ),

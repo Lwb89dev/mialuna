@@ -6,26 +6,21 @@ import '../core/nostr/event_store.dart';
 import '../core/nostr/profile_repository.dart';
 import '../core/nostr/relay_pool.dart';
 import '../core/storage/local_cache.dart';
-
-const defaultRelays = [
-  'wss://relay.damus.io',
-  'wss://nos.lol',
-  'wss://relay.nostr.band',
-  'wss://nostr.mom',
-];
+import '../features/settings/settings_controller.dart';
 
 final localCacheProvider = Provider((ref) => LocalCache());
 
 final eventStoreProvider = Provider((ref) => EventStore());
 
 final relayPoolProvider = Provider((ref) {
-  final pool = RelayPool(defaultRelays);
+  final settings = ref.watch(settingsProvider);
+  final pool = RelayPool(settings.relays);
   ref.onDispose(pool.dispose);
   return pool;
 });
 
 final blossomClientProvider = Provider(
-  (ref) => BlossomClient(BlossomClient.defaultServer),
+  (ref) => BlossomClient(ref.watch(settingsProvider).blossomServer),
 );
 
 /// Convenience: the active signer.
