@@ -15,7 +15,7 @@ Mialuna implementa e con quali convenzioni.
 | NIP-55 | Amber signer | ✅ | Android, intent `nostrsigner:` |
 | NIP-46 | Bunker | ⏳ | Previsto dall'astrazione `Signer` |
 | NIP-68 | Foto (kind 20) | ✅ | Lettura + pubblicazione, caroselli, `imeta` |
-| NIP-71 | Video (kind 21/22) | 🔶 | Parsing completo; player e Reels in Fase 2 |
+| NIP-71 | Video (kind 21/22) | ✅ | Lettura + pubblicazione (kind 21/22), player e Reels viewer |
 | NIP-65 | Relay list | ⏳ | Fase 4 |
 | NIP-50 | Search | ⏳ | Fase 3/4 |
 | NIP-57 | Zaps | ⏳ | Opzionale, Fase 4 |

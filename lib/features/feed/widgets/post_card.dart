@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/nostr/models/media_event.dart';
+import '../../reels/widgets/video_player_screen.dart';
 
 /// Renders a single media post: header, carousel, caption beneath the media
 /// (Instagram-style), action row. Hashtags are clickable.
@@ -122,13 +123,23 @@ class _MediaCarouselState extends State<_MediaCarousel> {
             itemBuilder: (context, i) {
               final item = media[i];
               if (item.isVideo) {
-                return Container(
-                  color: Colors.black,
-                  child: const Center(
-                    child: Icon(
-                      Icons.play_circle_outline,
-                      size: 64,
-                      color: Colors.white70,
+                return GestureDetector(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => VideoPlayerScreen(
+                        item: item,
+                        title: widget.post.title,
+                      ),
+                    ),
+                  ),
+                  child: Container(
+                    color: Colors.black,
+                    child: const Center(
+                      child: Icon(
+                        Icons.play_circle_outline,
+                        size: 64,
+                        color: Colors.white70,
+                      ),
                     ),
                   ),
                 );

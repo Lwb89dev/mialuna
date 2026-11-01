@@ -81,8 +81,33 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                 ),
               ),
             ),
+          SegmentedButton<ComposerMode>(
+            segments: const [
+              ButtonSegment(
+                value: ComposerMode.photo,
+                icon: Icon(Icons.photo_outlined),
+                label: Text('Foto'),
+              ),
+              ButtonSegment(
+                value: ComposerMode.video,
+                icon: Icon(Icons.videocam_outlined),
+                label: Text('Video'),
+              ),
+              ButtonSegment(
+                value: ComposerMode.reel,
+                icon: Icon(Icons.play_circle_outline),
+                label: Text('Reel'),
+              ),
+            ],
+            selected: {state.mode},
+            onSelectionChanged: (sel) =>
+                ref.read(composerProvider.notifier).setMode(sel.first),
+          ),
+          const SizedBox(height: 16),
           GestureDetector(
-            onTap: () => ref.read(composerProvider.notifier).pickImages(),
+            onTap: () => state.mode == ComposerMode.photo
+                ? ref.read(composerProvider.notifier).pickImages()
+                : ref.read(composerProvider.notifier).pickVideo(),
             child: Container(
               height: 160,
               decoration: BoxDecoration(
@@ -94,12 +119,18 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.add_photo_alternate_outlined,
+                      state.mode == ComposerMode.photo
+                          ? Icons.add_photo_alternate_outlined
+                          : Icons.video_library_outlined,
                       size: 40,
                       color: theme.colorScheme.primary,
                     ),
                     const SizedBox(height: 8),
-                    const Text('Aggiungi foto'),
+                    Text(
+                      state.mode == ComposerMode.photo
+                          ? 'Aggiungi foto'
+                          : 'Aggiungi video',
+                    ),
                   ],
                 ),
               ),
@@ -122,12 +153,23 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.memory(
-                            m.bytes,
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          ),
+                          child: m.isVideo
+                              ? Container(
+                                  width: 100,
+                                  height: 100,
+                                  color: Colors.black,
+                                  child: const Icon(
+                                    Icons.play_circle_outline,
+                                    color: Colors.white70,
+                                    size: 40,
+                                  ),
+                                )
+                              : Image.memory(
+                                  m.bytes,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
                         ),
                         Positioned(
                           top: 2,

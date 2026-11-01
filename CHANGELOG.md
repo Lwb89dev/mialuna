@@ -3,6 +3,22 @@
 Tutte le modifiche rilevanti a Mialuna sono documentate qui.
 Formato basato su [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.0] — 2026-11-01 — Fase 2 (video e Reels)
+
+### Aggiunto
+- Player video a schermo intero (`video_player`): controlli, mute, scrubbing,
+  indicatore di buffering, retry su errore. Aperto dal feed toccando un video.
+- Reels: viewer verticale full-screen con swipe, autoplay del video attivo,
+  pausa/reset uscendo dalla pagina, overlay creatore con didascalia
+  espandibile e pulsanti like/commento/condivisione/segui.
+- Composer: modalità Foto / Video / Reel (selettore), selezione video da
+  galleria, pubblicazione kind 21 (video) o kind 22 (reel) con upload Blossom.
+- Feed: anteprima video tappabile nelle card.
+
+### Note
+- Preload dei reel adiacenti e trim video: iterazione successiva.
+- Il caricamento video rispetta i limiti dei server Blossom configurati.
+
 ## [0.1.0] — 2026-11-01 — Fase 1 (MVP fotografico, in corso)
 
 ### Aggiunto

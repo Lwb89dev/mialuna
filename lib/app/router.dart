@@ -32,10 +32,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(
-                path: '/create',
-                builder: (_, _) => const CreateScreen(),
-              ),
+              GoRoute(path: '/create', builder: (_, _) => const CreateScreen()),
             ],
           ),
           StatefulShellBranch(

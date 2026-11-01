@@ -10,6 +10,8 @@ import '../../core/media/blossom.dart';
 import '../../core/nostr/event.dart';
 import '../../core/nostr/models/media_event.dart';
 
+enum ComposerMode { photo, video, reel }
+
 class PickedMedia {
   final XFile file;
   final Uint8List bytes;
@@ -23,11 +25,14 @@ class PickedMedia {
     required this.mimeType,
     this.alt = '',
   });
+
+  bool get isVideo => mimeType.startsWith('video/');
 }
 
 class ComposerState {
   final List<PickedMedia> media;
   final String caption;
+  final ComposerMode mode;
   final bool isPublishing;
   final double uploadProgress;
   final String? error;
@@ -36,6 +41,7 @@ class ComposerState {
   const ComposerState({
     this.media = const [],
     this.caption = '',
+    this.mode = ComposerMode.photo,
     this.isPublishing = false,
     this.uploadProgress = 0,
     this.error,
@@ -54,6 +60,7 @@ class ComposerState {
   ComposerState copyWith({
     List<PickedMedia>? media,
     String? caption,
+    ComposerMode? mode,
     bool? isPublishing,
     double? uploadProgress,
     String? error,
@@ -61,6 +68,7 @@ class ComposerState {
   }) => ComposerState(
     media: media ?? this.media,
     caption: caption ?? this.caption,
+    mode: mode ?? this.mode,
     isPublishing: isPublishing ?? this.isPublishing,
     uploadProgress: uploadProgress ?? this.uploadProgress,
     error: error,
@@ -83,6 +91,26 @@ class ComposerController extends Notifier<ComposerState> {
     if (draft is Map && draft['caption'] is String) {
       state = state.copyWith(caption: draft['caption'] as String);
     }
+  }
+
+  void setMode(ComposerMode mode) {
+    if (mode == state.mode) return;
+    // Switching mode clears picked media: photo carousels and videos are
+    // different event kinds.
+    state = state.copyWith(mode: mode, media: const []);
+  }
+
+  Future<void> pickVideo() async {
+    final picker = ImagePicker();
+    final file = await picker.pickVideo(source: ImageSource.gallery);
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty) return;
+    state = state.copyWith(
+      media: [
+        PickedMedia(file: file, bytes: bytes, mimeType: _guessMime(file.name)),
+      ],
+    );
   }
 
   Future<void> pickImages() async {
@@ -125,8 +153,9 @@ class ComposerController extends Notifier<ComposerState> {
   }
 
   /// Full publish flow: upload every media item to Blossom, then build,
-  /// sign and publish the kind 20 event. A failed upload aborts publishing —
-  /// no event ever references media that failed to upload.
+  /// sign and publish the media event (kind 20/21/22 depending on mode).
+  /// A failed upload aborts publishing — no event ever references media
+  /// that failed to upload.
   Future<bool> publish() async {
     final auth = ref.read(authProvider);
     if (!auth.signer.canSign) {
@@ -180,8 +209,13 @@ class ComposerController extends Notifier<ComposerState> {
     );
 
     try {
+      final kind = switch (state.mode) {
+        ComposerMode.photo => NostrKinds.picture,
+        ComposerMode.video => NostrKinds.video,
+        ComposerMode.reel => NostrKinds.shortVideo,
+      };
       final event = await auth.signer.signEvent(
-        kind: NostrKinds.picture,
+        kind: kind,
         tags: tags,
         content: caption,
       );
