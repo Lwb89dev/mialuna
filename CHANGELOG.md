@@ -3,6 +3,22 @@
 All notable changes to Mialuna are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.10.0] — 2026-11-01 — Photo editor
+
+### Added
+- Built-in photo editor in the composer (crop icon on photo thumbnails):
+  free and shape-locked crop (original, 1:1, 4:3, 3:2, 16:9) with draggable
+  handles, quarter-turn rotation, horizontal flip, brightness, contrast
+  and saturation.
+- The crop math is ported from eikon-gallery's CropTool (MIT, same
+  author), including its test suite; the pixel pipeline runs on the
+  `image` package, no new dependencies.
+
+### Tests
+- CropTool port: the full eikon-gallery test suite, translated.
+- Apply pipeline: crop/rotation geometry, brightness, grayscale, passthrough
+  of undecodable bytes.
+
 ## [0.9.0] — 2026-11-01 — Profile tabs, alt text, NIP-65 read
 
 ### Added

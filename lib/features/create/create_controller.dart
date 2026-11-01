@@ -162,6 +162,18 @@ class ComposerController extends Notifier<ComposerState> {
     state = state.copyWith(media: media);
   }
 
+  /// Replaces a photo's bytes with its edited version.
+  void replaceMediaBytes(int index, Uint8List bytes) {
+    final media = [...state.media];
+    media[index] = PickedMedia(
+      file: media[index].file,
+      bytes: bytes,
+      mimeType: media[index].mimeType,
+      alt: media[index].alt,
+    );
+    state = state.copyWith(media: media);
+  }
+
   void reorderMedia(int oldIndex, int newIndex) {
     // onReorderItem passes an already-adjusted newIndex.
     final media = [...state.media];

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_controller.dart';
 import 'create_controller.dart';
+import 'editor/image_editor_screen.dart';
 
 class CreateScreen extends ConsumerStatefulWidget {
   const CreateScreen({super.key});
@@ -25,6 +26,18 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
   void dispose() {
     _captionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _editPhoto(int index) async {
+    final media = ref.read(composerProvider).media[index];
+    final edited = await ImageEditorScreen.show(
+      context,
+      bytes: media.bytes,
+      mimeType: media.mimeType,
+    );
+    if (edited != null) {
+      ref.read(composerProvider.notifier).replaceMediaBytes(index, edited);
+    }
   }
 
   Future<void> _editAlt(int index) async {
@@ -284,6 +297,23 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                                     fontSize: 8,
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          if (!m.isVideo)
+                            Positioned(
+                              bottom: 2,
+                              right: 2,
+                              child: GestureDetector(
+                                onTap: () => _editPhoto(i),
+                                child: const CircleAvatar(
+                                  radius: 12,
+                                  backgroundColor: Colors.black54,
+                                  child: Icon(
+                                    Icons.crop,
+                                    size: 14,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ),
