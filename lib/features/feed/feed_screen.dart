@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../feed/feed_controller.dart';
 import '../feed/widgets/post_card.dart';
+import '../stories/stories_rail.dart';
 
 class FeedScreen extends ConsumerWidget {
   const FeedScreen({super.key});
@@ -40,9 +41,10 @@ class FeedScreen extends ConsumerWidget {
                 ],
               )
             : ListView.builder(
-                itemCount: feed.posts.length + 1,
+                itemCount: feed.posts.length + 2,
                 itemBuilder: (context, i) {
-                  if (i == feed.posts.length) {
+                  if (i == 0) return const StoriesRail();
+                  if (i == feed.posts.length + 1) {
                     if (feed.isLoadingMore) {
                       return const Padding(
                         padding: EdgeInsets.all(16),
@@ -55,7 +57,7 @@ class FeedScreen extends ConsumerWidget {
                       child: const Text('Carica altri momenti'),
                     );
                   }
-                  return PostCard(post: feed.posts[i]);
+                  return PostCard(post: feed.posts[i - 1]);
                 },
               ),
       ),

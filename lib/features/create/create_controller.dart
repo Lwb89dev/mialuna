@@ -10,7 +10,7 @@ import '../../core/media/blossom.dart';
 import '../../core/nostr/event.dart';
 import '../../core/nostr/models/media_event.dart';
 
-enum ComposerMode { photo, video, reel }
+enum ComposerMode { photo, video, reel, story }
 
 class PickedMedia {
   final XFile file;
@@ -117,8 +117,14 @@ class ComposerController extends Notifier<ComposerState> {
     final picker = ImagePicker();
     final files = await picker.pickMultiImage(limit: 10);
     if (files.isEmpty) return;
-    final media = [...state.media];
-    for (final f in files) {
+    // Stories carry a single media per event.
+    final selected = state.mode == ComposerMode.story
+        ? files.take(1).toList()
+        : files;
+    final media = state.mode == ComposerMode.story
+        ? <PickedMedia>[]
+        : [...state.media];
+    for (final f in selected) {
       final bytes = await f.readAsBytes();
       if (bytes.isEmpty) continue;
       media.add(
@@ -200,11 +206,16 @@ class ComposerController extends Notifier<ComposerState> {
     ];
 
     final caption = state.finalCaption; // includes #mialuna exactly once
+    final isStory = state.mode == ComposerMode.story;
     final tags = MialunaTag.applyToTags(
       MediaPost.buildTags(
         media: mediaItems,
         caption: caption,
         extraHashtags: const [MialunaTag.hashtag],
+        isStory: isStory,
+        expiresAt: isStory
+            ? DateTime.now().millisecondsSinceEpoch ~/ 1000 + 86400
+            : null,
       ),
     );
 
@@ -213,6 +224,10 @@ class ComposerController extends Notifier<ComposerState> {
         ComposerMode.photo => NostrKinds.picture,
         ComposerMode.video => NostrKinds.video,
         ComposerMode.reel => NostrKinds.shortVideo,
+        ComposerMode.story =>
+          state.media.first.isVideo
+              ? NostrKinds.shortVideo
+              : NostrKinds.picture,
       };
       final event = await auth.signer.signEvent(
         kind: kind,

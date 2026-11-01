@@ -3,6 +3,23 @@
 Tutte le modifiche rilevanti a Mialuna sono documentate qui.
 Formato basato su [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.0] — 2026-11-01 — Fase 3 (Storie e scoperta)
+
+### Aggiunto
+- Storie (NIP-40): eventi kind 20/22 con label `mialuna.story` (NIP-32) e
+  scadenza a 24 ore; rail circolare sopra il feed raggruppato per autore;
+  viewer full-screen con barre di avanzamento, tap avanti/indietro, pressione
+  lunga per pausa, swipe tra autori; le Storie scadute spariscono ovunque.
+- Composer: modalità Storia (foto o video singolo) con avviso esplicito che
+  la scadenza non garantisce la cancellazione.
+- Esplora: ricerca universale — hashtag, account via npub (NIP-19), ricerca
+  testuale NIP-50 (nei relay che la supportano).
+- Filtro Nostr con campo `search` (NIP-50).
+
+### Test
+- 7 nuovi test: scadenza Storie, etichette NIP-32, kind 22 per video-Storie,
+  serializzazione NIP-50.
+
 ## [0.2.0] — 2026-11-01 — Fase 2 (video e Reels)
 
 ### Aggiunto
