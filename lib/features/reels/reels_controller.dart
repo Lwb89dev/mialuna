@@ -6,6 +6,7 @@ import '../../app/providers.dart';
 import '../../core/nostr/event.dart';
 import '../../core/nostr/filter.dart';
 import '../../core/nostr/models/media_event.dart';
+import '../social/moderation_controller.dart';
 
 class ReelsState {
   final List<MediaPost> reels;
@@ -41,6 +42,10 @@ class ReelsController extends Notifier<ReelsState> {
     _subId = id;
     _sub = stream.listen((event) {
       if (_seen.contains(event.id)) return;
+      if (ref.read(muteProvider).contains(event.pubkey) ||
+          ref.read(blockProvider).contains(event.pubkey)) {
+        return;
+      }
       final post = MediaPost.tryParse(event);
       if (post == null || post.isStory || post.isExpired()) return;
       if (post.media.isEmpty || !post.media.first.isVideo) return;

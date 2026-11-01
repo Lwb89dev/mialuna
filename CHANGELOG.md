@@ -3,6 +3,21 @@
 All notable changes to Mialuna are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.12.0] — 2026-11-01 — Block, hashtag filters, story sharing
+
+### Added
+- Block (local, device-only): blocked authors disappear from feed, reels,
+  stories, comments and notifications. Available from the post menu.
+- Hashtag muting: posts carrying a muted hashtag are filtered from feed
+  and explore. Hashtags travel in the NIP-51 mute list (kind 10000 `t`
+  tags) alongside muted authors.
+- Settings → Moderazione: manage muted authors, blocked authors and muted
+  hashtags (add/remove).
+- Stories: share button copies the `nostr:note1…` link (NIP-19/NIP-21).
+
+### Tests
+- NIP-51 hashtag round-trip (lowercased), wrong-kind rejection.
+
 ## [0.11.0] — 2026-11-01 — NIP-51 list sync
 
 ### Added

@@ -8,6 +8,7 @@ import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/event.dart';
 import '../../core/nostr/filter.dart';
 import '../../core/nostr/zap_service.dart';
+import '../social/moderation_controller.dart';
 
 class NotificationItem {
   final NostrEvent event;
@@ -59,6 +60,7 @@ class NotificationsController extends Notifier<List<NotificationItem>> {
     _subId = id;
     _sub = stream.listen((event) {
       if (_seen.contains(event.id) || event.pubkey == pubkey) return;
+      if (ref.read(blockProvider).contains(event.pubkey)) return;
       _seen.add(event.id);
       final kind = switch (event.kind) {
         NostrKinds.reaction => 'reaction',

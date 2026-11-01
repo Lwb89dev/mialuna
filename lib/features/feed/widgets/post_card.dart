@@ -59,6 +59,10 @@ class PostCard extends ConsumerWidget {
                   value: 'mute',
                   child: Text('Silenzia autore'),
                 ),
+                const PopupMenuItem(
+                  value: 'block',
+                  child: Text('Blocca autore'),
+                ),
                 const PopupMenuItem(value: 'report', child: Text('Segnala')),
               ],
             ),
@@ -157,10 +161,16 @@ class PostCard extends ConsumerWidget {
       case 'save':
         await ref.read(bookmarksProvider.notifier).toggle(post.id);
       case 'mute':
-        await ref.read(muteProvider.notifier).mute(post.author);
+        await ref.read(muteControllerProvider.notifier).mute(post.author);
         if (context.mounted) {
           ScaffoldMessenger.of(context)
               .showSnackBar(const SnackBar(content: Text('Autore silenziato')));
+        }
+      case 'block':
+        await ref.read(blockProvider.notifier).block(post.author);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text('Autore bloccato')));
         }
       case 'report':
         final ok = await reportEvent(

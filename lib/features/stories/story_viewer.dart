@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../core/nostr/models/media_event.dart';
+import '../../core/nostr/nip19.dart';
 import 'stories_controller.dart';
 
 /// Full-screen story viewer: progress bars, tap to advance/go back,
@@ -254,9 +256,30 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                 Positioned(
                   top: MediaQuery.of(context).padding.top + 16,
                   right: 8,
-                  child: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.of(context).pop(),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(
+                          Icons.share_outlined,
+                          color: Colors.white,
+                        ),
+                        tooltip: 'Condividi',
+                        onPressed: () {
+                          final note = Nip19.encodeNote(story.event.id);
+                          Clipboard.setData(ClipboardData(text: 'nostr:$note'));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Link Nostr copiato negli appunti'),
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
                   ),
                 ),
               ],
