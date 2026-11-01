@@ -21,37 +21,41 @@ class StoriesRail extends ConsumerWidget {
         itemCount: state.groups.length,
         itemBuilder: (context, i) {
           final group = state.groups[i];
-          return GestureDetector(
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) =>
-                    StoryViewerScreen(groups: state.groups, initialGroup: i),
+          return Semantics(
+            button: true,
+            label: 'Storie di ${group.author.substring(0, 8)}',
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      StoryViewerScreen(groups: state.groups, initialGroup: i),
+                ),
               ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: theme.colorScheme.secondary,
-                        width: 2.5,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: theme.colorScheme.secondary,
+                          width: 2.5,
+                        ),
+                      ),
+                      child: CircleAvatar(
+                        radius: 28,
+                        child: Text(group.author.substring(0, 2).toUpperCase()),
                       ),
                     ),
-                    child: CircleAvatar(
-                      radius: 28,
-                      child: Text(group.author.substring(0, 2).toUpperCase()),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${group.author.substring(0, 6)}…',
+                      style: theme.textTheme.labelSmall,
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${group.author.substring(0, 6)}…',
-                    style: theme.textTheme.labelSmall,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );

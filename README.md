@@ -2,31 +2,48 @@
 
 **Your moments, under the same moon.**
 
-Mialuna è un social network visuale, open-source e decentralizzato, costruito
-su [Nostr](https://github.com/nostr-protocol/nips). Foto, caroselli, video,
-Reels e Storie — con l'esperienza familiare di Instagram e senza piattaforme
-centralizzate.
+Mialuna is an open-source, decentralized visual social network built on
+[Nostr](https://github.com/nostr-protocol/nips). Photos, carousels, videos,
+Reels and Stories — with the familiar feel of Instagram, without any
+centralized platform.
 
-> Mialuna è **media-first**: non esistono post di solo testo.
+> Mialuna is **media-first**: text-only posts do not exist. Every post
+> contains at least one photo or video.
 
-## Stato del progetto
+## Features
 
-Fase 1 (MVP fotografico) in sviluppo. Vedi [CHANGELOG.md](CHANGELOG.md) e
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+- **Photography** — NIP-68 (kind 20) feed, multi-image carousels, captions
+  with clickable hashtags, alt text
+- **Videos & Reels** — NIP-71 publishing (kind 21/22), full-screen vertical
+  Reels viewer with autoplay and preloading
+- **Stories** — 24-hour visual moments via NIP-40 expiration, grouped by
+  creator, with a full-screen viewer
+- **Explore** — media grid, hashtag search, account search, official
+  `#mialuna` feed, optional NIP-50 relay search
+- **Social** — NIP-25 reactions, NIP-22 comments with nested replies,
+  NIP-02 follow lists, bookmarks, NIP-57 Lightning zaps, notifications
+- **Authentication** — Amber (NIP-55, Android), remote signers (NIP-46
+  bunker), nsec advanced fallback, read-only guest mode
+- **Media uploads** — Blossom (kind 24242 authorization, SHA-256 content
+  addressing), NIP-96 alternative, automatic EXIF/GPS stripping
+- **Relays** — multi-relay pool with reconnect/backoff, NIP-65 relay lists
+  (kind 10002), partial publication reporting, offline cache
+- **Privacy & moderation** — mute, block, sensitive-content warnings (NIP-36),
+  reporting, secure credential storage
+- **Branding** — every post published from Mialuna carries `#mialuna`,
+  without rejecting external posts that lack it
 
-## Funzionalità (Fase 1)
+## Project status
 
-- Feed fotografico NIP-68 (kind 20), caroselli, didascalie con hashtag cliccabili
-- Pubblicazione foto con upload Blossom (kind 24242) e hashtag ufficiale `#mialuna`
-- Parsing NIP-71 (kind 21/22) — riproduzione video e Reels in Fase 2
-- Accesso: Amber (NIP-55, Android), nsec (fallback avanzato), modalità ospite
-- Reazioni NIP-25, commenti NIP-22, follow list NIP-02 (modello dati)
-- Cache locale offline e bozze persistenti
-- Temi chiaro/scuro con la palette Mialuna
+All four roadmap phases are implemented: photographic MVP, videos and Reels,
+Stories and discovery, social polish. See [CHANGELOG.md](CHANGELOG.md),
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and
+[docs/nostr-compatibility.md](docs/nostr-compatibility.md) for details and
+known limitations.
 
 ## Build
 
-Requisiti: Flutter 3.47+, Android SDK 36, JDK 21.
+Requirements: Flutter 3.47+, Android SDK 36, JDK 21.
 
 ```bash
 flutter pub get
@@ -35,10 +52,31 @@ flutter analyze
 flutter build apk --debug
 ```
 
-La toolchain è pinnata con [mise](https://mise.jdx.dev/) (`mise.toml`):
-`mise install` installa Flutter e Java. L'Android SDK va configurato a parte
-(`flutter config --android-sdk <percorso>`).
+The toolchain is pinned with [mise](https://mise.jdx.dev/) (`mise.toml`):
+`mise install` installs Flutter and Java. The Android SDK must be configured
+separately (`flutter config --android-sdk <path>`).
 
-## Licenza
+For signed release builds and store preparation see
+[docs/release.md](docs/release.md).
 
-MIT — vedi [LICENSE](LICENSE).
+## Repository layout
+
+```text
+lib/
+  app/       app shell, providers, routing
+  core/      auth, nostr, media, storage, theme, branding
+  features/  feed, explore, create, reels, stories, profile,
+             comments, notifications, settings, onboarding, social
+docs/        architecture, Nostr compatibility, release guide
+```
+
+## Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Please
+read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) and [SECURITY.md](SECURITY.md).
+Privacy notes are in [PRIVACY.md](PRIVACY.md); third-party attributions in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+## License
+
+MIT — see [LICENSE](LICENSE).

@@ -1,26 +1,26 @@
-# Politica di sicurezza
+# Security policy
 
-## Segnalazione vulnerabilità
+## Reporting vulnerabilities
 
-Per favore **non aprire issue pubbliche** per vulnerabilità di sicurezza.
-Contatta i maintainer in privato (vedi README) descrivendo:
+Please **do not open public issues** for security vulnerabilities.
+Contact the maintainers privately (see README) describing:
 
-- componente coinvolto e versione
-- impatto potenziale
-- passi per riprodurre (se possibile)
+- affected component and version
+- potential impact
+- steps to reproduce (if possible)
 
-Ci impegniamo a rispondere entro 7 giorni.
+We aim to respond within 7 days.
 
-## Ambito
+## Scope
 
-- Gestione delle chiavi: le chiavi private non vengono mai loggate né
-  trasmesse; il login nsec usa storage cifrato; Amber (NIP-55) tiene la
-  chiave fuori dal processo.
-- Upload media: l'autorizzazione Blossom (kind 24242) ha scadenza breve.
-- Contenuti pubblici: tutto ciò che è pubblicato su relay Nostr è pubblico
-  per definizione del protocollo.
+- Key management: private keys are never logged or transmitted; nsec login
+  uses encrypted storage; Amber (NIP-55) keeps the key outside the app
+  process.
+- Media uploads: Blossom authorization (kind 24242) has a short expiry.
+- Public content: everything published to Nostr relays is public by
+  definition of the protocol.
 
-## Dipendenze
+## Dependencies
 
-Le dipendenze sono riesaminate ad ogni release; preferenza per licenze
-MIT/Apache/BSD e pacchetti attivamente mantenuti.
+Dependencies are reviewed at every release; preference goes to
+MIT/Apache/BSD licenses and actively maintained packages.

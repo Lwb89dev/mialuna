@@ -1,21 +1,21 @@
-# Codice di condotta
+# Code of conduct
 
-Mialuna è un progetto accogliente per tutte le persone, a prescindere da
-genere, età, origine, disabilità, livello di esperienza o background.
+Mialuna is a welcoming project for everyone, regardless of gender, age,
+origin, disability, experience level or background.
 
-## Ci aspettiamo
+## We expect
 
-- Linguaggio rispettoso e inclusivo
-- Critiche costruttive rivolte al codice, non alle persone
-- Accettazione serena dei feedback e delle decisioni dei maintainer
+- Respectful and inclusive language
+- Constructive criticism aimed at code, not people
+- Graceful acceptance of feedback and maintainer decisions
 
-## Non tolleriamo
+## We do not tolerate
 
-- Molestie, insulti, discriminazione
-- Doxing o pubblicazione di informazioni private
-- Spam o comportamenti che danneggiano la comunità
+- Harassment, insults, discrimination
+- Doxing or publishing private information
+- Spam or behavior that harms the community
 
-Le violazioni possono essere segnalate ai maintainer (vedi README) e possono
-portare alla rimozione dei contenuti o all'esclusione dalla partecipazione.
+Violations can be reported to the maintainers (see README) and may lead to
+content removal or exclusion from participation.
 
-Adattato dal Contributor Covenant, versione 2.1.
+Adapted from the Contributor Covenant, version 2.1.

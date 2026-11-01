@@ -7,6 +7,7 @@ import '../../app/providers.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/branding/mialuna_tag.dart';
 import '../../core/media/blossom.dart';
+import '../../core/media/exif.dart';
 import '../../core/nostr/event.dart';
 import '../../core/nostr/models/media_event.dart';
 
@@ -113,6 +114,22 @@ class ComposerController extends Notifier<ComposerState> {
     );
   }
 
+  /// Captures a photo with the device camera.
+  Future<void> capturePhoto() async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.camera);
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty) return;
+    final media = state.mode == ComposerMode.story
+        ? <PickedMedia>[]
+        : [...state.media];
+    media.add(
+      PickedMedia(file: file, bytes: bytes, mimeType: _guessMime(file.name)),
+    );
+    state = state.copyWith(media: media);
+  }
+
   Future<void> pickImages() async {
     final picker = ImagePicker();
     final files = await picker.pickMultiImage(limit: 10);
@@ -181,10 +198,15 @@ class ComposerController extends Notifier<ComposerState> {
     try {
       for (var i = 0; i < state.media.length; i++) {
         final item = state.media[i];
+        // EXIF (incl. GPS) is stripped by default before upload.
+        final (cleanBytes, cleanMime) = ExifStripper.strip(
+          item.bytes,
+          item.mimeType,
+        );
         item.uploaded ??= await blossom.upload(
           signer: auth.signer,
-          bytes: item.bytes,
-          mimeType: item.mimeType,
+          bytes: cleanBytes,
+          mimeType: cleanMime,
           onProgress: (p) => state = state.copyWith(
             uploadProgress: (i + p) / state.media.length,
           ),
@@ -199,7 +221,7 @@ class ComposerController extends Notifier<ComposerState> {
       for (final m in state.media)
         MediaItem(
           url: m.uploaded!.url,
-          mimeType: m.mimeType,
+          mimeType: m.uploaded!.mimeType ?? m.mimeType,
           sha256: m.uploaded!.sha256,
           alt: m.alt.isNotEmpty ? m.alt : null,
         ),

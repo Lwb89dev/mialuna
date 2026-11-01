@@ -102,15 +102,17 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     });
   }
 
+  Duration get _transition =>
+      MediaQuery.maybeOf(context)?.disableAnimations == true
+      ? Duration.zero
+      : const Duration(milliseconds: 250);
+
   void _next() {
     if (_storyIndex < _group.stories.length - 1) {
       _storyIndex++;
       _startStory();
     } else if (_groupIndex < widget.groups.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-      );
+      _pageController.nextPage(duration: _transition, curve: Curves.easeOut);
     } else {
       Navigator.of(context).pop();
     }
@@ -122,7 +124,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       _startStory();
     } else if (_groupIndex > 0) {
       _pageController.previousPage(
-        duration: const Duration(milliseconds: 250),
+        duration: _transition,
         curve: Curves.easeOut,
       );
     }

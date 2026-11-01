@@ -1,37 +1,37 @@
-# Compatibilità Nostr di Mialuna
+# Mialuna Nostr compatibility
 
-I NIP ufficiali sono la fonte autorevole. Questa tabella descrive cosa
-Mialuna implementa e con quali convenzioni.
+The official NIPs are the authoritative source. This table describes what
+Mialuna implements and with which conventions.
 
-| NIP | Argomento | Stato | Note |
+| NIP | Topic | Status | Notes |
 |---|---|---|---|
-| NIP-01 | Eventi, filtri, relay | ✅ | Pool multi-relay, dedup, backoff, verifica firme BIP-340 |
-| NIP-02 | Follow list (kind 3) | ✅ | Lettura/scrittura, conserva i tag esistenti |
-| NIP-19 | npub/nsec/note | ✅ | Codec bech32 interno, testato su vettori noti |
-| NIP-22 | Commenti (kind 1111) | ✅ | Thread bottom sheet, risposte annidate |
-| NIP-25 | Reazioni (kind 7) | ✅ | Like con conteggio live |
-| NIP-36/56 | Content warning, report | ✅ | Overlay contenuti sensibili; kind 1984 | Overlay "contenuto sensibile" nel feed |
-| NIP-40 | Expiration | ✅ | Eventi scaduti filtrati ovunque; base delle Storie |
-| NIP-32 | Label (Storie) | ✅ | `mialuna.story` per identificare le Storie |
-| NIP-55 | Amber signer | ✅ | Android, intent `nostrsigner:` |
-| NIP-46 | Bunker | ✅ | Login + firma remota (NIP-04); NIP-44 pianificato |
-| NIP-68 | Foto (kind 20) | ✅ | Lettura + pubblicazione, caroselli, `imeta` |
-| NIP-71 | Video (kind 21/22) | ✅ | Lettura + pubblicazione (kind 21/22), player e Reels viewer |
-| NIP-65 | Relay list | ⏳ | Iterazione successiva |
-| NIP-50 | Search | ✅ | Ricerca testuale in Esplora (dipende dal supporto dei relay) |
-| NIP-57 | Zaps | ✅ | Zap request kind 9734, LNURL, apertura wallet |
-| Blossom | Media server | ✅ | PUT /upload, auth kind 24242, indirizzamento sha256 |
+| NIP-01 | Events, filters, relays | ✅ | Multi-relay pool, dedup, backoff, BIP-340 signature verification |
+| NIP-02 | Follow lists (kind 3) | ✅ | Read/write, preserves existing tags |
+| NIP-19 | npub/nsec/note | ✅ | Internal bech32 codec, tested against known vectors |
+| NIP-22 | Comments (kind 1111) | ✅ | Bottom-sheet threads, nested replies |
+| NIP-25 | Reactions (kind 7) | ✅ | Likes with live count |
+| NIP-36/56 | Content warning, reports | ✅ | Sensitive-content overlay; kind 1984 reports |
+| NIP-40 | Expiration | ✅ | Expired events filtered everywhere; basis of Stories |
+| NIP-32 | Labels (Stories) | ✅ | `mialuna.story` to identify Stories |
+| NIP-55 | Amber signer | ✅ | Android, `nostrsigner:` intents |
+| NIP-46 | Bunker | ✅ | Login + remote signing (NIP-04); NIP-44 planned |
+| NIP-68 | Photos (kind 20) | ✅ | Read + publish, carousels, `imeta` |
+| NIP-71 | Videos (kind 21/22) | ✅ | Read + publish (kind 21/22), player and Reels viewer |
+| NIP-65 | Relay lists (kind 10002) | ✅ | Publish from Settings; read on login |
+| NIP-50 | Search | ✅ | Text search in Explore (depends on relay support) |
+| NIP-57 | Zaps | ✅ | Zap request kind 9734, LNURL, wallet handoff |
+| Blossom | Media servers | ✅ | PUT /upload, kind 24242 auth, sha256 addressing |
 
-✅ implementato · 🔶 parziale · ⏳ pianificato
+✅ implemented · 🔶 partial · ⏳ planned
 
-## Convenzioni Mialuna
+## Mialuna conventions
 
-- **Media-first**: il feed richiede solo kind 20/21/22/34235/34236. I kind 1
-  non vengono mai richiesti né renderizzati come post.
-- **#mialuna**: i post media creati in Mialuna portano `["t","mialuna"]` e il
-  suffisso `#mialuna` nella didascalia (mai nei commenti o nelle reazioni).
-  I post di altri client senza hashtag restano visibili.
-- **Storie** (Fase 3): kind 20/22 con NIP-40 a 24h e label NIP-32
-  `["L","mialuna.story"]` / `["l","story","mialuna.story"]`. Convenzione
-  documentata qui in attesa di standard più ampi; i client che non la
-  conoscono vedono normali eventi media con scadenza.
+- **Media-first**: the feed requests only kinds 20/21/22/34235/34236.
+  Kind 1 events are never requested or rendered as posts.
+- **#mialuna**: media posts created in Mialuna carry `["t","mialuna"]` and
+  the `#mialuna` suffix in the caption (never in comments or reactions).
+  Posts from other clients without the hashtag remain visible.
+- **Stories**: kind 20/22 with NIP-40 24h expiration and NIP-32 label
+  `["L","mialuna.story"]` / `["l","story","mialuna.story"]`. Convention
+  documented here until broader standards emerge; clients that do not know
+  it see ordinary expiring media events.

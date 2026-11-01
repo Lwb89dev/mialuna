@@ -228,16 +228,24 @@ class _MediaCarouselState extends State<_MediaCarousel> {
                   ),
                 );
               }
-              return CachedNetworkImage(
-                imageUrl: item.url,
-                fit: BoxFit.cover,
-                placeholder: (_, _) => Container(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  child: const Center(child: CircularProgressIndicator()),
-                ),
-                errorWidget: (_, _, _) => Container(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  child: const Icon(Icons.broken_image_outlined),
+              return Semantics(
+                image: true,
+                label: item.alt ?? 'Immagine del post',
+                child: CachedNetworkImage(
+                  imageUrl: item.url,
+                  fit: BoxFit.cover,
+                  placeholder: (_, _) => Container(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest,
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
+                  errorWidget: (_, _, _) => Container(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest,
+                    child: const Icon(Icons.broken_image_outlined),
+                  ),
                 ),
               );
             },

@@ -1,24 +1,26 @@
-# Contribuire a Mialuna
+# Contributing to Mialuna
 
-Grazie per l'interesse! Mialuna è open-source (MIT) e accoglie contributi.
+Thanks for your interest! Mialuna is open source (MIT) and welcomes
+contributions.
 
-## Regole fondamentali
+## Ground rules
 
-1. **Media-first**: nessun post di solo testo. Kind 1 non entra mai nel feed.
-2. `#mialuna` va applicato solo ai post media pubblicati da Mialuna, tramite
-   `lib/core/branding/mialuna_tag.dart` (unica fonte di verità, coperta da test).
-3. I NIP ufficiali sono la fonte autorevole. Non inventare kind o protocolli
-   custom senza documentarli in `docs/nostr-compatibility.md`.
-4. Niente dipendenze proprietarie, tracker, analytics o advertising SDK.
+1. **Media-first**: no text-only posts. Kind 1 never enters the feed.
+2. `#mialuna` is applied only to media posts published by Mialuna, through
+   `lib/core/branding/mialuna_tag.dart` (single source of truth, covered by
+   tests).
+3. The official NIPs are authoritative. Do not invent custom kinds or
+   protocols without documenting them in `docs/nostr-compatibility.md`.
+4. No proprietary dependencies, trackers, analytics or advertising SDKs.
 
 ## Workflow
 
 ```bash
 flutter pub get
-flutter analyze   # deve restare pulito
-flutter test      # tutti i test devono passare
+flutter analyze   # must stay clean
+flutter test      # all tests must pass
 ```
 
-- Un commit per cambiamento logico, messaggio in italiano o inglese.
-- Le nuove funzionalità di protocollo richiedono test unitari.
-- Apri una issue prima di cambiamenti architetturali grandi.
+- One commit per logical change, message in English.
+- New protocol features require unit tests.
+- Open an issue before large architectural changes.
