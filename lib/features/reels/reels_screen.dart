@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../core/nostr/models/media_event.dart';
+import '../../core/nostr/nip19.dart';
+import '../comments/comments_sheet.dart';
+import '../social/follow_controller.dart';
+import '../social/interactions_controller.dart';
 import 'reels_controller.dart';
 
 /// Full-screen vertical Reels viewer: swipe navigation, autoplay of the
@@ -61,16 +66,16 @@ class _ReelsScreenState extends ConsumerState<ReelsScreen> {
   }
 }
 
-class _ReelPage extends StatefulWidget {
+class _ReelPage extends ConsumerStatefulWidget {
   final MediaPost reel;
   final bool active;
   const _ReelPage({super.key, required this.reel, required this.active});
 
   @override
-  State<_ReelPage> createState() => _ReelPageState();
+  ConsumerState<_ReelPage> createState() => _ReelPageState();
 }
 
-class _ReelPageState extends State<_ReelPage> {
+class _ReelPageState extends ConsumerState<_ReelPage> {
   VideoPlayerController? _controller;
   bool _failed = false;
   bool _expanded = false;
@@ -171,13 +176,19 @@ class _ReelPageState extends State<_ReelPage> {
                   ),
                   const SizedBox(width: 8),
                   OutlinedButton(
-                    onPressed: () {},
+                    onPressed: () => ref
+                        .read(followListProvider.notifier)
+                        .toggleFollow(reel.author),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
                       side: const BorderSide(color: Colors.white70),
                       minimumSize: const Size(0, 32),
                     ),
-                    child: const Text('Segui'),
+                    child: Text(
+                      ref.watch(followListProvider).contains(reel.author)
+                          ? 'Segui già'
+                          : 'Segui',
+                    ),
                   ),
                 ],
               ),
@@ -208,7 +219,8 @@ class _ReelPageState extends State<_ReelPage> {
                   color: Colors.white,
                   size: 30,
                 ),
-                onPressed: () {},
+                onPressed: () =>
+                    ref.read(interactionsProvider(reel).notifier).like(reel),
               ),
               IconButton(
                 icon: const Icon(
@@ -216,7 +228,7 @@ class _ReelPageState extends State<_ReelPage> {
                   color: Colors.white,
                   size: 30,
                 ),
-                onPressed: () {},
+                onPressed: () => CommentsSheet.show(context, reel),
               ),
               IconButton(
                 icon: const Icon(
@@ -224,7 +236,15 @@ class _ReelPageState extends State<_ReelPage> {
                   color: Colors.white,
                   size: 30,
                 ),
-                onPressed: () {},
+                onPressed: () {
+                  final note = Nip19.encodeNote(reel.id);
+                  Clipboard.setData(ClipboardData(text: 'nostr:$note'));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Link Nostr copiato negli appunti'),
+                    ),
+                  );
+                },
               ),
             ],
           ),

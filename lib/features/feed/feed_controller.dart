@@ -6,6 +6,7 @@ import '../../app/providers.dart';
 import '../../core/nostr/event.dart';
 import '../../core/nostr/filter.dart';
 import '../../core/nostr/models/media_event.dart';
+import '../social/moderation_controller.dart';
 
 class FeedState {
   final List<MediaPost> posts;
@@ -51,6 +52,8 @@ class FeedController extends Notifier<FeedState> {
     return const FeedState();
   }
 
+  bool _isMuted(String pubkey) => ref.read(muteProvider).contains(pubkey);
+
   void _start() {
     final pool = ref.read(relayPoolProvider);
     pool.connect();
@@ -71,6 +74,7 @@ class FeedController extends Notifier<FeedState> {
 
   void _ingest(NostrEvent event) {
     if (_postIds.contains(event.id)) return;
+    if (_isMuted(event.pubkey)) return;
     final post = MediaPost.tryParse(event);
     if (post == null || post.isStory || post.isExpired()) return;
     _postIds.add(event.id);
