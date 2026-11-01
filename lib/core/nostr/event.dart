@@ -135,6 +135,9 @@ abstract final class NostrKinds {
   static const comment = 1111; // NIP-22
   static const zapRequest = 9734; // NIP-57
   static const zapReceipt = 9735; // NIP-57
+  static const muteList = 10000; // NIP-51
+  static const bookmarks = 10003; // NIP-51
+  static const relayList = 10002; // NIP-65
   static const blossomAuth = 24242;
   static const addressableVideo = 34235;
   static const addressableShortVideo = 34236;
