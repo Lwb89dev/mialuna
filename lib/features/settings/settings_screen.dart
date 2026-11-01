@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../core/auth/auth_controller.dart';
 import 'settings_controller.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -30,9 +31,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     super.dispose();
   }
 
+  Future<void> _publishRelayList(AppSettings settings) async {
+    final signer = ref.read(authProvider).signer;
+    if (!signer.canSign) return;
+    try {
+      final event = await signer.signEvent(
+        kind: 10002, // NIP-65 relay list metadata
+        tags: [
+          for (final r in settings.relays) ['r', r],
+        ],
+        content: '',
+      );
+      final report = await ref.read(relayPoolProvider).publish(event);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              report.publishedSomewhere
+                  ? 'Relay list pubblicata su ${report.acceptedCount} relay'
+                  : 'Nessun relay ha accettato la lista',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
+    final isGuest = ref.watch(authProvider).isGuest;
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Impostazioni')),
@@ -86,6 +119,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 },
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.publish_outlined),
+            label: const Text('Pubblica relay list (NIP-65)'),
+            onPressed: isGuest ? null : () => _publishRelayList(settings),
           ),
           const SizedBox(height: 24),
           Text('Server media (Blossom)', style: theme.textTheme.titleMedium),

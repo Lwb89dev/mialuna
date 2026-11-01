@@ -1,99 +1,120 @@
 # Changelog
 
-Tutte le modifiche rilevanti a Mialuna sono documentate qui.
-Formato basato su [Keep a Changelog](https://keepachangelog.com/).
+All notable changes to Mialuna are documented here.
+Format based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [0.5.0] — 2026-11-01 — Accesso esteso, zap e impostazioni
+## [0.6.0] — 2026-11-01 — Camera, EXIF, NIP-65, accessibility
 
-### Aggiunto
-- Login bunker NIP-46 (NIP-04 legacy, il più supportato dai bunker):
-  connessione, firma remota, ripristino sessione; UI nella schermata di accesso.
-- Zap NIP-57: indirizzo lud16/lud06 dal profilo, zap request kind 9734 firmata,
-  fattura BOLT-11 via LNURL, apertura del wallet Lightning. Opzionale.
-- Impostazioni: gestione relay (aggiungi/rimuovi, persistita, mai sovrascritta),
-  server Blossom configurabile, svuotamento cache, info app.
-- Metadata profilo: parsing lud16/lud06.
-- Metadati F-Droid (fastlane, en/it) e THIRD_PARTY_NOTICES.md.
+### Added
+- Composer: camera capture for photos and videos (image_picker), alongside
+  gallery selection.
+- Automatic EXIF/GPS metadata stripping before every upload
+  (`core/media/exif.dart`), with unit tests.
+- NIP-65 relay lists (kind 10002): publish your read/write relay set from
+  Settings.
+- Accessibility: semantics labels on media and interactive elements,
+  reduced-motion support honored by Stories and Reels.
+- `docs/release.md`: signed release builds, F-Droid/IzzyOnDroid
+  preparation; fastlane store metadata.
 
-## [0.4.0] — 2026-11-01 — Fase 4 (social polish)
+### Fixed
+- EXIF test fixture now produces a real GPS IFD (typed setters).
 
-### Aggiunto
-- Like NIP-25 (kind 7) con conteggio live per post; commenti NIP-22
-  (kind 1111) con bottom sheet, risposte annidate a modello e invio.
-- Condivisione: copia link `nostr:note1…` (NIP-19/NIP-21).
-- Follow NIP-02 (kind 3): lettura/scrittura conservando i tag esistenti,
-  pulsante Segui nei Reels e conteggio nel profilo.
-- Profilo: metadata kind 0 (nome, bio, avatar, NIP-05), modifica profilo,
-  griglia dei propri post, copia npub.
-- Notifiche: reazioni, commenti e nuovi follower (schermata dedicata,
-  con avviso sui limiti dei relay).
-- Bookmark locali (salvataggio post) e autori silenziati locali;
-  segnalazioni NIP-56 (kind 1984).
-- Il feed filtra gli autori silenziati.
+## [0.5.0] — 2026-11-01 — Extended sign-in, zaps and settings
 
-### Note
-- Zaps NIP-57 e bunker NIP-46 restano pianificati (interfaccia Signer pronta).
-- Sync NIP-51 di bookmark/mute list: iterazione successiva (ora locali).
+### Added
+- NIP-46 bunker login (legacy NIP-04, the most widely supported by
+  bunkers): connect, remote signing, session restore; UI on the login
+  screen.
+- NIP-57 zaps: lud16/lud06 address from profile, signed kind 9734 zap
+  request, BOLT-11 invoice via LNURL, Lightning wallet handoff. Optional.
+- Settings: relay management (add/remove, persisted, never silently
+  overwritten), configurable Blossom server, cache clearing, app info.
+- Profile metadata: lud16/lud06 parsing.
+- F-Droid metadata (fastlane, en/it) and THIRD_PARTY_NOTICES.md.
 
-## [0.3.0] — 2026-11-01 — Fase 3 (Storie e scoperta)
+## [0.4.0] — 2026-11-01 — Phase 4 (social polish)
 
-### Aggiunto
-- Storie (NIP-40): eventi kind 20/22 con label `mialuna.story` (NIP-32) e
-  scadenza a 24 ore; rail circolare sopra il feed raggruppato per autore;
-  viewer full-screen con barre di avanzamento, tap avanti/indietro, pressione
-  lunga per pausa, swipe tra autori; le Storie scadute spariscono ovunque.
-- Composer: modalità Storia (foto o video singolo) con avviso esplicito che
-  la scadenza non garantisce la cancellazione.
-- Esplora: ricerca universale — hashtag, account via npub (NIP-19), ricerca
-  testuale NIP-50 (nei relay che la supportano).
-- Filtro Nostr con campo `search` (NIP-50).
+### Added
+- NIP-25 likes (kind 7) with live per-post count; NIP-22 comments
+  (kind 1111) with bottom sheet, nested reply model and sending.
+- Sharing: copy `nostr:note1…` links (NIP-19/NIP-21).
+- NIP-02 follows (kind 3): read/write preserving existing tags, Follow
+  button in Reels and count on the profile.
+- Profile: kind 0 metadata (name, bio, avatar, NIP-05), profile editing,
+  grid of your own posts, npub copy.
+- Notifications: reactions, comments and new followers (dedicated screen,
+  with a warning about relay limits).
+- Local bookmarks (saved posts) and locally muted authors; NIP-56 reports
+  (kind 1984).
+- The feed filters out muted authors.
 
-### Test
-- 7 nuovi test: scadenza Storie, etichette NIP-32, kind 22 per video-Storie,
-  serializzazione NIP-50.
+### Notes
+- NIP-57 zaps and NIP-46 bunker landed in 0.5.0.
+- NIP-51 sync of bookmarks/mute lists: future iteration (local for now).
 
-## [0.2.0] — 2026-11-01 — Fase 2 (video e Reels)
+## [0.3.0] — 2026-11-01 — Phase 3 (Stories and discovery)
 
-### Aggiunto
-- Player video a schermo intero (`video_player`): controlli, mute, scrubbing,
-  indicatore di buffering, retry su errore. Aperto dal feed toccando un video.
-- Reels: viewer verticale full-screen con swipe, autoplay del video attivo,
-  pausa/reset uscendo dalla pagina, overlay creatore con didascalia
-  espandibile e pulsanti like/commento/condivisione/segui.
-- Composer: modalità Foto / Video / Reel (selettore), selezione video da
-  galleria, pubblicazione kind 21 (video) o kind 22 (reel) con upload Blossom.
-- Feed: anteprima video tappabile nelle card.
+### Added
+- Stories (NIP-40): kind 20/22 events with the `mialuna.story` label
+  (NIP-32) and 24-hour expiration; circular rail above the feed grouped by
+  author; full-screen viewer with progress bars, tap forward/back,
+  long-press to pause, swipe between authors; expired Stories disappear
+  everywhere.
+- Composer: Story mode (single photo or video) with an explicit warning
+  that expiration does not guarantee deletion.
+- Explore: universal search — hashtags, accounts via npub (NIP-19), NIP-50
+  text search (on relays that support it).
+- Nostr filter with `search` field (NIP-50).
 
-### Note
-- Preload dei reel adiacenti e trim video: iterazione successiva.
-- Il caricamento video rispetta i limiti dei server Blossom configurati.
+### Tests
+- 7 new tests: Story expiration, NIP-32 labels, kind 22 for video Stories,
+  NIP-50 serialization.
 
-## [0.1.0] — 2026-11-01 — Fase 1 (MVP fotografico, in corso)
+## [0.2.0] — 2026-11-01 — Phase 2 (videos and Reels)
 
-### Aggiunto
-- Fondamenta Flutter: tema Mialuna (chiaro/scuro), navigazione a 5 tab
-  (Home, Esplora, Crea, Reels, Profilo), router con `go_router`.
-- Core Nostr: eventi NIP-01, firma BIP-340, NIP-19 (npub/nsec/note),
-  pool multi-relay con deduplicazione, backoff esponenziale e verifica firme,
-  store in memoria con gestione eventi rimpiazzabili.
-- Foto NIP-68 (kind 20): parsing e pubblicazione, caroselli multi-immagine,
-  `imeta` con mime/dim/hash/alt, `content-warning` (NIP-36).
-- Parsing NIP-71 (kind 21/22/34235/34236) a modello dati.
-- Hashtag ufficiale `#mialuna`: applicazione centralizzata, deduplicazione,
-  anteprima nel composer (`core/branding`).
-- Autenticazione: Amber via NIP-55 (Android, canale nativo Kotlin), nsec con
-  storage cifrato e avviso di rischio, modalità ospite read-only.
-- Upload Blossom con autorizzazione kind 24242; pubblicazione bloccata se
-  un upload fallisce; bozze persistenti offline.
-- Esplora: griglia di scoperta e ricerca per hashtag (feed #mialuna).
-- Cache locale JSON di eventi e bozze.
-- 41 test unitari: NIP-19, bech32, firma/verifica eventi, parsing NIP-68/71,
-  hashtag policy, EventStore, filtri, Blossom.
+### Added
+- Full-screen video player (`video_player`): controls, mute, scrubbing,
+  buffering indicator, retry on error. Opened from the feed by tapping a
+  video.
+- Reels: full-screen vertical viewer with swipe, autoplay of the active
+  video, pause/reset when leaving the page, creator overlay with expandable
+  caption and like/comment/share/follow buttons.
+- Composer: Photo / Video / Reel modes (selector), video selection from
+  gallery, kind 21 (video) or kind 22 (reel) publishing with Blossom
+  upload.
+- Feed: tappable video previews in cards.
 
-### Noto / limitazioni
-- Reels e riproduzione video: Fase 2.
-- Storie (NIP-40 UI): Fase 3 (filtro di scadenza già attivo nel feed).
-- NIP-46 bunker: interfaccia prevista, implementazione in arrivo.
-- NIP-65 relay list, NIP-05, zaps NIP-57, notifiche: Fase 4.
-- Cache locale in JSON; migrazione a Drift/SQLite pianificata.
-- Build iOS non verificata (serve ambiente Xcode).
+### Notes
+- Adjacent reel preloading and video trimming: future iteration.
+- Video uploads respect the limits of the configured Blossom servers.
+
+## [0.1.0] — 2026-11-01 — Phase 1 (photographic MVP)
+
+### Added
+- Flutter foundation: Mialuna theme (light/dark), 5-tab navigation
+  (Home, Explore, Create, Reels, Profile), router with `go_router`.
+- Nostr core: NIP-01 events, BIP-340 signing, NIP-19 (npub/nsec/note),
+  multi-relay pool with deduplication, exponential backoff and signature
+  verification, in-memory store with replaceable-event handling.
+- NIP-68 photos (kind 20): parsing and publishing, multi-image carousels,
+  `imeta` with mime/dim/hash/alt, `content-warning` (NIP-36).
+- NIP-71 parsing (kind 21/22/34235/34236) at the data-model level.
+- Official `#mialuna` hashtag: centralized application, deduplication,
+  composer preview (`core/branding`).
+- Authentication: Amber via NIP-55 (Android, native Kotlin channel), nsec
+  with encrypted storage and risk warning, read-only guest mode.
+- Blossom uploads with kind 24242 authorization; publishing blocked when an
+  upload fails; persistent offline drafts.
+- Explore: discovery grid and hashtag search (#mialuna feed).
+- Local JSON cache for events and drafts.
+- 41 unit tests: NIP-19, bech32, event signing/verification, NIP-68/71
+  parsing, hashtag policy, EventStore, filters, Blossom.
+
+### Known limitations
+- Reels and video playback landed in Phase 2 (0.2.0).
+- Stories landed in Phase 3 (0.3.0).
+- NIP-46 bunker landed in 0.5.0.
+- NIP-65 relay lists landed in 0.6.0.
+- Local cache is JSON; Drift/SQLite migration planned.
+- iOS build not verified (requires an Xcode environment).

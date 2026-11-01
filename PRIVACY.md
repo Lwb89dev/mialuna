@@ -1,36 +1,36 @@
 # Privacy in Mialuna
 
-Mialuna non ha server propri, non raccoglie analytics, non include tracker né
-SDK pubblicitari.
+Mialuna has no servers of its own, collects no analytics, and includes no
+trackers or advertising SDKs.
 
-## Cosa è pubblico
+## What is public
 
-Nostr è un protocollo pubblico. Tutto ciò che pubblichi (foto, video,
-didascalie, reazioni, commenti, lista dei seguiti) è inviato ai relay che
-scegli e può essere letto, copiato e archiviato da chiunque. Tratta ogni
-contenuto come permanentemente pubblico.
+Nostr is a public protocol. Everything you publish (photos, videos,
+captions, reactions, comments, follow list) is sent to the relays you
+choose and can be read, copied and archived by anyone. Treat every piece of
+content as permanently public.
 
-## Le Storie non sono veramente effimere
+## Stories are not truly ephemeral
 
-Le Storie usano NIP-40 con scadenza di 24 ore: i relay che rispettano lo
-standard smettono di distribuirle dopo la scadenza, ma **non possiamo
-garantire la cancellazione** da relay, archivi o server media. Chiunque può
-salvare o catturare lo schermo.
+Stories use NIP-40 with a 24-hour expiration: relays that honor the
+standard stop distributing them after expiry, but **we cannot guarantee
+deletion** from relays, archives or media storage servers. Anyone can save
+or screenshot them.
 
-## Chiavi
+## Keys
 
-- **Amber (consigliato)**: la chiave privata non entra mai in Mialuna.
-- **nsec**: salvata solo nello storage cifrato del dispositivo, mai
-  trasmessa né loggata. La cancellazione avviene al logout.
+- **Amber (recommended)**: the private key never enters Mialuna.
+- **nsec**: stored only in the device's encrypted storage, never
+  transmitted or logged. Removed on logout.
 
 ## Media
 
-Gli upload vanno ai server Blossom che configuri tu. I metadati EXIF di
-geolocalizzazione vengono rimossi di default prima della pubblicazione.
-Eliminare un evento Nostr (kind 5) **non elimina** il file media dal server
-Blossom: sono operazioni distinte.
+Uploads go to the Blossom servers you configure. Geolocation EXIF metadata
+is stripped by default before publishing. Deleting a Nostr event (kind 5)
+**does not delete** the media file from the Blossom server: they are
+separate operations.
 
-## Dati locali
+## Local data
 
-Cache di eventi e bozze restano sul dispositivo e possono essere eliminate
-dalle impostazioni.
+Event caches and drafts stay on the device and can be wiped from the
+settings.

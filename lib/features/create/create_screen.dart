@@ -119,45 +119,86 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
             ),
           ],
           const SizedBox(height: 16),
-          GestureDetector(
-            onTap: () => switch (state.mode) {
-              ComposerMode.photo || ComposerMode.story =>
-                ref.read(composerProvider.notifier).pickImages(),
-              _ => ref.read(composerProvider.notifier).pickVideo(),
-            },
-            onLongPress: state.mode == ComposerMode.story
-                ? () => ref.read(composerProvider.notifier).pickVideo()
-                : null,
-            child: Container(
-              height: 160,
-              decoration: BoxDecoration(
-                border: Border.all(color: theme.colorScheme.outline),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      switch (state.mode) {
-                        ComposerMode.photo =>
-                          Icons.add_photo_alternate_outlined,
-                        ComposerMode.story => Icons.auto_stories_outlined,
-                        _ => Icons.video_library_outlined,
-                      },
-                      size: 40,
-                      color: theme.colorScheme.primary,
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => switch (state.mode) {
+                    ComposerMode.photo || ComposerMode.story =>
+                      ref.read(composerProvider.notifier).pickImages(),
+                    _ => ref.read(composerProvider.notifier).pickVideo(),
+                  },
+                  onLongPress: state.mode == ComposerMode.story
+                      ? () => ref.read(composerProvider.notifier).pickVideo()
+                      : null,
+                  child: Container(
+                    height: 140,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: theme.colorScheme.outline),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    const SizedBox(height: 8),
-                    Text(switch (state.mode) {
-                      ComposerMode.photo => 'Aggiungi foto',
-                      ComposerMode.story =>
-                        'Aggiungi foto (tieni premuto per video)',
-                      _ => 'Aggiungi video',
-                    }),
-                  ],
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            switch (state.mode) {
+                              ComposerMode.photo =>
+                                Icons.add_photo_alternate_outlined,
+                              ComposerMode.story => Icons.auto_stories_outlined,
+                              _ => Icons.video_library_outlined,
+                            },
+                            size: 40,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(switch (state.mode) {
+                            ComposerMode.photo => 'Dalla galleria',
+                            ComposerMode.story =>
+                              'Galleria (tieni premuto per video)',
+                            _ => 'Aggiungi video',
+                          }),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
+              if (state.mode != ComposerMode.video &&
+                  state.mode != ComposerMode.reel) ...[
+                const SizedBox(width: 12),
+                GestureDetector(
+                  onTap: () =>
+                      ref.read(composerProvider.notifier).capturePhoto(),
+                  child: Container(
+                    height: 140,
+                    width: 110,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: theme.colorScheme.outline),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.photo_camera_outlined,
+                          size: 40,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text('Fotocamera'),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'I metadati di posizione (EXIF) vengono rimossi automaticamente.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
             ),
           ),
           const SizedBox(height: 16),
