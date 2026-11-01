@@ -6,13 +6,23 @@ import '../features/create/create_screen.dart';
 import '../features/explore/explore_screen.dart';
 import '../features/feed/feed_screen.dart';
 import '../features/onboarding/login_screen.dart';
+import '../features/onboarding/onboarding_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/reels/reels_screen.dart';
 
+/// Whether the first-run onboarding has been completed. Overridden in
+/// `main()` with the persisted value before the app starts.
+final onboardingDoneProvider = Provider<bool>((ref) => false);
+
 final routerProvider = Provider<GoRouter>((ref) {
+  final onboardingDone = ref.watch(onboardingDoneProvider);
   return GoRouter(
-    initialLocation: '/home',
+    initialLocation: onboardingDone ? '/home' : '/onboarding',
     routes: [
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => MialunaShell(shell: shell),

@@ -5,6 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../app/providers.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/models/media_event.dart';
+import '../../core/nostr/nwc_controller.dart';
+import '../../core/nostr/nwc_service.dart';
 import '../../core/nostr/zap_service.dart';
 import '../../features/settings/settings_controller.dart';
 
@@ -86,6 +88,23 @@ Future<void> showZapSheet(
       eventId: post.id,
       relays: ref.read(settingsProvider).relays,
     );
+    // Nostr Wallet Connect pays in-app; otherwise hand the invoice to an
+    // external Lightning wallet.
+    final nwc = ref.read(nwcProvider);
+    if (nwc != null) {
+      try {
+        await NwcService().payInvoice(nwc, invoice.bolt11);
+        messenger.showSnackBar(
+          SnackBar(content: Text('Zap da $sats sats inviato ⚡')),
+        );
+        return;
+      } catch (e) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Pagamento NWC fallito: $e')),
+        );
+        // Fall through to the external wallet handoff.
+      }
+    }
     final uri = Uri.parse('lightning:${invoice.bolt11}');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
