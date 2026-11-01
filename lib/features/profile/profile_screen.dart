@@ -13,6 +13,7 @@ import '../../core/nostr/filter.dart';
 import '../../core/nostr/models/media_event.dart';
 import '../../core/nostr/signer.dart';
 import '../social/follow_controller.dart';
+import '../settings/settings_screen.dart';
 import 'edit_profile_screen.dart';
 
 /// Own media posts grid data.
@@ -95,6 +96,13 @@ class ProfileScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(metadata.value?.label ?? 'Profilo'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Impostazioni',
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
+          ),
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             tooltip: 'Modifica profilo',

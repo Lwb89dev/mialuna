@@ -1,0 +1,11 @@
+Mialuna is a visual social network powered by Nostr.
+
+Share photos, carousels, videos, Reels and Stories in an elegant, decentralized environment — no central platform, no ads, no tracking.
+
+- Media-first: no text-only posts
+- Decentralized: your keys, your relays, your media servers (Blossom)
+- Sign in with Amber (NIP-55), a remote bunker (NIP-46) or browse as guest
+- Stories expire after 24 hours (NIP-40)
+- Open source (MIT)
+
+Your moments, under the same moon.

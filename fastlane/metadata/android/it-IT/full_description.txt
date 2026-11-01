@@ -1,0 +1,11 @@
+Mialuna è un social network visuale basato su Nostr.
+
+Condividi foto, caroselli, video, Reels e Storie in un ambiente elegante e decentralizzato — nessuna piattaforma centrale, nessuna pubblicità, nessun tracciamento.
+
+- Media-first: niente post di solo testo
+- Decentralizzato: le tue chiavi, i tuoi relay, i tuoi server media (Blossom)
+- Accedi con Amber (NIP-55), un bunker remoto (NIP-46) o naviga come ospite
+- Le Storie scadono dopo 24 ore (NIP-40)
+- Open source (MIT)
+
+I tuoi momenti, sotto la stessa luna.

@@ -17,6 +17,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _nsecController = TextEditingController();
+  final _bunkerController = TextEditingController();
   bool _busy = false;
   String? _error;
   bool _amberAvailable = false;
@@ -32,6 +33,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void dispose() {
     _nsecController.dispose();
+    _bunkerController.dispose();
     super.dispose();
   }
 
@@ -114,6 +116,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             const SizedBox(height: 24),
             const Divider(),
             const SizedBox(height: 16),
+            Text('Bunker remoto (NIP-46)', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _bunkerController,
+              decoration: const InputDecoration(
+                labelText: 'bunker://…',
+                border: OutlineInputBorder(),
+              ),
+              autocorrect: false,
+              enableSuggestions: false,
+            ),
+            const SizedBox(height: 12),
+            FilledButton.tonal(
+              onPressed: _busy
+                  ? null
+                  : () {
+                      final url = _bunkerController.text.trim();
+                      if (!url.startsWith('bunker://')) {
+                        setState(() => _error = 'URL bunker non valido.');
+                        return;
+                      }
+                      _run(
+                        () => ref
+                            .read(authProvider.notifier)
+                            .loginWithBunker(url),
+                      );
+                    },
+              child: const Text('Connetti bunker'),
+            ),
+            const SizedBox(height: 24),
             Text('Accesso avanzato (nsec)', style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
             Container(

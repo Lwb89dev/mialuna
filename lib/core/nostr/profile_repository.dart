@@ -14,6 +14,8 @@ class ProfileMetadata {
   final String? picture;
   final String? banner;
   final String? nip05;
+  final String? lud16;
+  final String? lud06;
 
   const ProfileMetadata({
     required this.pubkey,
@@ -23,6 +25,8 @@ class ProfileMetadata {
     this.picture,
     this.banner,
     this.nip05,
+    this.lud16,
+    this.lud06,
   });
 
   String get label => displayName?.isNotEmpty == true
@@ -47,6 +51,8 @@ class ProfileMetadata {
       picture: json['picture'] as String?,
       banner: json['banner'] as String?,
       nip05: json['nip05'] as String?,
+      lud16: json['lud16'] as String?,
+      lud06: json['lud06'] as String?,
     );
   }
 

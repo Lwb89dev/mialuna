@@ -14,12 +14,12 @@ Mialuna implementa e con quali convenzioni.
 | NIP-40 | Expiration | ✅ | Eventi scaduti filtrati ovunque; base delle Storie |
 | NIP-32 | Label (Storie) | ✅ | `mialuna.story` per identificare le Storie |
 | NIP-55 | Amber signer | ✅ | Android, intent `nostrsigner:` |
-| NIP-46 | Bunker | ⏳ | Previsto dall'astrazione `Signer` |
+| NIP-46 | Bunker | ✅ | Login + firma remota (NIP-04); NIP-44 pianificato |
 | NIP-68 | Foto (kind 20) | ✅ | Lettura + pubblicazione, caroselli, `imeta` |
 | NIP-71 | Video (kind 21/22) | ✅ | Lettura + pubblicazione (kind 21/22), player e Reels viewer |
 | NIP-65 | Relay list | ⏳ | Iterazione successiva |
 | NIP-50 | Search | ✅ | Ricerca testuale in Esplora (dipende dal supporto dei relay) |
-| NIP-57 | Zaps | ⏳ | Opzionale, iterazione successiva |
+| NIP-57 | Zaps | ✅ | Zap request kind 9734, LNURL, apertura wallet |
 | Blossom | Media server | ✅ | PUT /upload, auth kind 24242, indirizzamento sha256 |
 
 ✅ implementato · 🔶 parziale · ⏳ pianificato
