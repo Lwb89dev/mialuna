@@ -133,6 +133,8 @@ abstract final class NostrKinds {
   static const video = 21; // NIP-71 normal
   static const shortVideo = 22; // NIP-71 shorts / reels / stories
   static const comment = 1111; // NIP-22
+  static const zapRequest = 9734; // NIP-57
+  static const zapReceipt = 9735; // NIP-57
   static const blossomAuth = 24242;
   static const addressableVideo = 34235;
   static const addressableShortVideo = 34236;

@@ -3,6 +3,25 @@
 All notable changes to Mialuna are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.7.0] — 2026-11-01 — NIP-44, zap hardening
+
+### Added
+- NIP-44 v2 encryption (`core/nostr/nip44.dart`): secp256k1 ECDH,
+  HKDF-SHA256, ChaCha20, HMAC-SHA256, power-of-two padding with extended
+  length prefix. Verified against the official test vectors (conversation
+  keys, message keys, padding, encrypt/decrypt, invalid payloads).
+- Bunker (NIP-46) now prefers NIP-44 and falls back transparently to legacy
+  NIP-04 for older remote signers (timeout retry + `?iv=` detection).
+- Zap receipts (kind 9735) in notifications: sender, amount in sats and
+  comment parsed from the embedded zap request.
+- LNURL-pay limits (`minSendable`/`maxSendable`, `commentAllowed`) are
+  honored: the zap dialog shows the valid range and invalid amounts are
+  rejected before requesting an invoice.
+
+### Tests
+- 30 new NIP-44 tests against the official vectors; 9 new zap tests with a
+  mocked LNURL endpoint (invoice flow, limits, comments, receipts).
+
 ## [0.6.0] — 2026-11-01 — Camera, EXIF, NIP-65, accessibility
 
 ### Added

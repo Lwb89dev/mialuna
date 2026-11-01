@@ -7,6 +7,7 @@ import '../../app/providers.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/event.dart';
 import '../../core/nostr/filter.dart';
+import '../../core/nostr/zap_service.dart';
 
 class NotificationItem {
   final NostrEvent event;
@@ -37,7 +38,11 @@ class NotificationsController extends Notifier<List<NotificationItem>> {
     pool.connect();
     final (:id, :stream) = pool.subscribe([
       NostrFilter(
-        kinds: const [NostrKinds.reaction, NostrKinds.comment],
+        kinds: const [
+          NostrKinds.reaction,
+          NostrKinds.comment,
+          NostrKinds.zapReceipt,
+        ],
         tagFilters: {
           '#p': [pubkey],
         },
@@ -58,6 +63,7 @@ class NotificationsController extends Notifier<List<NotificationItem>> {
       final kind = switch (event.kind) {
         NostrKinds.reaction => 'reaction',
         NostrKinds.comment => 'comment',
+        NostrKinds.zapReceipt => 'zap',
         _ => 'follow',
       };
       state = [NotificationItem(event, kind), ...state];
@@ -114,12 +120,26 @@ class NotificationsScreen extends ConsumerWidget {
                           Icons.chat_bubble_outline,
                           'ha commentato: ${n.event.content}',
                         ),
+                        'zap' => () {
+                          final receipt = ZapReceipt.fromEvent(n.event);
+                          return (
+                            Icons.bolt,
+                            receipt != null
+                                ? 'ti ha inviato ${receipt.amountSats} sats'
+                                      '${receipt.comment.isNotEmpty ? ': ${receipt.comment}' : ''}'
+                                : 'ti ha inviato uno zap',
+                          );
+                        }(),
                         _ => (Icons.person_add_alt, 'ha iniziato a seguirti'),
                       };
+                      final receipt = n.kind == 'zap'
+                          ? ZapReceipt.fromEvent(n.event)
+                          : null;
+                      final sender = receipt?.sender ?? n.event.pubkey;
                       return ListTile(
                         leading: Icon(icon, color: theme.colorScheme.secondary),
                         title: Text(
-                          '${n.event.pubkey.substring(0, 8)}… $text',
+                          '${sender.substring(0, 8)}… $text',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),

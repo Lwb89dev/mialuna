@@ -1,5 +1,3 @@
-// ignore_for_file: prefer_initializing_formals
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
@@ -10,6 +8,7 @@ import 'bech32.dart';
 import 'event.dart';
 import 'filter.dart';
 import 'nip04.dart';
+import 'nip44.dart';
 import 'relay_pool.dart';
 import 'signer.dart';
 
@@ -22,25 +21,28 @@ class BunkerException implements Exception {
 
 /// NIP-46 remote signer (bunker). Holds only a local ephemeral session key;
 /// the user's private key stays on the remote signer.
+///
+/// Encryption: NIP-44 v2 is preferred; if the remote signer only speaks the
+/// legacy NIP-04 scheme we detect it (timeout on connect or `?iv=` payloads)
+/// and fall back transparently for the rest of the session.
 class BunkerSigner extends Signer {
   final String _localPrivkey;
   final String _remotePubkey;
   final RelayPool _pool;
+
   @override
-  final String publicKey;
+  late final String publicKey;
 
   final _pendingRequests = <String, Completer<Map<String, dynamic>>>{};
   StreamSubscription? _sub;
   String? _subId;
+  bool _useNip44 = true;
 
   BunkerSigner._({
-    required String localPrivkey,
-    required String remotePubkey,
-    required this.publicKey,
-    required RelayPool pool,
-  }) : _localPrivkey = localPrivkey,
-       _remotePubkey = remotePubkey,
-       _pool = pool;
+    required this._localPrivkey,
+    required this._remotePubkey,
+    required this._pool,
+  });
 
   /// Connects to a bunker URL:
   /// `bunker://<remote-pubkey>?relay=wss://…&relay=…&secret=…`
@@ -66,8 +68,11 @@ class BunkerSigner extends Signer {
     final pool = RelayPool(relays);
     pool.connect();
 
-    final tempSigner = NsecSigner.fromNsec(localPriv);
-    final pending = <String, Completer<Map<String, dynamic>>>{};
+    final signer = BunkerSigner._(
+      localPrivkey: localPriv,
+      remotePubkey: uri.host,
+      pool: pool,
+    );
     final (:id, :stream) = pool.subscribe([
       NostrFilter(
         kinds: const [24133],
@@ -76,85 +81,131 @@ class BunkerSigner extends Signer {
         },
       ),
     ]);
-    final sub = stream.listen((event) {
+    signer._subId = id;
+    signer._sub = stream.listen((event) {
       if (event.kind != 24133 || event.pubkey != uri.host) return;
       final p = event.firstTagValue('p');
       if (p != localPub) return;
       try {
-        final plaintext = Nip04.decrypt(
-          privateKeyHex: localPriv,
-          publicKeyHex: event.pubkey,
-          payload: event.content,
-        );
+        final plaintext = signer._decrypt(event.content);
         final response = jsonDecode(plaintext) as Map<String, dynamic>;
-        pending.remove(response['id'])?.complete(response);
+        signer._pendingRequests.remove(response['id'])?.complete(response);
       } catch (_) {}
     });
 
-    Future<Map<String, dynamic>> rpc(
-      String method,
-      List<dynamic> params,
-    ) async {
-      final reqId = bytesToHex(List<int>.generate(8, (_) => rng.nextInt(256)));
-      final payload = jsonEncode({
-        'id': reqId,
-        'method': method,
-        'params': params,
-      });
-      final encrypted = Nip04.encrypt(
-        privateKeyHex: localPriv,
-        publicKeyHex: uri.host,
-        plaintext: payload,
-      );
-      final event = await tempSigner.signEvent(
-        kind: 24133,
-        tags: [
-          ['p', uri.host],
-        ],
-        content: encrypted,
-      );
-      final completer = Completer<Map<String, dynamic>>();
-      pending[reqId] = completer;
-      await pool.publish(event);
-      final response = await completer.future.timeout(
-        timeout,
-        onTimeout: () => throw BunkerException('Timeout dal bunker'),
-      );
-      if (response['error'] != null) {
-        throw BunkerException('${response['error']}');
-      }
-      return response;
-    }
-
     try {
-      final connectResp = await rpc('connect', [uri.host, ?secret]);
+      // NIP-44 first; legacy NIP-04 bunkers never answer and we retry.
+      final connectResp = await signer._rpcWithFallback('connect', [
+        uri.host,
+        ?secret,
+      ], timeout);
       if (connectResp['result'] == 'auth_url') {
         throw const BunkerException(
           'Il bunker richiede un\'autorizzazione web (auth_url non supportata)',
         );
       }
-      final pubkeyResp = await rpc('get_public_key', []);
+      final pubkeyResp = await signer._rpc('get_public_key', [], timeout);
       final remoteUserPubkey = pubkeyResp['result'] as String?;
       if (remoteUserPubkey == null || remoteUserPubkey.length != 64) {
         throw const BunkerException(
           'Il bunker non ha restituito una chiave valida',
         );
       }
-      final signer = BunkerSigner._(
-        localPrivkey: localPriv,
-        remotePubkey: uri.host,
-        publicKey: remoteUserPubkey,
-        pool: pool,
-      );
-      signer._sub = sub;
-      signer._subId = id;
-      signer._pendingRequests.addAll(pending);
+      signer.publicKey = remoteUserPubkey;
       return signer;
     } catch (e) {
-      await sub.cancel();
-      pool.unsubscribe(id);
-      await pool.dispose();
+      await signer.dispose();
       rethrow;
+    }
+  }
+
+  String _encrypt(String plaintext) => _useNip44
+      ? Nip44.encrypt(
+          privateKeyHex: _localPrivkey,
+          publicKeyHex: _remotePubkey,
+          plaintext: plaintext,
+        )
+      : Nip04.encrypt(
+          privateKeyHex: _localPrivkey,
+          publicKeyHex: _remotePubkey,
+          plaintext: plaintext,
+        );
+
+  String _decrypt(String payload) {
+    // NIP-04 payloads carry an explicit '?iv=' marker; NIP-44 ones are a
+    // versioned base64 envelope. Try the preferred scheme first anyway.
+    if (_useNip44 && !payload.contains('?iv=')) {
+      try {
+        return Nip44.decrypt(
+          privateKeyHex: _localPrivkey,
+          publicKeyHex: _remotePubkey,
+          payload: payload,
+        );
+      } catch (_) {
+        // fall through to legacy
+      }
+    }
+    final plaintext = Nip04.decrypt(
+      privateKeyHex: _localPrivkey,
+      publicKeyHex: _remotePubkey,
+      payload: payload,
+    );
+    // The peer speaks legacy NIP-04: stick to it for the session.
+    _useNip44 = false;
+    return plaintext;
+  }
+
+  Future<Map<String, dynamic>> _rpc(
+    String method,
+    List<dynamic> params,
+    Duration timeout,
+  ) async {
+    final rng = Random.secure();
+    final reqId = bytesToHex(List<int>.generate(8, (_) => rng.nextInt(256)));
+    final payload = jsonEncode({
+      'id': reqId,
+      'method': method,
+      'params': params,
+    });
+    final encrypted = _encrypt(payload);
+    final tempSigner = NsecSigner.fromNsec(_localPrivkey);
+    final event = await tempSigner.signEvent(
+      kind: 24133,
+      tags: [
+        ['p', _remotePubkey],
+      ],
+      content: encrypted,
+    );
+    final completer = Completer<Map<String, dynamic>>();
+    _pendingRequests[reqId] = completer;
+    await _pool.publish(event);
+    try {
+      final response = await completer.future.timeout(
+        timeout,
+        onTimeout: () => throw const BunkerException('Timeout dal bunker'),
+      );
+      if (response['error'] != null) {
+        throw BunkerException('${response['error']}');
+      }
+      return response;
+    } finally {
+      _pendingRequests.remove(reqId);
+    }
+  }
+
+  /// First call of the session: try NIP-44, and on timeout retry once with
+  /// legacy NIP-04 for older bunkers.
+  Future<Map<String, dynamic>> _rpcWithFallback(
+    String method,
+    List<dynamic> params,
+    Duration timeout,
+  ) async {
+    try {
+      return await _rpc(method, params, timeout);
+    } on BunkerException catch (e) {
+      if (!_useNip44 || e.message != 'Timeout dal bunker') rethrow;
+      _useNip44 = false;
+      return _rpc(method, params, timeout);
     }
   }
 
@@ -179,37 +230,9 @@ class BunkerSigner extends Signer {
       'tags': tags,
       'content': content,
     };
-    final reqId = bytesToHex(
-      List<int>.generate(8, (_) => Random.secure().nextInt(256)),
-    );
-    final payload = jsonEncode({
-      'id': reqId,
-      'method': 'sign_event',
-      'params': [jsonEncode(unsigned)],
-    });
-    final encrypted = Nip04.encrypt(
-      privateKeyHex: _localPrivkey,
-      publicKeyHex: _remotePubkey,
-      plaintext: payload,
-    );
-    final tempSigner = NsecSigner.fromNsec(_localPrivkey);
-    final request = await tempSigner.signEvent(
-      kind: 24133,
-      tags: [
-        ['p', _remotePubkey],
-      ],
-      content: encrypted,
-    );
-    final completer = Completer<Map<String, dynamic>>();
-    _pendingRequests[reqId] = completer;
-    await _pool.publish(request);
-    final response = await completer.future.timeout(
-      const Duration(seconds: 60),
-      onTimeout: () => throw const BunkerException('Timeout firma dal bunker'),
-    );
-    if (response['error'] != null) {
-      throw BunkerException('${response['error']}');
-    }
+    final response = await _rpc('sign_event', [
+      jsonEncode(unsigned),
+    ], const Duration(seconds: 60));
     final signed =
         jsonDecode(response['result'] as String) as Map<String, dynamic>;
     return NostrEvent.fromJson(signed);
