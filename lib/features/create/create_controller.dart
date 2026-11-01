@@ -39,6 +39,9 @@ class ComposerState {
   final String? error;
   final bool published;
 
+  /// NIP-36: publish behind a sensitive-content warning.
+  final bool sensitive;
+
   const ComposerState({
     this.media = const [],
     this.caption = '',
@@ -47,6 +50,7 @@ class ComposerState {
     this.uploadProgress = 0,
     this.error,
     this.published = false,
+    this.sensitive = false,
   });
 
   /// The caption exactly as it will be published (with #mialuna applied).
@@ -66,6 +70,7 @@ class ComposerState {
     double? uploadProgress,
     String? error,
     bool? published,
+    bool? sensitive,
   }) => ComposerState(
     media: media ?? this.media,
     caption: caption ?? this.caption,
@@ -74,6 +79,7 @@ class ComposerState {
     uploadProgress: uploadProgress ?? this.uploadProgress,
     error: error,
     published: published ?? this.published,
+    sensitive: sensitive ?? this.sensitive,
   );
 }
 
@@ -169,6 +175,10 @@ class ComposerController extends Notifier<ComposerState> {
     state = state.copyWith();
   }
 
+  void setSensitive(bool sensitive) {
+    state = state.copyWith(sensitive: sensitive);
+  }
+
   void setCaption(String caption) {
     state = state.copyWith(caption: caption);
     // Drafts survive offline/relay failures.
@@ -234,6 +244,7 @@ class ComposerController extends Notifier<ComposerState> {
         media: mediaItems,
         caption: caption,
         extraHashtags: const [MialunaTag.hashtag],
+        contentWarning: state.sensitive ? 'sensitive content' : null,
         isStory: isStory,
         expiresAt: isStory
             ? DateTime.now().millisecondsSinceEpoch ~/ 1000 + 86400

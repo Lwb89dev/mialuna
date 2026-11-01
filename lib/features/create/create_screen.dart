@@ -27,6 +27,39 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
     super.dispose();
   }
 
+  Future<void> _editAlt(int index) async {
+    final media = ref.read(composerProvider).media[index];
+    final controller = TextEditingController(text: media.alt);
+    final saved = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Testo alternativo'),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Descrivi il contenuto per chi non può vederlo…',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annulla'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Salva'),
+          ),
+        ],
+      ),
+    );
+    if (saved != null) {
+      ref.read(composerProvider.notifier).setAlt(index, saved);
+    }
+  }
+
   Future<void> _publish() async {
     final ok = await ref.read(composerProvider.notifier).publish();
     if (!mounted) return;
@@ -214,47 +247,67 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                   return Padding(
                     key: ValueKey(m.file.path + i.toString()),
                     padding: const EdgeInsets.only(right: 8),
-                    child: Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: m.isVideo
-                              ? Container(
-                                  width: 100,
-                                  height: 100,
-                                  color: Colors.black,
-                                  child: const Icon(
-                                    Icons.play_circle_outline,
-                                    color: Colors.white70,
-                                    size: 40,
+                    child: GestureDetector(
+                      onTap: () => _editAlt(i),
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: m.isVideo
+                                ? Container(
+                                    width: 100,
+                                    height: 100,
+                                    color: Colors.black,
+                                    child: const Icon(
+                                      Icons.play_circle_outline,
+                                      color: Colors.white70,
+                                      size: 40,
+                                    ),
+                                  )
+                                : Image.memory(
+                                    m.bytes,
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
                                   ),
-                                )
-                              : Image.memory(
-                                  m.bytes,
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
+                          ),
+                          if (m.alt.isNotEmpty)
+                            const Positioned(
+                              bottom: 2,
+                              left: 2,
+                              child: CircleAvatar(
+                                radius: 10,
+                                backgroundColor: Colors.black54,
+                                child: Text(
+                                  'ALT',
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                        ),
-                        Positioned(
-                          top: 2,
-                          right: 2,
-                          child: GestureDetector(
-                            onTap: () => ref
-                                .read(composerProvider.notifier)
-                                .removeMedia(i),
-                            child: const CircleAvatar(
-                              radius: 12,
-                              backgroundColor: Colors.black54,
-                              child: Icon(
-                                Icons.close,
-                                size: 14,
-                                color: Colors.white,
+                              ),
+                            ),
+                          Positioned(
+                            top: 2,
+                            right: 2,
+                            child: GestureDetector(
+                              onTap: () => ref
+                                  .read(composerProvider.notifier)
+                                  .removeMedia(i),
+                              child: const CircleAvatar(
+                                radius: 12,
+                                backgroundColor: Colors.black54,
+                                child: Icon(
+                                  Icons.close,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 },
@@ -287,6 +340,25 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                 ),
               ),
             ],
+          ),
+          if (state.media.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Tocca una miniatura per aggiungere il testo alternativo.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          ],
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(Icons.visibility_off_outlined),
+            title: const Text('Contenuto sensibile'),
+            subtitle: const Text(
+              'Il post sarà oscurato da un avviso (NIP-36).',
+            ),
+            value: state.sensitive,
+            onChanged: ref.read(composerProvider.notifier).setSensitive,
           ),
           if (state.isPublishing) ...[
             const SizedBox(height: 16),
