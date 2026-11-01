@@ -17,6 +17,7 @@ class SettingsController extends Notifier<AppSettings> {
   static const _relaysKey = 'mialuna_relays';
   static const _blossomKey = 'mialuna_blossom';
   static const _customizedKey = 'mialuna_relays_customized';
+  static const _dataSaverKey = 'mialuna_data_saver';
 
   /// Pubkeys whose NIP-65 list was already applied this session.
   final Set<String> _nip65Synced = {};
@@ -35,7 +36,14 @@ class SettingsController extends Notifier<AppSettings> {
       relays: relays ?? defaultRelays,
       blossomServer: blossom ?? state.blossomServer,
       relaysCustomized: prefs.getBool(_customizedKey) ?? false,
+      dataSaver: prefs.getBool(_dataSaverKey) ?? false,
     );
+  }
+
+  Future<void> setDataSaver(bool value) async {
+    state = state.copyWith(dataSaver: value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_dataSaverKey, value);
   }
 
   Future<void> setRelays(List<String> relays) async {
@@ -93,20 +101,26 @@ class AppSettings {
   /// True once the user edits relays manually: NIP-65 sync is then disabled.
   final bool relaysCustomized;
 
+  /// Data-saver: no off-screen reel loading, reduced-resolution images.
+  final bool dataSaver;
+
   const AppSettings({
     required this.relays,
     this.blossomServer = 'https://blossom.primal.net',
     this.relaysCustomized = false,
+    this.dataSaver = false,
   });
 
   AppSettings copyWith({
     List<String>? relays,
     String? blossomServer,
     bool? relaysCustomized,
+    bool? dataSaver,
   }) => AppSettings(
     relays: relays ?? this.relays,
     blossomServer: blossomServer ?? this.blossomServer,
     relaysCustomized: relaysCustomized ?? this.relaysCustomized,
+    dataSaver: dataSaver ?? this.dataSaver,
   );
 }
 

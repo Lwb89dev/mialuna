@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 import '../../core/nostr/models/media_event.dart';
 import '../../core/nostr/nip19.dart';
 import '../comments/comments_sheet.dart';
+import '../settings/settings_controller.dart';
 import '../social/follow_controller.dart';
 import '../social/interactions_controller.dart';
 import 'reels_controller.dart';
@@ -83,7 +84,10 @@ class _ReelPageState extends ConsumerState<_ReelPage> {
   @override
   void initState() {
     super.initState();
-    _init();
+    // Data-saver: off-screen reels are not downloaded at all; they start
+    // loading only when the user swipes to them.
+    final dataSaver = ref.read(settingsProvider).dataSaver;
+    if (widget.active || !dataSaver) _init();
   }
 
   Future<void> _init() async {
@@ -105,7 +109,10 @@ class _ReelPageState extends ConsumerState<_ReelPage> {
   void didUpdateWidget(_ReelPage old) {
     super.didUpdateWidget(old);
     final c = _controller;
-    if (c == null || !c.value.isInitialized) return;
+    if (c == null || !c.value.isInitialized) {
+      if (widget.active && !old.active && c == null) _init();
+      return;
+    }
     if (widget.active && !old.active) {
       c.play();
     } else if (!widget.active && old.active) {
