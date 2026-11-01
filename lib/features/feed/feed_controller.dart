@@ -52,7 +52,12 @@ class FeedController extends Notifier<FeedState> {
     return const FeedState();
   }
 
-  bool _isMuted(String pubkey) => ref.read(muteProvider).contains(pubkey);
+  bool _isMuted(String pubkey) =>
+      ref.read(muteProvider).contains(pubkey) ||
+      ref.read(blockProvider).contains(pubkey);
+
+  bool _hasMutedHashtag(MediaPost post) =>
+      post.hashtags.any(ref.read(mutedHashtagsProvider).contains);
 
   void _start() {
     final pool = ref.read(relayPoolProvider);
@@ -77,6 +82,7 @@ class FeedController extends Notifier<FeedState> {
     if (_isMuted(event.pubkey)) return;
     final post = MediaPost.tryParse(event);
     if (post == null || post.isStory || post.isExpired()) return;
+    if (_hasMutedHashtag(post)) return;
     _postIds.add(event.id);
     ref.read(eventStoreProvider).add(event);
     final posts = [...state.posts, post]

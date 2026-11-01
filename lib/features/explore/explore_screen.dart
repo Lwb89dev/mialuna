@@ -10,6 +10,7 @@ import '../../core/nostr/event.dart';
 import '../../core/nostr/filter.dart';
 import '../../core/nostr/models/media_event.dart';
 import '../../core/nostr/nip19.dart';
+import '../social/moderation_controller.dart';
 
 /// Explore: image-first discovery grid + hashtag search + official
 /// #mialuna feed.
@@ -92,8 +93,13 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     _subId = id;
     _sub = stream.listen((event) {
       if (_seen.contains(event.id)) return;
+      if (ref.read(muteProvider).contains(event.pubkey) ||
+          ref.read(blockProvider).contains(event.pubkey)) {
+        return;
+      }
       final post = MediaPost.tryParse(event);
       if (post == null || post.isStory || post.isExpired()) return;
+      if (post.hashtags.any(ref.read(mutedHashtagsProvider).contains)) return;
       _seen.add(event.id);
       setState(() => _results.add(post));
     });

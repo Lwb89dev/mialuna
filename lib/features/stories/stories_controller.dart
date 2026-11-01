@@ -6,6 +6,7 @@ import '../../app/providers.dart';
 import '../../core/nostr/event.dart';
 import '../../core/nostr/filter.dart';
 import '../../core/nostr/models/media_event.dart';
+import '../social/moderation_controller.dart';
 
 /// Stories published by one creator, newest first.
 class StoryGroup {
@@ -61,8 +62,12 @@ class StoriesController extends Notifier<StoriesState> {
   }
 
   void _ingest(dynamic event) {
-    final e = event;
+    final e = event as NostrEvent;
     if (_byId.containsKey(e.id)) return;
+    if (ref.read(blockProvider).contains(e.pubkey) ||
+        ref.read(muteProvider).contains(e.pubkey)) {
+      return;
+    }
     final post = MediaPost.tryParse(e);
     if (post == null || !post.isStory || post.isExpired()) return;
     _byId[e.id] = post;

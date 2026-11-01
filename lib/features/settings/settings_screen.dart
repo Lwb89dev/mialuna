@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../core/auth/auth_controller.dart';
+import '../social/moderation_controller.dart';
 import 'settings_controller.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -14,6 +15,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _relayController = TextEditingController();
+  final _hashtagController = TextEditingController();
   late final TextEditingController _blossomController;
 
   @override
@@ -27,6 +29,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void dispose() {
     _relayController.dispose();
+    _hashtagController.dispose();
     _blossomController.dispose();
     super.dispose();
   }
@@ -139,6 +142,77 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ref.read(settingsProvider.notifier).setBlossomServer(v),
           ),
           const SizedBox(height: 24),
+          Text('Moderazione', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(
+            'Silenziati e hashtag nascosti sono sincronizzati via NIP-51. '
+            'I bloccati restano solo su questo dispositivo.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _MuteSection(
+            title: 'Autori silenziati',
+            emptyLabel: 'Nessun autore silenziato',
+            entries: ref
+                .watch(muteControllerProvider)
+                .pubkeys
+                .map((pk) => '${pk.substring(0, 12)}…')
+                .toList(),
+            onRemove: (i) => ref
+                .read(muteControllerProvider.notifier)
+                .unmute(ref.read(muteControllerProvider).pubkeys.elementAt(i)),
+          ),
+          _MuteSection(
+            title: 'Autori bloccati',
+            emptyLabel: 'Nessun autore bloccato',
+            entries: ref
+                .watch(blockProvider)
+                .map((pk) => '${pk.substring(0, 12)}…')
+                .toList(),
+            onRemove: (i) => ref
+                .read(blockProvider.notifier)
+                .unblock(ref.read(blockProvider).elementAt(i)),
+          ),
+          _MuteSection(
+            title: 'Hashtag nascosti',
+            emptyLabel: 'Nessun hashtag nascosto',
+            entries: ref
+                .watch(mutedHashtagsProvider)
+                .map((t) => '#$t')
+                .toList(),
+            onRemove: (i) => ref
+                .read(muteControllerProvider.notifier)
+                .unmuteHashtag(
+                  ref.read(muteControllerProvider).hashtags.elementAt(i),
+                ),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _hashtagController,
+                  decoration: const InputDecoration(
+                    hintText: '#hashtag da nascondere',
+                    isDense: true,
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filledTonal(
+                icon: const Icon(Icons.visibility_off_outlined),
+                onPressed: () {
+                  ref
+                      .read(muteControllerProvider.notifier)
+                      .muteHashtag(_hashtagController.text);
+                  _hashtagController.clear();
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
           Text('Archiviazione', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           OutlinedButton.icon(
@@ -158,7 +232,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Text('Informazioni', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           Text(
-            'Mialuna 0.4.0 — Your moments, under the same moon.\n'
+            'Mialuna 0.11.0 — Your moments, under the same moon.\n'
             'Open source (MIT). github.com/Lwb89dev/mialuna',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.outline,
@@ -166,6 +240,53 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Compact removable list for the moderation settings.
+class _MuteSection extends StatelessWidget {
+  final String title;
+  final String emptyLabel;
+  final List<String> entries;
+  final void Function(int index) onRemove;
+
+  const _MuteSection({
+    required this.title,
+    required this.emptyLabel,
+    required this.entries,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12),
+        Text(title, style: theme.textTheme.titleSmall),
+        const SizedBox(height: 4),
+        if (entries.isEmpty)
+          Text(
+            emptyLabel,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          )
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              for (var i = 0; i < entries.length; i++)
+                InputChip(
+                  label: Text(entries[i]),
+                  onDeleted: () => onRemove(i),
+                ),
+            ],
+          ),
+      ],
     );
   }
 }

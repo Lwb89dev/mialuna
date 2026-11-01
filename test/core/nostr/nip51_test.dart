@@ -44,11 +44,28 @@ void main() {
       expect(Nip51.mutedPubkeys(event), pubs);
     });
 
+    test('hashtags round-trip and are lowercased', () {
+      final event = listEvent(
+        NostrKinds.muteList,
+        Nip51.muteTags({'a' * 64}, hashtags: {'Moon', 'sea'}),
+      );
+      expect(Nip51.mutedPubkeys(event), {'a' * 64});
+      expect(Nip51.mutedHashtags(event), {'moon', 'sea'});
+    });
+
     test('ignores other kinds', () {
       expect(
         Nip51.mutedPubkeys(
           listEvent(NostrKinds.bookmarks, [
             ['p', 'a' * 64],
+          ]),
+        ),
+        isEmpty,
+      );
+      expect(
+        Nip51.mutedHashtags(
+          listEvent(NostrKinds.bookmarks, [
+            ['t', 'moon'],
           ]),
         ),
         isEmpty,

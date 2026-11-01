@@ -8,6 +8,7 @@ import '../../core/nostr/event.dart';
 import '../../core/nostr/filter.dart';
 import '../../core/nostr/models/comment.dart';
 import '../../core/nostr/models/media_event.dart';
+import 'moderation_controller.dart';
 
 class PostInteractions {
   final int likeCount;
@@ -58,6 +59,7 @@ class InteractionsController
   }
 
   void _ingest(NostrEvent event, MediaPost post) {
+    if (ref.read(blockProvider).contains(event.pubkey)) return;
     if (event.kind == NostrKinds.reaction) {
       // Count one reaction per author; content '-' or '' counts as unlike.
       if (event.content == '-') {
