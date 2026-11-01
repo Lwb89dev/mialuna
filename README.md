@@ -17,7 +17,8 @@ centralized platform.
 ## Features
 
 - **Photography** — NIP-68 (kind 20) feed, multi-image carousels, captions
-  with clickable hashtags, alt text
+  with clickable hashtags, alt text, built-in photo editor (crop, rotate,
+  adjustments)
 - **Videos & Reels** — NIP-71 publishing (kind 21/22), full-screen vertical
   Reels viewer with autoplay and preloading
 - **Stories** — 24-hour visual moments via NIP-40 expiration, grouped by

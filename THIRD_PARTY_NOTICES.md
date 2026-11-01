@@ -31,6 +31,8 @@ Mialuna is made possible by these open-source projects.
 - [hzrd149/blossom](https://github.com/hzrd149/blossom) — media server protocol
 - [vitorpamplona/amethyst](https://github.com/vitorpamplona/amethyst) — architecture reference (not copied)
 - [pablof7z/olas](https://github.com/pablof7z/olas-nmp) — NIP-68 reference
+- [Lwb89dev/eikon-gallery](https://github.com/Lwb89dev/eikon-gallery) — the
+  composer photo editor's crop math is ported from its CropTool (MIT)
 
 ## Icon
 
