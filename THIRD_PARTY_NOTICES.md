@@ -21,6 +21,7 @@ Mialuna is made possible by these open-source projects.
 | path_provider | BSD-3 | Local cache |
 | cached_network_image | MIT | Feed images |
 | url_launcher | BSD-3 | Lightning wallet handoff |
+| permission_handler | MIT | Runtime permissions (media, notifications) |
 | intl | BSD-3 | Formatting |
 | flutter_launcher_icons (dev) | MIT | Icon generation |
 

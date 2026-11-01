@@ -3,6 +3,29 @@
 All notable changes to Mialuna are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.8.0] — 2026-11-01 — Onboarding, Amber fix, Nostr Wallet Connect
+
+### Added
+- Three-page first-run onboarding: 1) welcome with app presentation,
+  2) sign-in (Amber / bunker / nsec / guest), 3) permissions (photos &
+  videos, notifications) and optional NWC wallet link. Shown once,
+  persisted locally; /login stays reachable afterwards.
+- Nostr Wallet Connect (NIP-47): parse `nostr+walletconnect://` strings,
+  pay zap invoices in-app (kind 23194/23195, NIP-44 with NIP-04 fallback),
+  connection persisted in encrypted storage. Zaps fall back to the
+  external wallet handoff when NWC is not configured or payment fails.
+- Amber button is now always visible on Android; when Amber is not
+  installed it explains why and links to F-Droid.
+
+### Fixed
+- Amber detection on Android 11+: the manifest now declares the signer
+  package and `nostrsigner:` scheme in `<queries>` — without it the button
+  never appeared even with Amber installed.
+
+### Tests
+- NWC: URI parsing/round-trip, NIP-44 and NIP-04 `pay_invoice` request
+  payloads decryptable by the wallet side.
+
 ## [0.7.0] — 2026-11-01 — NIP-44, zap hardening
 
 ### Added
