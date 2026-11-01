@@ -1,5 +1,9 @@
 # Mialuna
 
+<p align="center">
+  <img src="assets/icons/icon.png" width="160" alt="Mialuna icon">
+</p>
+
 **Your moments, under the same moon.**
 
 Mialuna is an open-source, decentralized visual social network built on
@@ -72,9 +76,9 @@ docs/        architecture, Nostr compatibility, release guide
 
 ## Contributing
 
-Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Please
-read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) and [SECURITY.md](SECURITY.md).
-Privacy notes are in [PRIVACY.md](PRIVACY.md); third-party attributions in
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Security
+reports: [SECURITY.md](SECURITY.md). Privacy notes are in
+[PRIVACY.md](PRIVACY.md); third-party attributions in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## License
