@@ -3,6 +3,17 @@
 All notable changes to Mialuna are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.11.0] — 2026-11-01 — NIP-51 list sync
+
+### Added
+- Bookmarks (kind 10003) and muted authors (kind 10000) now sync through
+  NIP-51: on sign-in the relay lists are merged into the local ones
+  (union — nothing local is ever deleted) and every change is published
+  back as a replaceable event. Guest mode stays local-only.
+
+### Tests
+- NIP-51 tag building and parsing round-trips, wrong-kind rejection.
+
 ## [0.10.0] — 2026-11-01 — Photo editor
 
 ### Added

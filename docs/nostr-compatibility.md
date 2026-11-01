@@ -15,6 +15,7 @@ Mialuna implements and with which conventions.
 | NIP-32 | Labels (Stories) | ✅ | `mialuna.story` to identify Stories |
 | NIP-55 | Amber signer | ✅ | Android, `nostrsigner:` intents |
 | NIP-46 | Bunker | ✅ | Login + remote signing; NIP-44 preferred, NIP-04 fallback |
+| NIP-51 | Lists | ✅ | Bookmarks (10003) and mute list (10000), merged union on sign-in |
 | NIP-47 | Nostr Wallet Connect | ✅ | pay_invoice in-app for zaps; NIP-44 preferred, NIP-04 fallback |
 | NIP-68 | Photos (kind 20) | ✅ | Read + publish, carousels, `imeta` |
 | NIP-71 | Videos (kind 21/22) | ✅ | Read + publish (kind 21/22), player and Reels viewer |
