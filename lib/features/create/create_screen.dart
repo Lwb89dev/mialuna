@@ -98,16 +98,36 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                 icon: Icon(Icons.play_circle_outline),
                 label: Text('Reel'),
               ),
+              ButtonSegment(
+                value: ComposerMode.story,
+                icon: Icon(Icons.auto_stories_outlined),
+                label: Text('Storia'),
+              ),
             ],
             selected: {state.mode},
             onSelectionChanged: (sel) =>
                 ref.read(composerProvider.notifier).setMode(sel.first),
           ),
+          if (state.mode == ComposerMode.story) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Le Storie scadono dopo 24 ore sui relay che rispettano NIP-40, '
+              'ma possono comunque essere salvate o archiviate da altri.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           GestureDetector(
-            onTap: () => state.mode == ComposerMode.photo
-                ? ref.read(composerProvider.notifier).pickImages()
-                : ref.read(composerProvider.notifier).pickVideo(),
+            onTap: () => switch (state.mode) {
+              ComposerMode.photo || ComposerMode.story =>
+                ref.read(composerProvider.notifier).pickImages(),
+              _ => ref.read(composerProvider.notifier).pickVideo(),
+            },
+            onLongPress: state.mode == ComposerMode.story
+                ? () => ref.read(composerProvider.notifier).pickVideo()
+                : null,
             child: Container(
               height: 160,
               decoration: BoxDecoration(
@@ -119,18 +139,22 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      state.mode == ComposerMode.photo
-                          ? Icons.add_photo_alternate_outlined
-                          : Icons.video_library_outlined,
+                      switch (state.mode) {
+                        ComposerMode.photo =>
+                          Icons.add_photo_alternate_outlined,
+                        ComposerMode.story => Icons.auto_stories_outlined,
+                        _ => Icons.video_library_outlined,
+                      },
                       size: 40,
                       color: theme.colorScheme.primary,
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      state.mode == ComposerMode.photo
-                          ? 'Aggiungi foto'
-                          : 'Aggiungi video',
-                    ),
+                    Text(switch (state.mode) {
+                      ComposerMode.photo => 'Aggiungi foto',
+                      ComposerMode.story =>
+                        'Aggiungi foto (tieni premuto per video)',
+                      _ => 'Aggiungi video',
+                    }),
                   ],
                 ),
               ),

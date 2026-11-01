@@ -11,13 +11,14 @@ Mialuna implementa e con quali convenzioni.
 | NIP-22 | Commenti (kind 1111) | 🔶 | Modello dati; UI in Fase 4 |
 | NIP-25 | Reazioni (kind 7) | 🔶 | Modello dati; UI in Fase 4 |
 | NIP-36 | Content warning | ✅ | Overlay "contenuto sensibile" nel feed |
-| NIP-40 | Expiration | ✅ | Eventi scaduti filtrati ovunque; base delle Storie (Fase 3) |
+| NIP-40 | Expiration | ✅ | Eventi scaduti filtrati ovunque; base delle Storie |
+| NIP-32 | Label (Storie) | ✅ | `mialuna.story` per identificare le Storie |
 | NIP-55 | Amber signer | ✅ | Android, intent `nostrsigner:` |
 | NIP-46 | Bunker | ⏳ | Previsto dall'astrazione `Signer` |
 | NIP-68 | Foto (kind 20) | ✅ | Lettura + pubblicazione, caroselli, `imeta` |
 | NIP-71 | Video (kind 21/22) | ✅ | Lettura + pubblicazione (kind 21/22), player e Reels viewer |
 | NIP-65 | Relay list | ⏳ | Fase 4 |
-| NIP-50 | Search | ⏳ | Fase 3/4 |
+| NIP-50 | Search | ✅ | Ricerca testuale in Esplora (dipende dal supporto dei relay) |
 | NIP-57 | Zaps | ⏳ | Opzionale, Fase 4 |
 | Blossom | Media server | ✅ | PUT /upload, auth kind 24242, indirizzamento sha256 |
 

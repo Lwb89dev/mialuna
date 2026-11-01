@@ -9,6 +9,7 @@ import '../../core/branding/mialuna_tag.dart';
 import '../../core/nostr/event.dart';
 import '../../core/nostr/filter.dart';
 import '../../core/nostr/models/media_event.dart';
+import '../../core/nostr/nip19.dart';
 
 /// Explore: image-first discovery grid + hashtag search + official
 /// #mialuna feed.
@@ -25,7 +26,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   final Set<String> _seen = {};
   StreamSubscription<NostrEvent>? _sub;
   String? _subId;
-  String _activeTag = MialunaTag.hashtag;
 
   @override
   void initState() {
@@ -43,7 +43,43 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   void _search(String hashtag) {
     final normalized = hashtag.replaceFirst('#', '').toLowerCase().trim();
     if (normalized.isEmpty) return;
-    _activeTag = normalized;
+    _activeLabel = '#$normalized';
+    _runQuery([
+      const NostrFilter(
+        kinds: NostrKinds.mediaKinds,
+        tagFilters: {},
+        limit: 60,
+      ).withTag('t', normalized),
+    ]);
+  }
+
+  /// Universal search: hashtag, npub account, or NIP-50 full-text.
+  void _searchUniversal(String input) {
+    final query = input.trim();
+    if (query.isEmpty) return;
+    if (Nip19.isValidNpub(query)) {
+      final pubkey = Nip19.decodeNpub(query);
+      _activeLabel = 'Post di ${query.substring(0, 12)}…';
+      _runQuery([
+        NostrFilter(kinds: NostrKinds.mediaKinds, authors: [pubkey], limit: 60),
+      ]);
+    } else if (query.startsWith('#') || RegExp(r'^\w+$').hasMatch(query)) {
+      _search(query);
+    } else {
+      _activeLabel = '“$query”';
+      _runQuery([
+        NostrFilter(
+          kinds: NostrKinds.mediaKinds,
+          search: query, // NIP-50; relays without support return nothing
+          limit: 60,
+        ),
+      ]);
+    }
+  }
+
+  String _activeLabel = '#${MialunaTag.hashtag}';
+
+  void _runQuery(List<NostrFilter> filters) {
     _sub?.cancel();
     if (_subId != null) ref.read(relayPoolProvider).unsubscribe(_subId!);
     setState(() {
@@ -52,13 +88,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     });
     final pool = ref.read(relayPoolProvider);
     pool.connect();
-    final (:id, :stream) = pool.subscribe([
-      NostrFilter(
-        kinds: NostrKinds.mediaKinds,
-        tagFilters: const {},
-        limit: 60,
-      ).withTag('t', normalized),
-    ]);
+    final (:id, :stream) = pool.subscribe(filters);
     _subId = id;
     _sub = stream.listen((event) {
       if (_seen.contains(event.id)) return;
@@ -77,7 +107,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
         title: TextField(
           controller: _searchController,
           decoration: InputDecoration(
-            hintText: 'Cerca hashtag…',
+            hintText: 'Cerca hashtag, npub o parole…',
             prefixIcon: const Icon(Icons.search),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(24),
@@ -87,7 +117,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
             isDense: true,
           ),
           textInputAction: TextInputAction.search,
-          onSubmitted: _search,
+          onSubmitted: _searchUniversal,
         ),
       ),
       body: Column(
@@ -96,7 +126,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: Text(
-              '#$_activeTag',
+              _activeLabel,
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.secondary,
               ),
@@ -163,5 +193,6 @@ extension on NostrFilter {
     since: since,
     until: until,
     limit: limit,
+    search: search,
   );
 }
