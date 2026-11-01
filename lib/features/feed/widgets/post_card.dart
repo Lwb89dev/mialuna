@@ -242,7 +242,9 @@ class _MediaCarouselState extends State<_MediaCarousel> {
                 image: true,
                 label: item.alt ?? 'Immagine del post',
                 child: CachedNetworkImage(
-                  imageUrl: item.url,
+                  imageUrl: ref.watch(settingsProvider).dataSaver
+                      ? (item.previewUrl ?? item.url)
+                      : item.url,
                   fit: BoxFit.cover,
                   placeholder: (_, _) => Container(
                     color: Theme.of(context)
