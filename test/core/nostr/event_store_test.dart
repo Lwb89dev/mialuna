@@ -62,12 +62,12 @@ void main() {
           '#t': ['mialuna'],
         },
       );
-      final match = NostrEvent(
+      final match = const NostrEvent(
         id: 'x',
         pubkey: 'a',
         createdAt: 100,
         kind: 20,
-        tags: const [
+        tags: [
           ['t', 'mialuna'],
         ],
         content: '',

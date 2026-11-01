@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/amber_signer.dart';
 import '../../core/nostr/nip19.dart';
+import '../../l10n/strings.dart';
 
 /// Shared login form: Amber (recommended on Android), bunker (NIP-46),
 /// nsec (advanced fallback) or guest browsing. Used by the onboarding
@@ -64,15 +65,12 @@ class _LoginPanelState extends ConsumerState<LoginPanel> {
       await showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Amber non trovato'),
-          content: const Text(
-            'Amber è un signer Nostr che custodisce la tua chiave privata '
-            'fuori da Mialuna. Installalo e riprova.',
-          ),
+          title: Text(context.l10n.amberNotFound),
+          content: Text(context.l10n.amberExplain),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Annulla'),
+              child: Text(context.l10n.cancel),
             ),
             FilledButton(
               onPressed: () {
@@ -84,7 +82,7 @@ class _LoginPanelState extends ConsumerState<LoginPanel> {
                   mode: LaunchMode.externalApplication,
                 );
               },
-              child: const Text('Scarica da F-Droid'),
+              child: Text(context.l10n.downloadFromFdroid),
             ),
           ],
         ),
@@ -103,14 +101,14 @@ class _LoginPanelState extends ConsumerState<LoginPanel> {
         if (_isAndroid) ...[
           FilledButton.icon(
             icon: const Icon(Icons.key),
-            label: const Text('Continua con Amber'),
+            label: Text(context.l10n.continueWithAmber),
             onPressed: _busy ? null : _onAmberPressed,
           ),
           const SizedBox(height: 8),
           Text(
             _amberAvailable
-                ? 'Consigliato: la chiave privata resta al sicuro in Amber.'
-                : 'Amber non rilevato: installalo per l\'accesso consigliato.',
+                ? context.l10n.amberRecommended
+                : context.l10n.amberNotDetected,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall,
           ),
@@ -123,12 +121,12 @@ class _LoginPanelState extends ConsumerState<LoginPanel> {
                   ref.read(authProvider.notifier).loginAsGuest();
                   widget.onLoggedIn();
                 },
-          child: const Text('Esplora senza account'),
+          child: Text(context.l10n.exploreWithoutAccount),
         ),
         const SizedBox(height: 24),
         const Divider(),
         const SizedBox(height: 16),
-        Text('Bunker remoto (NIP-46)', style: theme.textTheme.titleSmall),
+        Text(context.l10n.remoteBunker, style: theme.textTheme.titleSmall),
         const SizedBox(height: 8),
         TextField(
           controller: _bunkerController,
@@ -146,17 +144,17 @@ class _LoginPanelState extends ConsumerState<LoginPanel> {
               : () {
                   final url = _bunkerController.text.trim();
                   if (!url.startsWith('bunker://')) {
-                    setState(() => _error = 'URL bunker non valido.');
+                    setState(() => _error = context.l10n.invalidBunkerUrlDot);
                     return;
                   }
                   _run(
                     () => ref.read(authProvider.notifier).loginWithBunker(url),
                   );
                 },
-          child: const Text('Connetti bunker'),
+          child: Text(context.l10n.connectBunker),
         ),
         const SizedBox(height: 24),
-        Text('Accesso avanzato (nsec)', style: theme.textTheme.titleSmall),
+        Text(context.l10n.advancedNsec, style: theme.textTheme.titleSmall),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.all(12),
@@ -165,8 +163,7 @@ class _LoginPanelState extends ConsumerState<LoginPanel> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            'Attenzione: incollare la chiave privata è rischioso. '
-            'Non condividerla mai con nessuno. Su Android preferisci Amber.',
+            context.l10n.nsecWarning,
             style: theme.textTheme.bodySmall,
           ),
         ),
@@ -189,14 +186,14 @@ class _LoginPanelState extends ConsumerState<LoginPanel> {
                   final input = _nsecController.text;
                   if (!Nip19.isValidNsec(input) &&
                       !RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(input.trim())) {
-                    setState(() => _error = 'Chiave nsec non valida.');
+                    setState(() => _error = context.l10n.invalidNsec);
                     return;
                   }
                   _run(
                     () => ref.read(authProvider.notifier).loginWithNsec(input),
                   );
                 },
-          child: const Text('Accedi con nsec'),
+          child: Text(context.l10n.signInWithNsec),
         ),
         if (_error != null) ...[
           const SizedBox(height: 16),

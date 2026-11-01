@@ -8,6 +8,9 @@ import '../../core/nostr/event.dart';
 import '../../core/nostr/filter.dart';
 import '../../core/nostr/models/comment.dart';
 import '../../core/nostr/models/media_event.dart';
+import '../../core/nostr/relay_pool.dart';
+import '../private/private_delivery.dart';
+import '../private/private_posts.dart';
 import 'moderation_controller.dart';
 
 class PostInteractions {
@@ -22,87 +25,228 @@ class PostInteractions {
   });
 }
 
-/// Reactions and comments for a single post, live from the relays.
-/// Counts are relay-scoped: they reflect what the configured relays return,
-/// not a guaranteed global total.
-class InteractionsController
-    extends FamilyNotifier<PostInteractions, MediaPost> {
-  StreamSubscription? _sub;
-  String? _subId;
-  final Set<String> _likers = {};
-  final Map<String, Comment> _comments = {};
+class _PostData {
+  final Map<String, NostrEvent> reactions = {}; // author -> newest reaction
+  final Map<String, Comment> comments = {};
+}
 
-  @override
-  PostInteractions build(MediaPost arg) {
-    ref.onDispose(() {
-      _sub?.cancel();
-      if (_subId != null) ref.read(relayPoolProvider).unsubscribe(_subId!);
-    });
-    _subscribe(arg);
-    return const PostInteractions();
+/// Reactions and comments for posts, fetched in batches: every post asked
+/// for within a short window is covered by a single REQ, so scrolling a feed
+/// never opens a subscription per card. Counts are relay-scoped: they
+/// reflect what the configured relays return, not a global total.
+class InteractionsRepository {
+  final RelayPool pool;
+  final Map<String, _PostData> _data = {};
+  final Set<String> _requested = {};
+  final Set<String> _wanted = {};
+  final _changes = StreamController<String>.broadcast();
+  Timer? _timer;
+  bool _disposed = false;
+
+  InteractionsRepository(this.pool);
+
+  Stream<String> get changes => _changes.stream;
+
+  void request(String postId) {
+    if (_disposed || !_requested.add(postId)) return;
+    _data.putIfAbsent(postId, _PostData.new);
+    _wanted.add(postId);
+    _timer ??= Timer(const Duration(milliseconds: 120), _flush);
   }
 
-  void _subscribe(MediaPost post) {
-    final pool = ref.read(relayPoolProvider);
-    pool.connect();
-    final (:id, :stream) = pool.subscribe([
-      NostrFilter(
-        kinds: const [NostrKinds.reaction, NostrKinds.comment],
-        tagFilters: {
-          '#e': [post.id],
-        },
-        limit: 500,
-      ),
-    ]);
-    _subId = id;
-    _sub = stream.listen((event) => _ingest(event, post));
-  }
-
-  void _ingest(NostrEvent event, MediaPost post) {
-    if (ref.read(blockProvider).contains(event.pubkey)) return;
-    if (event.kind == NostrKinds.reaction) {
-      // Count one reaction per author; content '-' or '' counts as unlike.
-      if (event.content == '-') {
-        _likers.remove(event.pubkey);
-      } else {
-        _likers.add(event.pubkey);
-      }
-    } else if (event.kind == NostrKinds.comment) {
-      final comment = Comment.tryParse(event, forRootId: post.id);
-      if (comment != null) _comments[comment.id] = comment;
+  Future<void> _flush() async {
+    _timer = null;
+    if (_wanted.isEmpty || _disposed) return;
+    final batch = _wanted.take(40).toList();
+    _wanted.removeAll(batch);
+    if (_wanted.isNotEmpty) {
+      _timer = Timer(const Duration(milliseconds: 60), _flush);
     }
-    final myPub = ref.read(authProvider).publicKey;
-    final comments = _comments.values.toList()
-      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    state = PostInteractions(
-      likeCount: _likers.length,
-      likedByMe: myPub != null && _likers.contains(myPub),
+
+    final sub = pool.subscribe([
+      NostrFilter(
+        kinds: const [NostrKinds.reaction],
+        tagFilters: {'#e': batch},
+        limit: batch.length * 40,
+      ),
+      NostrFilter(
+        kinds: const [NostrKinds.comment],
+        tagFilters: {'#E': batch},
+        limit: batch.length * 30,
+      ),
+      NostrFilter(
+        kinds: const [NostrKinds.comment],
+        tagFilters: {'#e': batch},
+        limit: batch.length * 30,
+      ),
+    ], eoseTimeout: const Duration(seconds: 8));
+    final listener = sub.events.listen((e) => ingest(e, batch));
+    await sub.eose;
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    await listener.cancel();
+    sub.close();
+  }
+
+  void ingest(NostrEvent event, [Iterable<String>? known]) {
+    final ids = known ?? _data.keys;
+    if (event.kind == NostrKinds.reaction) {
+      // NIP-25: the last `e` tag is the reacted-to event.
+      String? target;
+      for (final t in event.tags) {
+        if (t.length >= 2 && t[0] == 'e') target = t[1];
+      }
+      final data = target == null ? null : _data[target];
+      if (data == null) return;
+      final prev = data.reactions[event.pubkey];
+      if (prev != null && prev.createdAt >= event.createdAt) return;
+      data.reactions[event.pubkey] = event;
+      _changes.add(target!);
+    } else if (event.kind == NostrKinds.comment) {
+      for (final id in ids) {
+        final comment = Comment.tryParse(event, forRootId: id);
+        if (comment == null) continue;
+        final data = _data[id];
+        if (data == null || data.comments.containsKey(comment.id)) return;
+        data.comments[comment.id] = comment;
+        _changes.add(id);
+        return;
+      }
+    }
+  }
+
+  PostInteractions snapshot(
+    String postId, {
+    String? me,
+    Set<String> blocked = const {},
+  }) {
+    final data = _data[postId];
+    if (data == null) return const PostInteractions();
+    final likers = {
+      for (final e in data.reactions.values)
+        if (e.content != '-' && !blocked.contains(e.pubkey)) e.pubkey,
+    };
+    final comments = [
+      for (final c in data.comments.values)
+        if (!blocked.contains(c.author)) c,
+    ]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    return PostInteractions(
+      likeCount: likers.length,
+      likedByMe: me != null && likers.contains(me),
       comments: comments,
     );
   }
 
-  /// Publishes a kind 7 like. No-op for guests.
+  NostrEvent? reactionOf(String postId, String pubkey) =>
+      _data[postId]?.reactions[pubkey];
+
+  void addLocalReaction(String postId, NostrEvent reaction) {
+    final data = _data.putIfAbsent(postId, _PostData.new);
+    data.reactions[reaction.pubkey] = reaction;
+    _changes.add(postId);
+  }
+
+  void removeLocalReaction(String postId, String pubkey) {
+    _data[postId]?.reactions.remove(pubkey);
+    _changes.add(postId);
+  }
+
+  void addLocalComment(String postId, Comment comment) {
+    _data.putIfAbsent(postId, _PostData.new).comments[comment.id] = comment;
+    _changes.add(postId);
+  }
+
+  void dispose() {
+    _disposed = true;
+    _timer?.cancel();
+    _changes.close();
+  }
+}
+
+final interactionsRepositoryProvider = Provider<InteractionsRepository>((ref) {
+  final repo = InteractionsRepository(ref.read(relayPoolProvider));
+  ref.onDispose(repo.dispose);
+  return repo;
+});
+
+/// View of one post's reactions/comments plus the actions on them.
+class InteractionsController
+    extends AutoDisposeFamilyNotifier<PostInteractions, MediaPost> {
+  @override
+  PostInteractions build(MediaPost arg) {
+    final me0 = ref.watch(authProvider).publicKey;
+    if (arg.isPrivate) {
+      // Close-friends post: likes and replies travel in gift wraps and are
+      // read from the private store; nothing is asked of public relays.
+      final shared = ref.watch(privatePostsProvider).of(arg.id);
+      return PostInteractions(
+        likeCount: shared.likers.length,
+        likedByMe: me0 != null && shared.likers.contains(me0),
+        comments: shared.replies,
+      );
+    }
+    final repo = ref.watch(interactionsRepositoryProvider);
+    final blocked = ref.watch(blockProvider);
+    final me = ref.watch(authProvider).publicKey;
+    // Keep counts for a while after the card leaves the screen, so scrolling
+    // back does not flash zeros.
+    final link = ref.keepAlive();
+    final keep = Timer(const Duration(minutes: 2), link.close);
+    final sub = repo.changes.where((id) => id == arg.id).listen((_) {
+      state = repo.snapshot(arg.id, me: me, blocked: blocked);
+    });
+    ref.onDispose(() {
+      keep.cancel();
+      sub.cancel();
+    });
+    repo.request(arg.id);
+    return repo.snapshot(arg.id, me: me, blocked: blocked);
+  }
+
+  /// Likes the post, or takes the like back (NIP-09 deletion of the
+  /// reaction) when it was already liked. Returns false on failure.
   Future<bool> like(MediaPost post) async {
+    if (post.isPrivate) {
+      return ref.read(privateDeliveryProvider).like(post);
+    }
     final signer = ref.read(authProvider).signer;
-    if (!signer.canSign) return false;
+    final me = signer.publicKey;
+    if (!signer.canSign || me == null) return false;
+    final repo = ref.read(interactionsRepositoryProvider);
+    final pool = ref.read(relayPoolProvider);
     try {
+      final existing = repo.reactionOf(post.id, me);
+      if (existing != null && existing.content != '-') {
+        final deletion = await signer.signEvent(
+          kind: NostrKinds.deletion,
+          tags: [
+            ['e', existing.id],
+            ['k', '${NostrKinds.reaction}'],
+          ],
+          content: '',
+        );
+        repo.removeLocalReaction(post.id, me);
+        final report = await pool.publish(deletion);
+        if (!report.publishedSomewhere) {
+          repo.addLocalReaction(post.id, existing);
+          return false;
+        }
+        return true;
+      }
       final event = await signer.signEvent(
         kind: NostrKinds.reaction,
         tags: buildReactionTags(post.event),
         content: '+',
       );
-      final report = await ref.read(relayPoolProvider).publish(event);
-      if (report.publishedSomewhere) {
-        _likers.add(signer.publicKey!);
-        state = PostInteractions(
-          likeCount: _likers.length,
-          likedByMe: true,
-          comments: state.comments,
-        );
-        return true;
+      repo.addLocalReaction(post.id, event); // optimistic
+      final report = await pool.publish(event);
+      if (!report.publishedSomewhere) {
+        repo.removeLocalReaction(post.id, me);
+        return false;
       }
-    } catch (_) {}
-    return false;
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Publishes a NIP-22 comment. Returns the new comment on success.
@@ -111,6 +255,11 @@ class InteractionsController
     String text, {
     NostrEvent? parentComment,
   }) async {
+    if (post.isPrivate) {
+      return ref
+          .read(privateDeliveryProvider)
+          .reply(post, text, parent: parentComment);
+    }
     final signer = ref.read(authProvider).signer;
     if (!signer.canSign || text.trim().isEmpty) return null;
     try {
@@ -123,28 +272,21 @@ class InteractionsController
         content: text.trim(),
       );
       final report = await ref.read(relayPoolProvider).publish(event);
-      if (report.publishedSomewhere) {
-        final comment = Comment.tryParse(event, forRootId: post.id);
-        if (comment != null) {
-          _comments[comment.id] = comment;
-          final comments = _comments.values.toList()
-            ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-          state = PostInteractions(
-            likeCount: _likers.length,
-            likedByMe: state.likedByMe,
-            comments: comments,
-          );
-        }
-        return comment;
+      if (!report.publishedSomewhere) return null;
+      final comment = Comment.tryParse(event, forRootId: post.id);
+      if (comment != null) {
+        ref
+            .read(interactionsRepositoryProvider)
+            .addLocalComment(post.id, comment);
       }
-    } catch (_) {}
-    return null;
+      return comment;
+    } catch (_) {
+      return null;
+    }
   }
 }
 
-final interactionsProvider =
-    NotifierProvider.family<
-      InteractionsController,
-      PostInteractions,
-      MediaPost
-    >(InteractionsController.new);
+final interactionsProvider = NotifierProvider.autoDispose
+    .family<InteractionsController, PostInteractions, MediaPost>(
+      InteractionsController.new,
+    );

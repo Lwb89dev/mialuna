@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/models/media_event.dart';
+import '../../l10n/strings.dart';
+import '../profile/profile_widgets.dart';
 import '../social/interactions_controller.dart';
 
 /// Bottom sheet with the comment thread (NIP-22) and composer.
@@ -52,11 +54,8 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
       if (comment != null) {
         _controller.clear();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Commento non inviato. Riprova più tardi.'),
-          ),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(context.l10n.commentNotSent)));
       }
     }
   }
@@ -70,14 +69,17 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
       children: [
         Padding(
           padding: const EdgeInsets.all(12),
-          child: Text('Commenti', style: theme.textTheme.titleMedium),
+          child: Text(
+            context.l10n.comments,
+            style: theme.textTheme.titleMedium,
+          ),
         ),
         const Divider(height: 1),
         Expanded(
           child: interactions.comments.isEmpty
               ? Center(
                   child: Text(
-                    'Nessun commento ancora.',
+                    context.l10n.noCommentsYet,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.outline,
                     ),
@@ -89,15 +91,9 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                     final c = interactions.comments[i];
                     return ListTile(
                       dense: true,
-                      leading: CircleAvatar(
-                        radius: 14,
-                        child: Text(
-                          c.author.substring(0, 2).toUpperCase(),
-                          style: theme.textTheme.labelSmall,
-                        ),
-                      ),
-                      title: Text(
-                        '${c.author.substring(0, 8)}…',
+                      leading: ProfileAvatar(pubkey: c.author, radius: 14),
+                      title: AuthorName(
+                        pubkey: c.author,
                         style: theme.textTheme.labelMedium,
                       ),
                       subtitle: Text(c.text),
@@ -107,9 +103,9 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
         ),
         const Divider(height: 1),
         if (isGuest)
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text('Accedi per commentare.'),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(context.l10n.signInToComment),
           )
         else
           Padding(
@@ -119,9 +115,9 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                 Expanded(
                   child: TextField(
                     controller: _controller,
-                    decoration: const InputDecoration(
-                      hintText: 'Aggiungi un commento…',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: context.l10n.addComment,
+                      border: const OutlineInputBorder(),
                       isDense: true,
                     ),
                     onSubmitted: (_) => _send(),

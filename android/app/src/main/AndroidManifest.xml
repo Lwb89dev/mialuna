@@ -49,6 +49,11 @@
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="nostrsigner"/>
         </intent>
+        <!-- Lightning wallets, for the optional donation button. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="lightning"/>
+        </intent>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>

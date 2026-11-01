@@ -2,9 +2,11 @@ import 'dart:math';
 
 import 'package:bip340/bip340.dart' as bip340;
 
+import '../../l10n/strings.dart';
 import 'bech32.dart';
 import 'event.dart';
 import 'nip19.dart';
+import 'nip44.dart';
 
 /// How the user's key material is held.
 enum SignerType { nsec, amber, bunker, guest }
@@ -25,6 +27,17 @@ abstract class Signer {
     required String content,
     int? createdAt,
   });
+
+  /// Whether this signer can NIP-44 encrypt/decrypt for private messages.
+  bool get canEncrypt => false;
+
+  /// NIP-44 v2 encryption for [peerPubkey] with the user's key.
+  Future<String> nip44Encrypt(String peerPubkey, String plaintext) =>
+      throw SignerException(AppStrings.current.signerNoPrivateMessages);
+
+  /// NIP-44 v2 decryption of a payload from [peerPubkey].
+  Future<String> nip44Decrypt(String peerPubkey, String ciphertext) =>
+      throw SignerException(AppStrings.current.signerNoPrivateMessages);
 
   Future<void> dispose() async {}
 }
@@ -70,6 +83,25 @@ class NsecSigner extends Signer {
 
   @override
   bool get canSign => true;
+
+  @override
+  bool get canEncrypt => true;
+
+  @override
+  Future<String> nip44Encrypt(String peerPubkey, String plaintext) async =>
+      Nip44.encrypt(
+        privateKeyHex: _privateKeyHex,
+        publicKeyHex: peerPubkey,
+        plaintext: plaintext,
+      );
+
+  @override
+  Future<String> nip44Decrypt(String peerPubkey, String ciphertext) async =>
+      Nip44.decrypt(
+        privateKeyHex: _privateKeyHex,
+        publicKeyHex: peerPubkey,
+        payload: ciphertext,
+      );
 
   @override
   Future<NostrEvent> signEvent({

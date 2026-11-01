@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../../l10n/strings.dart';
 import '../nostr/bech32.dart';
 import '../nostr/event.dart';
 import '../nostr/signer.dart';
@@ -117,7 +118,7 @@ class ZapService {
     }
     final json = jsonDecode(resp.body) as Map<String, dynamic>;
     if (json['allowsNostr'] != true) {
-      throw const ZapException('Questo indirizzo non supporta gli zap Nostr');
+      throw ZapException(AppStrings.current.zapNotSupported);
     }
     final callback = json['callback'] as String?;
     if (callback == null) throw const ZapException('LNURL callback missing');
@@ -143,7 +144,7 @@ class ZapService {
     final info = await fetchPayInfo(lightningAddressOrLnurl);
     if (amountSats < info.minSats || amountSats > info.maxSats) {
       throw ZapException(
-        'Importo fuori dai limiti (${info.minSats}–${info.maxSats} sats)',
+        AppStrings.current.zapAmountOutOfRange(info.minSats, info.maxSats),
       );
     }
     if (info.commentAllowed == 0 && comment.isNotEmpty) comment = '';

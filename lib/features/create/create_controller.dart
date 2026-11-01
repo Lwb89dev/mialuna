@@ -7,9 +7,17 @@ import '../../app/providers.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/branding/mialuna_tag.dart';
 import '../../core/media/blossom.dart';
-import '../../core/media/exif.dart';
+import '../../core/media/media_cipher.dart';
+import '../../core/media/media_sanitizer.dart';
+import '../../core/media/private_media.dart';
+import '../../core/media/video_frames.dart';
 import '../../core/nostr/event.dart';
 import '../../core/nostr/models/media_event.dart';
+import '../../core/nostr/nip59.dart';
+import '../../core/nostr/signer.dart';
+import '../../l10n/strings.dart';
+import '../private/close_friends.dart';
+import '../private/private_delivery.dart';
 
 enum ComposerMode { photo, video, reel, story }
 
@@ -18,7 +26,19 @@ class PickedMedia {
   final Uint8List bytes;
   final String mimeType;
   String alt;
+
+  /// Upload of the (sanitized) file; kept so a retry after a failed publish
+  /// does not upload the same file again.
   BlossomUploadResult? uploaded;
+  BlossomUploadResult? uploadedCover;
+  SanitizedMedia? sanitized;
+  VideoFrame? cover;
+
+  /// Close-friends artifacts, kept for the same reason as above.
+  EncryptedBlob? encrypted;
+  BlossomUploadResult? uploadedPrivate;
+  EncryptedBlob? encryptedCover;
+  BlossomUploadResult? uploadedPrivateCover;
 
   PickedMedia({
     required this.file,
@@ -36,11 +56,18 @@ class ComposerState {
   final ComposerMode mode;
   final bool isPublishing;
   final double uploadProgress;
+  final String? stage;
   final String? error;
   final bool published;
 
   /// NIP-36: publish behind a sensitive-content warning.
   final bool sensitive;
+
+  /// Who the post is for: everybody, or the close-friends list.
+  final Audience audience;
+
+  /// What happened after a successful publish (e.g. who got it).
+  final String? notice;
 
   const ComposerState({
     this.media = const [],
@@ -48,13 +75,19 @@ class ComposerState {
     this.mode = ComposerMode.photo,
     this.isPublishing = false,
     this.uploadProgress = 0,
+    this.stage,
     this.error,
     this.published = false,
     this.sensitive = false,
+    this.audience = Audience.public,
+    this.notice,
   });
 
   /// The caption exactly as it will be published (with #mialuna applied).
-  String get finalCaption => MialunaTag.applyToCaption(caption);
+  /// Close-friends posts are not discoverable, so they carry no hashtag.
+  String get finalCaption => audience == Audience.closeFriends
+      ? caption.trim()
+      : MialunaTag.applyToCaption(caption);
 
   /// Media-first rule: publishing requires at least one usable media item.
   bool get canPublish =>
@@ -68,18 +101,24 @@ class ComposerState {
     ComposerMode? mode,
     bool? isPublishing,
     double? uploadProgress,
+    String? stage,
     String? error,
     bool? published,
     bool? sensitive,
+    Audience? audience,
+    String? notice,
   }) => ComposerState(
     media: media ?? this.media,
     caption: caption ?? this.caption,
     mode: mode ?? this.mode,
     isPublishing: isPublishing ?? this.isPublishing,
     uploadProgress: uploadProgress ?? this.uploadProgress,
+    stage: stage,
     error: error,
     published: published ?? this.published,
     sensitive: sensitive ?? this.sensitive,
+    audience: audience ?? this.audience,
+    notice: notice,
   );
 }
 
@@ -89,7 +128,18 @@ class ComposerController extends Notifier<ComposerState> {
   @override
   ComposerState build() {
     _restoreDraft();
-    return const ComposerState();
+    // The audience picked last time is the default for the next post.
+    ref.listen(audiencePreferenceProvider, (_, audience) {
+      if (!state.isPublishing) state = state.copyWith(audience: audience);
+    });
+    return ComposerState(audience: ref.read(audiencePreferenceProvider));
+  }
+
+  /// Switches between public and close-friends (and remembers the choice).
+  void setAudience(Audience audience) {
+    if (audience == state.audience) return;
+    state = state.copyWith(audience: audience);
+    ref.read(audiencePreferenceProvider.notifier).set(audience);
   }
 
   Future<void> _restoreDraft() async {
@@ -115,7 +165,11 @@ class ComposerController extends Notifier<ComposerState> {
     if (bytes.isEmpty) return;
     state = state.copyWith(
       media: [
-        PickedMedia(file: file, bytes: bytes, mimeType: _guessMime(file.name)),
+        PickedMedia(
+          file: file,
+          bytes: bytes,
+          mimeType: _mimeOf(bytes, file.name),
+        ),
       ],
     );
   }
@@ -131,7 +185,11 @@ class ComposerController extends Notifier<ComposerState> {
         ? <PickedMedia>[]
         : [...state.media];
     media.add(
-      PickedMedia(file: file, bytes: bytes, mimeType: _guessMime(file.name)),
+      PickedMedia(
+        file: file,
+        bytes: bytes,
+        mimeType: _mimeOf(bytes, file.name),
+      ),
     );
     state = state.copyWith(media: media);
   }
@@ -151,10 +209,19 @@ class ComposerController extends Notifier<ComposerState> {
       final bytes = await f.readAsBytes();
       if (bytes.isEmpty) continue;
       media.add(
-        PickedMedia(file: f, bytes: bytes, mimeType: _guessMime(f.name)),
+        PickedMedia(file: f, bytes: bytes, mimeType: _mimeOf(bytes, f.name)),
       );
     }
     state = state.copyWith(media: media);
+  }
+
+  /// Adds an already-read file to the post (used by the pickers and tests).
+  void addPicked(PickedMedia media) {
+    final list = state.mode == ComposerMode.story
+        ? <PickedMedia>[]
+        : [...state.media];
+    list.add(media);
+    state = state.copyWith(media: list);
   }
 
   void removeMedia(int index) {
@@ -197,70 +264,130 @@ class ComposerController extends Notifier<ComposerState> {
     ref.read(localCacheProvider).saveDraft(_draftKey, {'caption': caption});
   }
 
-  /// Full publish flow: upload every media item to Blossom, then build,
-  /// sign and publish the media event (kind 20/21/22 depending on mode).
-  /// A failed upload aborts publishing — no event ever references media
-  /// that failed to upload.
+  void _progress(double value, String stage) {
+    state = ComposerState(
+      media: state.media,
+      caption: state.caption,
+      mode: state.mode,
+      isPublishing: true,
+      uploadProgress: value.clamp(0.0, 1.0),
+      stage: stage,
+      sensitive: state.sensitive,
+      audience: state.audience,
+    );
+  }
+
+  /// Full publish flow: sanitize (remove EXIF/location) and upload every
+  /// media item to Blossom, then build, sign and publish the media event
+  /// (kind 20/21/22 depending on mode). A failed upload aborts publishing —
+  /// no event ever references media that failed to upload.
   Future<bool> publish() async {
     final auth = ref.read(authProvider);
     if (!auth.signer.canSign) {
-      state = state.copyWith(error: 'Accedi per pubblicare.');
+      state = state.copyWith(error: AppStrings.current.signInToPublish);
       return false;
     }
     if (!state.canPublish) {
+      state = state.copyWith(error: AppStrings.current.addMediaFirst);
+      return false;
+    }
+    if (state.audience == Audience.closeFriends) return _publishPrivate();
+
+    state = state.copyWith(isPublishing: true, uploadProgress: 0);
+    final blossom = ref.read(blossomClientProvider);
+    final total = state.media.length;
+    final mediaItems = <MediaItem>[];
+    double? videoDuration;
+
+    try {
+      for (var i = 0; i < total; i++) {
+        final item = state.media[i];
+        double share(double within) => (i + within) / total;
+
+        // 1. Remove every trace of metadata. Fail-closed: a file that cannot
+        // be cleaned is never uploaded.
+        _progress(share(0), AppStrings.current.removingMetadata);
+        item.sanitized ??= await MediaSanitizer.sanitizeAsync(item.bytes);
+        final clean = item.sanitized!;
+
+        // 2. Upload the cleaned file.
+        item.uploaded ??= await blossom.upload(
+          signer: auth.signer,
+          bytes: clean.bytes,
+          mimeType: clean.mimeType,
+          label: item.isVideo ? 'video' : 'photo',
+          onProgress: (p) => _progress(
+            share(0.1 + 0.7 * p),
+            AppStrings.current.uploadingProgress(i + 1, total),
+          ),
+        );
+
+        // 3. Videos get a cover image (poster) taken from the first seconds.
+        int? width = clean.width, height = clean.height;
+        String? coverUrl;
+        if (item.isVideo) {
+          _progress(share(0.85), AppStrings.current.creatingPreview);
+          item.cover ??= await VideoFrames.extract(item.file.path);
+          final frame = item.cover;
+          if (frame != null) {
+            width = frame.width;
+            height = frame.height;
+            if (frame.durationMs > 0) videoDuration ??= frame.durationMs / 1000;
+            final coverClean = MediaSanitizer.sanitize(frame.bytes);
+            item.uploadedCover ??= await blossom.upload(
+              signer: auth.signer,
+              bytes: coverClean.bytes,
+              mimeType: coverClean.mimeType,
+              label: 'cover',
+            );
+            coverUrl = item.uploadedCover!.url;
+          }
+        }
+
+        mediaItems.add(
+          MediaItem(
+            url: item.uploaded!.url,
+            mimeType: clean.mimeType,
+            sha256: item.uploaded!.sha256,
+            width: width,
+            height: height,
+            alt: item.alt.isNotEmpty ? item.alt : null,
+            previewUrl: coverUrl,
+          ),
+        );
+      }
+    } on MediaSanitizeException catch (e) {
+      state = state.copyWith(isPublishing: false, error: e.message);
+      return false;
+    } on BlossomException catch (e) {
+      state = state.copyWith(isPublishing: false, error: e.message);
+      return false;
+    } on SignerException catch (e) {
+      state = state.copyWith(isPublishing: false, error: e.message);
+      return false;
+    } catch (e) {
       state = state.copyWith(
-        error: 'Aggiungi almeno una foto o un video prima di pubblicare.',
+        isPublishing: false,
+        error: AppStrings.current.uploadFailed(e),
       );
       return false;
     }
 
-    state = state.copyWith(isPublishing: true, uploadProgress: 0, error: null);
-    final blossom = ref.read(blossomClientProvider);
-
-    try {
-      for (var i = 0; i < state.media.length; i++) {
-        final item = state.media[i];
-        // EXIF (incl. GPS) is stripped by default before upload.
-        final (cleanBytes, cleanMime) = ExifStripper.strip(
-          item.bytes,
-          item.mimeType,
-        );
-        item.uploaded ??= await blossom.upload(
-          signer: auth.signer,
-          bytes: cleanBytes,
-          mimeType: cleanMime,
-          onProgress: (p) => state = state.copyWith(
-            uploadProgress: (i + p) / state.media.length,
-          ),
-        );
-      }
-    } on BlossomException catch (e) {
-      state = state.copyWith(isPublishing: false, error: e.message);
-      return false;
-    }
-
-    final mediaItems = [
-      for (final m in state.media)
-        MediaItem(
-          url: m.uploaded!.url,
-          mimeType: m.uploaded!.mimeType ?? m.mimeType,
-          sha256: m.uploaded!.sha256,
-          alt: m.alt.isNotEmpty ? m.alt : null,
-        ),
-    ];
-
+    _progress(0.95, AppStrings.current.publishing);
     final caption = state.finalCaption; // includes #mialuna exactly once
     final isStory = state.mode == ComposerMode.story;
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final tags = MialunaTag.applyToTags(
       MediaPost.buildTags(
         media: mediaItems,
         caption: caption,
+        title: MediaPost.deriveTitle(state.caption),
+        publishedAt: now,
+        duration: videoDuration,
         extraHashtags: const [MialunaTag.hashtag],
         contentWarning: state.sensitive ? 'sensitive content' : null,
         isStory: isStory,
-        expiresAt: isStory
-            ? DateTime.now().millisecondsSinceEpoch ~/ 1000 + 86400
-            : null,
+        expiresAt: isStory ? now + 86400 : null,
       ),
     );
 
@@ -281,30 +408,251 @@ class ComposerController extends Notifier<ComposerState> {
       );
       final report = await ref.read(relayPoolProvider).publish(event);
       if (!report.publishedSomewhere) {
+        final why = report.firstFailureReason;
         state = state.copyWith(
           isPublishing: false,
-          error:
-              'Nessun relay ha accettato il post. Il contenuto resta in bozze.',
+          error: AppStrings.current.noRelayAcceptedPost(
+            why != null ? ' ($why)' : '',
+          ),
         );
         return false;
       }
       await ref.read(localCacheProvider).deleteDraft(_draftKey);
-      state = const ComposerState(published: true);
+      state = ComposerState(published: true, audience: state.audience);
       return true;
+    } on SignerException catch (e) {
+      state = state.copyWith(isPublishing: false, error: e.message);
+      return false;
     } catch (e) {
       state = state.copyWith(isPublishing: false, error: e.toString());
       return false;
     }
   }
 
-  static String _guessMime(String name) {
-    final lower = name.toLowerCase();
-    if (lower.endsWith('.png')) return 'image/png';
-    if (lower.endsWith('.gif')) return 'image/gif';
-    if (lower.endsWith('.webp')) return 'image/webp';
-    if (lower.endsWith('.mp4')) return 'video/mp4';
-    if (lower.endsWith('.mov')) return 'video/quicktime';
-    return 'image/jpeg';
+  /// Close-friends flow: the picture/video is cleaned, **encrypted on this
+  /// phone** (a new AES-256 key per file), uploaded as an opaque blob signed
+  /// with a throw-away key, and the post — carrying the keys and the friends
+  /// list — is wrapped for each friend. A server, or anyone who finds the
+  /// URL, only ever holds scrambled bytes. If the media cannot be uploaded
+  /// encrypted, nothing is published: there is no unencrypted fallback.
+  Future<bool> _publishPrivate() async {
+    final auth = ref.read(authProvider);
+    final me = auth.publicKey;
+    if (me == null || !auth.signer.canEncrypt) {
+      state = state.copyWith(error: AppStrings.current.privateNeedsKeySigner);
+      return false;
+    }
+    final friends = ref.read(closeFriendsProvider).members;
+    if (friends.isEmpty) {
+      state = state.copyWith(
+        error: AppStrings.current.closeFriendsListEmptyAddSomeone,
+      );
+      return false;
+    }
+
+    state = state.copyWith(isPublishing: true, uploadProgress: 0);
+    final blossom = ref.read(blossomClientProvider);
+    // The upload is authorised by a key that exists only for this post, so
+    // the encrypted blob is not linked to the author's account.
+    final uploader = NsecSigner.fromNsec(NsecSigner.generatePrivateKey());
+    final total = state.media.length;
+    final items = <MediaItem>[];
+    double? videoDuration;
+
+    try {
+      for (var i = 0; i < total; i++) {
+        final item = state.media[i];
+        double share(double within) => (i + within) / total;
+
+        _progress(share(0), AppStrings.current.removingMetadata);
+        item.sanitized ??= await MediaSanitizer.sanitizeAsync(item.bytes);
+        final clean = item.sanitized!;
+        if (clean.bytes.length > PrivateMediaService.maxFileBytes) {
+          throw const MediaSanitizeException(
+            MediaSanitizeError.privateFileTooLarge,
+          );
+        }
+
+        _progress(share(0.1), AppStrings.current.encryptingOnPhone);
+        item.encrypted ??= await MediaCipher.encryptAsync(clean.bytes);
+        final enc = item.encrypted!;
+        item.uploadedPrivate ??= await blossom.upload(
+          signer: uploader,
+          bytes: enc.bytes,
+          mimeType: 'application/octet-stream',
+          opaque: true,
+          label: 'blob',
+          onProgress: (p) => _progress(
+            share(0.15 + 0.6 * p),
+            AppStrings.current.uploadingProgress(i + 1, total),
+          ),
+        );
+
+        int? width = clean.width, height = clean.height;
+        String? coverUrl;
+        MediaEncryption? coverEncryption;
+        if (item.isVideo) {
+          _progress(share(0.8), AppStrings.current.creatingPreview);
+          item.cover ??= await VideoFrames.extract(item.file.path);
+          final frame = item.cover;
+          if (frame != null) {
+            width = frame.width;
+            height = frame.height;
+            if (frame.durationMs > 0) videoDuration ??= frame.durationMs / 1000;
+            item.encryptedCover ??= await MediaCipher.encryptAsync(
+              MediaSanitizer.sanitize(frame.bytes).bytes,
+            );
+            final cover = item.encryptedCover!;
+            item.uploadedPrivateCover ??= await blossom.upload(
+              signer: uploader,
+              bytes: cover.bytes,
+              mimeType: 'application/octet-stream',
+              opaque: true,
+              label: 'blob',
+            );
+            coverUrl = item.uploadedPrivateCover!.url;
+            coverEncryption = MediaEncryption(
+              key: cover.key,
+              nonce: cover.nonce,
+            );
+          }
+        }
+
+        items.add(
+          MediaItem(
+            url: item.uploadedPrivate!.url,
+            mimeType: clean.mimeType,
+            sha256: enc.sha256,
+            plainSha256: enc.plainSha256,
+            width: width,
+            height: height,
+            alt: item.alt.isNotEmpty ? item.alt : null,
+            previewUrl: coverUrl,
+            encryption: MediaEncryption(key: enc.key, nonce: enc.nonce),
+            previewEncryption: coverEncryption,
+          ),
+        );
+      }
+    } on MediaSanitizeException catch (e) {
+      state = state.copyWith(isPublishing: false, error: e.message);
+      return false;
+    } on BlossomException catch (e) {
+      state = state.copyWith(
+        isPublishing: false,
+        error: AppStrings.current.noServerAcceptedEncrypted(e.message),
+      );
+      return false;
+    } on SignerException catch (e) {
+      state = state.copyWith(isPublishing: false, error: e.message);
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        isPublishing: false,
+        error: AppStrings.current.uploadFailed(e),
+      );
+      return false;
+    }
+
+    final isStory = state.mode == ComposerMode.story;
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final expiresAt = isStory ? now + 86400 : null;
+    final caption = state.finalCaption;
+    final kind = switch (state.mode) {
+      ComposerMode.photo => NostrKinds.picture,
+      ComposerMode.video => NostrKinds.video,
+      ComposerMode.reel => NostrKinds.shortVideo,
+      ComposerMode.story =>
+        state.media.first.isVideo ? NostrKinds.shortVideo : NostrKinds.picture,
+    };
+    final rumor = Rumor.create(
+      pubkey: me,
+      kind: kind,
+      createdAt: now,
+      content: caption,
+      tags: MediaPost.buildTags(
+        media: items,
+        caption: caption,
+        title: MediaPost.deriveTitle(state.caption),
+        publishedAt: now,
+        duration: videoDuration,
+        contentWarning: state.sensitive ? 'sensitive content' : null,
+        isStory: isStory,
+        expiresAt: expiresAt,
+        // The friends list is injected into the post itself.
+        closeFriends: friends,
+      ),
+    );
+
+    try {
+      _progress(0.9, AppStrings.current.sendingToFriends);
+      final report = await ref
+          .read(privateDeliveryProvider)
+          .send(
+            rumor,
+            friends,
+            expiresAt: expiresAt,
+            onProgress: (done, all) => _progress(
+              0.9 + 0.1 * done / all,
+              AppStrings.current.sendingToFriendsProgress(done, all),
+            ),
+          );
+      if (!report.reachedSomeone) {
+        final why = report.failed.values.toSet().take(2).join('; ');
+        state = state.copyWith(
+          isPublishing: false,
+          error: AppStrings.current.noFriendReceivedPost(
+            why.isEmpty ? '' : ' ($why)',
+          ),
+        );
+        return false;
+      }
+      await ref.read(localCacheProvider).deleteDraft(_draftKey);
+      final missed = report.failed.length;
+      state = ComposerState(
+        published: true,
+        audience: state.audience,
+        notice: missed == 0
+            ? AppStrings.current.sentToCloseFriends(report.delivered.length)
+            : AppStrings.current.sentToFriendsWithMisses(
+                report.delivered.length,
+                missed,
+              ),
+      );
+      return true;
+    } on SignerException catch (e) {
+      state = state.copyWith(isPublishing: false, error: e.message);
+      return false;
+    } catch (e) {
+      state = state.copyWith(isPublishing: false, error: e.toString());
+      return false;
+    }
+  }
+
+  /// The real type is read from the bytes; the file name is only a fallback.
+  static String _mimeOf(Uint8List bytes, String name) {
+    switch (MediaSanitizer.detect(bytes)) {
+      case MediaFormat.jpeg:
+        return 'image/jpeg';
+      case MediaFormat.png:
+        return 'image/png';
+      case MediaFormat.gif:
+        return 'image/gif';
+      case MediaFormat.webp:
+        return 'image/webp';
+      case MediaFormat.heif:
+        return 'image/heic';
+      case MediaFormat.webm:
+        return 'video/webm';
+      case MediaFormat.mp4:
+        return name.toLowerCase().endsWith('.mov')
+            ? 'video/quicktime'
+            : 'video/mp4';
+      case MediaFormat.unknown:
+        final lower = name.toLowerCase();
+        if (lower.endsWith('.mp4')) return 'video/mp4';
+        if (lower.endsWith('.mov')) return 'video/quicktime';
+        return 'image/jpeg';
+    }
   }
 }
 

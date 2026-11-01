@@ -3,6 +3,185 @@
 All notable changes to Mialuna are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.15.0] — 2026-11-01 — Close friends, theme, support
+
+### Added
+- **English and Italian, ready for more languages.** All text now lives in
+  `lib/l10n/app_en.arb` (template) and `app_it.arb`; the app follows the
+  phone's language and Settings → Appearance → Language overrides it. Errors
+  raised in background isolates carry a code and are translated on the main
+  isolate. A test checks that every language has the same keys and
+  placeholders and that no Italian is left in the code; the layout test now
+  renders every screen in both languages. How to add one: `docs/TRANSLATING.md`.
+- The Home bar shows the logo next to the lowercase "mialuna".
+- **Amici più stretti (close friends).** A list (NIP-51 private set,
+  `kind 30000`, `d=close-friends`, members encrypted to yourself, kept on the
+  device too, up to 60 people) and an audience switch in the composer
+  (Pubblico / Amici più stretti, remembered): photos, videos, reels and
+  stories published for that audience are an unsigned event whose `p` tags
+  are the friends — the list is *injected in the post* instead of picked each
+  time — gift-wrapped (NIP-59) once per friend and for yourself, and delivered
+  only to each friend's inbox relays (like Outkast's private replies). Stories
+  carry a NIP-40 expiration on the wrap. Friends see them in Home and in the
+  stories rail (green ring, star badge); a reply or like on a private post is
+  wrapped to the author only and never touches a public relay.
+- **Encrypted media.** Blossom does not encrypt, so a hidden event is not
+  enough: every file of a close-friends post (and the cover of a video) is
+  cleaned of metadata and then encrypted on the phone with AES-256-GCM (new
+  key and nonce per file, key only inside the wrap, ciphertext hash `x`,
+  plaintext hash `ox`), uploaded as an opaque blob signed by a **throw-away
+  key** (the blob is not linked to the author), and downloaded, verified and
+  decrypted on the friends' phones (streamed download capped at 120 MB; videos
+  are decrypted to a cache file wiped after a day and at logout). Servers
+  that refuse opaque blobs (Primal answers 415) are remembered and tried last.
+  **If no server accepts the encrypted file the post is not published; there
+  is no unencrypted fallback.**
+- **Onboarding page "Pubblico e privato"** (also at the top of the friends
+  list and in Settings → "Rivedi la guida iniziale") saying what is public,
+  what close friends protects, and what it cannot: screenshots, removed
+  friends, other Nostr clients, friends without private messages, servers
+  that refuse encrypted files.
+- **Theme**: light / dark / follow the system, in Settings.
+- **Support**: Lightning address (same as eikon) at the bottom of Settings;
+  opens the user's wallet, or copies the address.
+- `docs/ROADMAP.md`.
+
+### Changed
+- A public event that claims the close-friends audience is dropped by every
+  public path (`MediaPost.tryParse(allowPrivate: false)`).
+- Private posts have no public id: no save, link, report, zap or forwarding.
+
+### Tests
+- 340+ tests: AES-GCM against the NIST vector, tamper and wrong-key cases,
+  the full flow between author, friend, non-friend and unreachable friend
+  against a fake Blossom server (the server stores only ciphertext, the relay
+  only gift wraps, the upload is signed by another key, likes/replies stay
+  private, restart without relays, no plaintext fallback), the downloader,
+  and layout tests for the new screens.
+
+## [0.14.0] — 2026-11-01 — People search, Following / Discover
+
+### Fixed
+- **People could not be found by name** when forwarding a post or starting
+  a chat: only profiles that happened to be loaded were searched, and only
+  among followed accounts. The whole follow list is now loaded in the
+  background (a few batches at a time) and matched on display name,
+  username and NIP-05, ignoring accents ("jose" finds "José"). Accounts you
+  do not follow are found through NIP-50 search relays
+  (`search.nos.today`, `nostr.wine`; your own relays do not support it) and
+  `name@domain` addresses are resolved through NIP-05. Pasting an `npub`
+  still works but is never needed. Results show the name and the address.
+- **Which feed is this?** Home now shows only the people you follow (and
+  you), says so with a "Seguiti | Scopri" switch, and has a clear empty
+  state when you follow nobody. The everything-from-all-relays stream moved
+  to the **Scopri** tab (formerly Esplora), with recent posts, `#mialuna`,
+  search by person / hashtag / words, pull-to-refresh and endless scroll.
+  Guests, who cannot follow anyone, see Scopri on Home. Stories follow the
+  same rule (followed accounts and you).
+- Following feed reads the followed accounts in chunks of 80 (relays refuse
+  huge `authors` filters), on your relays and on the relays each author
+  publishes to (NIP-65 outbox, up to six).
+- `EOSE` was reported before events still waiting for signature
+  verification were delivered, so a caller that read its result right after
+  EOSE (the follow list) could see nothing.
+- A refresh while a load was already running returned that older load, which
+  had asked the relays before the new posts existed; it now queues a fresh
+  load.
+
+### Tests
+- 276 tests: people search (local, accents, NIP-05 names, NIP-50 relay,
+  ranking), following vs discover feed, refresh merge, empty follow list.
+
+## [0.13.0] — 2026-11-01 — Stable feed, private messages, clean uploads
+
+### Fixed
+- **The Home feed stayed on a spinner forever.** The relay pool was rebuilt
+  every time the settings emitted a new value (right after start-up and
+  after the NIP-65 sync), killing the feed's, the profile's and the
+  stories' subscriptions. The pool is now created once and follows the
+  settings through `updateRelays`; relays added later join open
+  subscriptions.
+- **Refresh did nothing.** The pool used to drop every event it had already
+  delivered once, so a second subscription (refresh, profile, search) got
+  nothing. Deduplication is now per subscription; refreshing merges new
+  posts into what is on screen and always completes (EOSE, with a timeout).
+- **Profiles retrieved nothing.** Metadata was requested one key at a time,
+  a miss was cached forever, an older kind 0 could replace a newer one, and
+  post cards never showed name or avatar. Profiles are now loaded in
+  batches (also from indexer relays), newest wins, misses are retried and
+  the cache is persisted. Every avatar and name in the app resolves through
+  it, and any author can be opened as a profile (follow, message, posts,
+  reels, NIP-05 really verified, following count).
+- **Videos opened full screen.** They now play inline in the card (poster,
+  play/pause, mute, progress, one at a time, paused on tab change and when
+  the app goes to the background). The full-screen player — source of the
+  RenderFlex overflow — is gone.
+- **Layout overflows**: fixed-height tiles in Create, the profile header and
+  the inbox no longer overflow with large fonts or small screens
+  (layout tests at 320×568, 411×923 and 800×1280, text ×1 and ×2).
+- **Images that did not load.** Posts pointing at YouTube pages or at
+  `127.0.0.1`/LAN addresses are rejected during parsing; photos try `https`
+  upgrades and `fallback` mirrors, are decoded at display size, and posts
+  whose media is permanently gone (HTTP 4xx, undecodable) disappear from
+  the feeds instead of showing broken tiles. Missing dimensions no longer
+  crop everything to a square.
+- **Blossom rejections.** Uploads now send `X-SHA-256`, accept `409 already
+  exists`, read the server's `X-Reason`, verify the returned hash, sign the
+  authorization once (a single Amber prompt) and try the servers of the
+  user's own list in order. The error shown names every server and why it
+  refused. Amber's public key is accepted as hex or `npub`, and Amber is no
+  longer launched at every start-up.
+- Follow list: a follow can no longer overwrite the list before it has been
+  loaded; relay hints, petnames and the legacy `content` are preserved.
+- Event deletion/like toggle (NIP-09) and per-card subscriptions replaced by
+  one batched request (relays cap concurrent REQs).
+- Several `whenComplete(() => map.remove(key))` calls returned the very
+  future they completed (self-deadlock) in the outbox resolver, the video
+  poster loader and NIP-42 authentication.
+
+### Added
+- **Pinch to zoom in place** (Instagram-style): two fingers lift the photo
+  above the feed, release springs it back; one finger still scrolls and
+  swipes the carousel. Double-tap likes.
+- **Tap Home to go back to the top and refresh** (Reels and Explore do the
+  same); infinite scroll; skeleton loading; "caption: more".
+- **Video posters**: from the event, or extracted from the video with the
+  platform decoder (native bridge, no plugin; Swift side untested). New
+  videos upload a cover image, dimensions and duration.
+- **Metadata removal at upload, fail-closed.** A byte-level sanitizer strips
+  EXIF/GPS, XMP, IPTC, comments, text/time chunks, vendor trailers
+  (Ultra HDR gain maps) from JPEG/PNG/WebP/GIF without recompressing, bakes
+  the EXIF rotation when needed, wipes MP4/MOV location atoms and
+  timestamps in place, converts HEIC/AVIF through the platform decoder and
+  refuses anything it cannot clean (the old code uploaded the original on
+  failure). The result is re-inspected before every upload.
+- **NIP-65, automatic.** Read/write roles per relay; on sign-in and when the
+  app returns to the foreground the newest kind 10002 (and BUD-03 kind
+  10063 Blossom list) is fetched from your relays and indexer relays and
+  adopted when newer; manual edits are published back. Authors' own relays
+  are used to read their profiles (outbox model).
+- **Private messages (NIP-17/NIP-59/NIP-44)**: inbox, chat, unread badge,
+  inbox relay setup (kind 10050), NIP-42 AUTH, self-copy for other devices.
+  **Forward photos, videos, reels and stories** from Home, Reels or the
+  story viewer with the paper-plane button (multi-select, optional note);
+  shared posts show as preview cards in the chat. Works with nsec, Amber
+  (silent through its content provider once "remember" is set) and bunker.
+- Stories: unseen/seen ring stored locally, first unseen story first,
+  swipe shows the neighbour creator instead of repeating the current one.
+- NIP-19 `nevent` with relay hints; `title`, `published_at`, `duration` and
+  `dim` tags on new posts.
+
+### Changed
+- Default relays: `relay.nostr.band` (no longer answering) replaced with
+  `relay.primal.net`.
+
+### Tests
+- 263 tests (from 128): relay pool against real local WebSocket relays
+  (dedup, EOSE, roles, publish reports, NIP-42), DM flow between two
+  accounts, NIP-59 impersonation checks, byte-level sanitizer fixtures,
+  Blossom fallback/409/hash, media validation, outbox planning, pinch zoom,
+  and 57 layout tests.
+
 ## [0.12.0] — 2026-11-01 — Block, hashtag filters, story sharing
 
 ### Added

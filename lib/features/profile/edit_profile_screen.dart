@@ -3,10 +3,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/providers.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/event.dart';
 import '../../core/nostr/profile_repository.dart';
-import '../../app/providers.dart';
+import '../../l10n/strings.dart';
 
 /// Edit kind 0 profile metadata: name, bio, avatar URL, NIP-05.
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -48,7 +49,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (!signer.canSign || _saving) return;
     setState(() => _saving = true);
     try {
+      // Fields this form does not edit (lightning address, banner, website…)
+      // are kept as they are.
       final content = jsonEncode({
+        ...?widget.current?.toJson(),
         'name': _name.text.trim(),
         'display_name': _name.text.trim(),
         'about': _about.text.trim(),
@@ -60,19 +64,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         tags: const [],
         content: content,
       );
-      final report = await ref.read(relayPoolProvider).publish(event);
+      final report = await ref
+          .read(relayPoolProvider)
+          .publish(event, extraRelays: ref.read(indexerRelaysProvider));
       if (mounted) {
         setState(() => _saving = false);
         if (report.publishedSomewhere) {
+          ref.read(profilesProvider.notifier).applyLocal(event);
           Navigator.of(context).pop();
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('Profilo aggiornato')));
+          ).showSnackBar(SnackBar(content: Text(context.l10n.profileUpdated)));
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Nessun relay ha accettato. Riprova più tardi.'),
-            ),
+            SnackBar(content: Text(context.l10n.noRelayAcceptedRetry)),
           );
         }
       }
@@ -89,7 +94,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Modifica profilo'),
+        title: Text(context.l10n.editProfile),
         actions: [
           TextButton(
             onPressed: _saving ? null : _save,
@@ -99,7 +104,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Salva'),
+                : Text(context.l10n.save),
           ),
         ],
       ),
@@ -108,34 +113,34 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         children: [
           TextField(
             controller: _name,
-            decoration: const InputDecoration(
-              labelText: 'Nome',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: context.l10n.fieldName,
+              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _about,
             maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Bio',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: context.l10n.fieldBio,
+              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _picture,
-            decoration: const InputDecoration(
-              labelText: 'URL avatar',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: context.l10n.fieldAvatarUrl,
+              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _nip05,
-            decoration: const InputDecoration(
-              labelText: 'NIP-05 (es. tu@esempio.com)',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: context.l10n.fieldNip05,
+              border: const OutlineInputBorder(),
             ),
           ),
         ],

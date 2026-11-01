@@ -139,6 +139,14 @@ abstract final class NostrKinds {
   static const bookmarks = 10003; // NIP-51
   static const relayList = 10002; // NIP-65
   static const blossomAuth = 24242;
+  static const clientAuth = 22242; // NIP-42
+  static const seal = 13; // NIP-59
+  static const chatMessage = 14; // NIP-17
+  static const fileMessage = 15; // NIP-17
+  static const giftWrap = 1059; // NIP-59
+  static const dmRelayList = 10050; // NIP-17
+  static const blossomServerList = 10063; // BUD-03
+  static const followSet = 30000; // NIP-51 categorised people list
   static const addressableVideo = 34235;
   static const addressableShortVideo = 34236;
 

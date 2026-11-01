@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 
+import '../../../l10n/strings.dart';
 import 'crop_tool.dart';
 import 'image_edit_apply.dart';
 
@@ -127,11 +128,11 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text('Modifica'),
+        title: Text(context.l10n.edit),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Reimposta',
+            tooltip: context.l10n.reset,
             onPressed: _edit.isIdentity && _shape == CropShape.free
                 ? null
                 : _reset,
@@ -145,7 +146,7 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
               );
               Navigator.pop(context, result);
             },
-            child: const Text('Applica'),
+            child: Text(context.l10n.apply),
           ),
         ],
       ),
@@ -164,8 +165,8 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
                   child: Row(
                     children: [
                       for (final (label, shape) in [
-                        ('Libero', CropShape.free),
-                        ('Originale', CropShape.original),
+                        (context.l10n.cropFree, CropShape.free),
+                        (context.l10n.cropOriginal, CropShape.original),
                         ('1:1', CropShape.square),
                         ('4:3', CropShape.fourThree),
                         ('3:2', CropShape.threeTwo),
@@ -187,28 +188,28 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.rotate_right),
-                      tooltip: 'Ruota',
+                      tooltip: context.l10n.rotate,
                       onPressed: _rotate,
                     ),
                     IconButton(
                       icon: const Icon(Icons.flip),
-                      tooltip: 'Rifletti',
+                      tooltip: context.l10n.flip,
                       onPressed: _flip,
                     ),
                   ],
                 ),
                 _slider(
-                  'Luminosità',
+                  context.l10n.brightness,
                   _edit.brightness,
                   (v) => _update(_edit.copyWith(brightness: v)),
                 ),
                 _slider(
-                  'Contrasto',
+                  context.l10n.contrast,
                   _edit.contrast,
                   (v) => _update(_edit.copyWith(contrast: v)),
                 ),
                 _slider(
-                  'Saturazione',
+                  context.l10n.saturation,
                   _edit.saturation,
                   (v) => _update(_edit.copyWith(saturation: v)),
                 ),

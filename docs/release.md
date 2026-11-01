@@ -68,3 +68,13 @@ flutter build ios --release
 ```
 
 iOS compilation has not been verified on a real environment yet.
+
+### Native code added in 0.13.0 that is only verified on Android
+
+- `ios/Runner/AppDelegate.swift` registers the `app.mialuna.social/media`
+  channel (video cover extraction with `AVAssetImageGenerator`). It mirrors
+  `android/.../MediaBridge.kt` but has **never been compiled**: build it on a
+  Mac first. If it fails, the app still works — posters simply fall back to
+  a dark placeholder and new videos publish without a cover.
+- Amber (NIP-55) is Android-only; on iOS use a NIP-46 bunker or a local key.
+  Private messages work with both (NIP-44 goes through the bunker).
