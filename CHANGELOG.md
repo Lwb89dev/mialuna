@@ -3,6 +3,157 @@
 All notable changes to Mialuna are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.16.0] — 2026-11-02 — Stories like Instagram, notifications, a security pass
+
+### Added
+- **Android notifications.** A reaction, comment, zap, new follower or private
+  message that arrives while Mialuna is in the background (but still running)
+  is now a system notification; the bell and the paper plane keep their red
+  counts. Tapping one opens the right screen — the chat, or Notifications — even
+  from a cold start. They need the notification permission (asked in the
+  onboarding, with the media one, or from Settings → System notifications,
+  which is also the on/off switch), come in two channels (social, messages),
+  never show a message's text and read just "New private message" on the lock
+  screen, are limited to 5 a minute per channel (then one summary), and are
+  cleared when the app opens. No push server, no Google messaging: they are
+  made on the phone (see PRIVACY.md).
+- **The story button is always in Home.** Your picture with a plus opens the new
+  story screen — choose a photo or video, write on it, choose who sees it
+  (public or close friends), share. Once you have published, a second circle
+  with your picture shows your stories. **Rings are divided into as many equal
+  parts as the person has stories from the last 24 hours**, new ones in the
+  brand gradient (green for close friends) and watched ones grey. A story you
+  publish is in the rail at once.
+- Sections of the story screen: crop / rotate the photo, caption, text, and
+  Back asks before throwing the story away.
+- `Settings → System notifications`, `SECURITY.md` (what the app does to keep
+  its attack surface small and what it cannot do), `test/android/manifest_test.dart`
+  (fails if permissions, backups, cleartext or exported components change
+  unintentionally), Dependabot, and a `Mialuna Debug` build that installs next
+  to the real app.
+- **Web of trust against spam**, after Outkast's: Settings → Web of trust
+  (off by default). Your network is the people you follow plus everyone
+  followed by at least 10 of them, worked out on the phone from public follow
+  lists, cached per account and refreshed after 12 hours. Only once it has been
+  computed does it filter: comments on posts, reactions / comments / zaps in
+  Notifications (new followers stay), close-friends posts and stories from
+  people outside it, and private messages from strangers, which wait in
+  **Message requests** instead of the inbox, do not count as unread, and move
+  to the inbox when you answer. Discover and Reels are never filtered.
+- **Who watched your stories.** From the note, not from Blossom: the viewer
+  sends the author one gift-wrapped receipt per author (kind 1417), listing the
+  stories watched, readable only by the author. An eye with the count appears
+  in the header of your own stories; tapping it lists the viewers. On by
+  default, off with Settings → "Let people see that I viewed their stories"
+  (see PRIVACY.md).
+- The profile shows the person's **npub** right under the name (tap to copy),
+  and a person with no name is shown by their npub instead of raw hex.
+- **New app icon.** `assets/icons/icon.png` now has transparent corners (it came
+  with black ones); the adaptive Android icon sits on a gradient sampled from
+  it and the iOS icon is a full-bleed square (`tool/launcher/`); every
+  launcher icon was regenerated.
+
+- **Unread indicators in Home.** The bell shows how many notifications
+  (reactions, comments, zaps, new followers) arrived since the notifications
+  screen was last opened; the paper plane shows unread private messages. Both
+  are red numbers (99+ at most), hidden at zero, and the tooltips say the
+  count aloud. The notifications now load for the whole session (they used to
+  exist only while the screen was open), remember what was seen per account,
+  highlight what is new when the screen opens, and show relative times.
+- **Texts over stories, written right on the photo.** Tap the picture (or the
+  text button) and the words appear on it, over the dimmed photo, as you type;
+  fonts, colours, the pill behind the letters and a size slider sit above the
+  keyboard, `#hashtags` are underlined as you write them. Drag, pinch to
+  resize and rotate, tap to edit again, drop on the bin to delete; five fonts,
+  none / solid / veil background, up to 8 texts.
+  The texts are kept as `story-text` tags (see `docs/nostr-compatibility.md`),
+  not baked into the picture, so **`#hashtags` in a story text — and in a story
+  caption — open the search for that tag**, pausing the story. Works for photos
+  and videos, public and close-friends stories (the texts stay inside the
+  encrypted post).
+- Hashtags in posts opened on their own (from Discover, a message, a profile)
+  are tappable too; they used to be highlighted but dead.
+
+### Security and privacy
+- Android: `allowBackup=false` and empty backup / device-transfer rules (the
+  decrypted messages no longer reach a cloud backup), no cleartext and no
+  user-installed CAs in release builds (debug may reach `localhost` only), R8
+  shrinking, release signing from `android/key.properties`, a policy test of the
+  manifest; the messages screens, the friends list and close-friends stories are
+  `FLAG_SECURE` (no screenshots, blank recents preview) and the keyboard is asked
+  not to learn from messages and comments.
+- Servers that somebody else chose (NIP-05 domains, Lightning addresses, LNURL
+  callbacks) are only reached on `https`, public hosts — by name and by what the
+  name resolves to — with no redirects and answers cut at 128 KB. The invoice
+  a Lightning server returns must match the amount you chose before the wallet
+  pays; a Lightning address can no longer smuggle a port, path or credentials.
+- Relays: plain `ws://` only to your own network, messages above 6 MB are
+  dropped; relay URLs from a bunker or wallet link are filtered the same way.
+- A zap receipt only names a sender whose signed zap request it carries, and
+  takes the amount from the paid invoice: nobody can put another name or a
+  bigger sum on a zap.
+- Signing out removes everything the account left behind: wallet link,
+  decrypted messages and close-friends posts, the friends list, the web of
+  trust, caches, drafts and the account's preferences (they used to survive and
+  would have been published with the next account's lists).
+- Very long texts of other people's posts, comments, messages and story
+  captions are cut at 5000 characters before they are laid out.
+- CI: read-only token, actions pinned to a commit, no persisted credentials.
+
+### Changed
+- Stories and the story editor open over the whole screen (the bottom bar used
+  to stay visible under them).
+- Settings → Clear cache says what it clears: the feed caches (messages go when
+  you sign out) — PRIVACY.md was wrong about it.
+- **Home answers faster.** It no longer starts as a guest (and loads Discover)
+  while the saved session is being read; the last session's posts are painted
+  before anything is asked of the network (they used to wait for the follow
+  list, up to 10 s); the follow list is remembered on the device; the
+  pull-to-refresh spinner stops after 4 s even if a relay is slow while the
+  load continues; pictures start loading 1500 px ahead, are no longer
+  re-encoded to PNG on disk, and a bookmark no longer rebuilds every card.
+- Picking a picture for a **story** now uses the system picker's
+  single-choice mode instead of multi-select with a limit.
+
+### Fixed
+- A person with no name showed their npub twice in the profile.
+- The "Seen by" setting and the notification switch could be undone by their
+  own late loading (a race at start-up).
+- Orphan strings and a stale launcher colour were removed.
+- A friend added to the close-friends list right at start-up was undone by the
+  list saved on disk loading a moment later.
+- The list of stories already reported to their authors is per account, not
+  per device.
+- Hashtags with accents or non-Latin letters were cut at the first one
+  (`#città` became `#citt`) in captions, tags and search.
+- Home could show nothing — or stop paging — when a followed account had a
+  page of stories in the relays' answer: paging now follows the oldest event
+  received, not the oldest post shown, and keeps looking a few pages back.
+- Saving a post or muting someone replaced the whole NIP-51 list with only what
+  Mialuna knows, erasing other clients' entries (muted words and threads,
+  addressable bookmarks, private entries). They are kept now, and nothing is
+  republished before the relay copy was read.
+- The unread badge of the paper plane flashed a big number during the very
+  first sync of a device.
+- The photo editor crashed on pictures the `image` package cannot read (HEIC);
+  it now says so.
+- Concurrent cache writes (a draft is saved at every keystroke) could leave a
+  truncated JSON file; operations on a file are now serialised, and a draft
+  deleted after publishing cannot come back.
+- A late story or reel load could touch a disposed provider.
+- Smaller: thumbnails in the composer lost their identity when reordered; the
+  private-post store redrew every private card each minute; a provider
+  keep-alive leaked on every account/block change; swiping between creators in
+  the story viewer started from the first story instead of the first unseen
+  one, and "back" on the very first story did nothing.
+
+### Tests
+- `FakeRelay` now answers like a real relay (newest first, `limit` honoured).
+- New: hashtags, story texts (model, parsing of hostile input, rendering,
+  editor gestures, end-to-end public and close-friends publishing), the
+  notifications flow, DM unread counting, NIP-51 preservation, paging through
+  stories, the Home badges; the layout matrix includes the Home bar.
+
 ## [0.15.0] — 2026-11-01 — Close friends, theme, support
 
 ### Added

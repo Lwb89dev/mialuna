@@ -439,6 +439,30 @@ void main() {
     );
   });
 
+  test(
+    'a friend added right at start-up joins the saved list, not replaces it',
+    () async {
+      final dir = Directory.systemTemp.createTempSync('mialuna_cf_');
+      File('${dir.path}/close_friends_${alice.publicKey}.json')
+          .writeAsStringSync(
+            jsonEncode({
+              'members': [carol.publicKey],
+              'updated_at': 1,
+              'dirty': false,
+            }),
+          );
+      final a = app(alice, dir: dir);
+      // No waiting: this is what tapping "add" a moment after launch does.
+      await a.read(closeFriendsProvider.notifier).add([bob.publicKey]);
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      expect(a.read(closeFriendsProvider).members.toSet(), {
+        carol.publicKey,
+        bob.publicKey,
+      });
+    },
+  );
+
   test('a public event cannot pose as a private post', () {
     final fake = NostrEvent(
       id: 'a' * 64,

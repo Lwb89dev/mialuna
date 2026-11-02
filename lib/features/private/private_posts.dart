@@ -8,6 +8,7 @@ import '../../core/nostr/event.dart';
 import '../../core/nostr/models/comment.dart';
 import '../../core/nostr/models/media_event.dart';
 import '../../core/nostr/nip59.dart';
+import '../trust/web_of_trust_controller.dart';
 
 /// What a close-friends post gathered: likes and private replies, all of
 /// them delivered to the author inside gift wraps — never on a public relay.
@@ -58,14 +59,16 @@ class PrivatePostsController extends Notifier<PrivatePostsState> {
       _saveTimer?.cancel();
       _expiryTimer?.cancel();
     });
+    ref.listen(trustFilterProvider, (_, _) => _publish());
     _posts.clear();
     _interactions.clear();
     _pub = pub;
     // Stories disappear by themselves after 24 hours.
-    _expiryTimer = Timer.periodic(
-      const Duration(minutes: 1),
-      (_) => _publish(),
-    );
+    _expiryTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      // Rebuilding the state every minute would redraw every private card.
+      if (state.posts.any((p) => p.isExpired(now))) _publish();
+    });
     if (pub == null) return const PrivatePostsState();
     Future.microtask(() => _load(generation));
     return const PrivatePostsState();
@@ -117,10 +120,15 @@ class PrivatePostsController extends Notifier<PrivatePostsState> {
 
   void _publish() {
     final me = _pub;
+    final trust = ref.read(trustFilterProvider);
     final posts = <MediaPost>[];
     for (final rumor in _posts.values) {
       final post = _toPost(rumor);
-      if (post != null && !post.isExpired()) posts.add(post);
+      if (post == null || post.isExpired()) continue;
+      // Anybody can gift-wrap a "close friends" post to anybody: with the web
+      // of trust on, only those of people you trust reach Home and the rail.
+      if (post.author != me && !trust.allows(post.author)) continue;
+      posts.add(post);
     }
     posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     final byPost = <String, List<Rumor>>{};

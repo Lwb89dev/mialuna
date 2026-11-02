@@ -19,10 +19,15 @@ class ReelsController extends Notifier<ReelsState> {
   final Map<String, MediaPost> _byId = {};
   Timer? _flushTimer;
   Future<void>? _running;
+  bool _disposed = false; // a load may end after the provider is gone
 
   @override
   ReelsState build() {
-    ref.onDispose(() => _flushTimer?.cancel());
+    _disposed = false;
+    ref.onDispose(() {
+      _disposed = true;
+      _flushTimer?.cancel();
+    });
     ref.listen(muteProvider, (_, _) => _commit());
     ref.listen(blockProvider, (_, _) => _commit());
     ref.listen(brokenMediaProvider, (_, _) => _commit());
@@ -64,6 +69,7 @@ class ReelsController extends Notifier<ReelsState> {
   }
 
   void _commit() {
+    if (_disposed) return;
     final muted = ref.read(muteProvider);
     final blocked = ref.read(blockProvider);
     final broken = ref.read(brokenMediaProvider);

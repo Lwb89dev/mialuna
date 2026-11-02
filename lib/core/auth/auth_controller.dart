@@ -12,7 +12,12 @@ const _bunkerUrlKey = 'mialuna_bunker_url';
 
 class AuthState {
   final Signer signer;
-  const AuthState(this.signer);
+
+  /// The saved session is still being read from secure storage (or a remote
+  /// signer is being reached): [signer] is a guest placeholder for now.
+  /// Screens that would start work as a guest wait for this to end.
+  final bool restoring;
+  const AuthState(this.signer, {this.restoring = false});
 
   bool get isGuest => signer.type == SignerType.guest;
   String? get publicKey => signer.publicKey;
@@ -25,7 +30,7 @@ class AuthController extends Notifier<AuthState> {
   );
 
   @override
-  AuthState build() => AuthState(GuestSigner());
+  AuthState build() => AuthState(GuestSigner(), restoring: true);
 
   /// Restores a previous session (nsec or Amber) from secure storage.
   Future<void> restore() async {
@@ -47,6 +52,9 @@ class AuthController extends Notifier<AuthState> {
       }
     } catch (_) {
       state = AuthState(GuestSigner());
+    } finally {
+      // Nothing saved: this really is a guest.
+      if (state.restoring) state = AuthState(state.signer);
     }
   }
 

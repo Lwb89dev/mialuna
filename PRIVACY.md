@@ -17,6 +17,33 @@ standard stop distributing them after expiry, but **we cannot guarantee
 deletion** from relays, archives or media storage servers. Anyone can save
 or screenshot them.
 
+## Who watched your stories
+
+When you watch a story, Mialuna can tell its author. It does so with one
+private message per author (NIP-17/NIP-59 gift wrap, like private likes and
+replies): it lists the stories you watched, is encrypted so that only the
+author can read it, and is published only to the author's inbox relays. Relays
+see a message from a throw-away key to the author, not who watched nor what.
+Nothing is asked of, or sent to, any media server. The author sees your name
+in the list of viewers of their own story, nobody else does.
+
+It is on by default and **Settings → "Let people see that I viewed their
+stories"** turns it off, after which nothing is sent. A story you already
+reported is not reported again. Receipts that reach you are kept on this
+device for three days.
+
+## Web of trust (optional)
+
+Settings → Web of trust is off by default. When on, Mialuna works out on this
+phone whom to trust — the people you follow, and whoever is followed by at
+least ten of them — by reading the follow lists (kind 3) that relays already
+publish, and hides comments, notifications, private posts and messages from
+everyone else (messages wait in "message requests"; Discover is never
+filtered). The result is kept on this device; nothing is sent to any server
+and no third-party scoring service is used. Asking relays for the follow lists
+of the people you follow does reveal, to those relays, whose lists you asked
+for.
+
 ## Keys
 
 - **Amber (recommended)**: the private key never enters Mialuna.
@@ -68,10 +95,30 @@ relays you use. A message can be read by whoever holds the recipient's key;
 Nostr cannot make a recipient forget what they received.
 
 Decrypted messages are kept in the app's private storage on this device so
-they do not have to be decrypted again at every start. They are removed
-when you clear the cache and are not synced anywhere by Mialuna. The key
-operations stay in Amber / your bunker; with Amber's "remember my choice",
-decryption happens silently through Amber's content provider.
+they do not have to be decrypted again at every start. They are removed when
+you **sign out** (Settings → Clear cache only empties the feed caches, not
+your messages), are excluded from Android's cloud backup and device-to-device
+transfer, and are not synced anywhere by Mialuna. The key operations stay in
+Amber / your bunker; with Amber's "remember my choice", decryption happens
+silently through Amber's content provider.
+
+The messages screens and the close-friends list are marked secure: Android
+blocks screenshots and screen recordings of them and shows a blank preview in
+the recent-apps list. The keyboard is asked not to learn from what you type in
+messages and comments (incognito mode, where the keyboard supports it).
+
+## Notifications on your phone
+
+Mialuna shows an Android notification when a reaction, comment, zap, follower
+or private message arrives while the app is in the background but still
+running. They are made on the phone from the events it receives from your
+relays: **there is no push server, no Firebase / Google messaging and no
+Mialuna account that learns anything**. A message notification never contains
+the message — only who wrote — and on the lock screen it reads just "New
+private message". Notifications are limited to a handful per minute, are
+cleared when you open the app, and can be turned off in Settings → System
+notifications or in Android's settings. Because Android stops apps that sit
+idle for long, they arrive only while Mialuna is still alive.
 
 ## Relay lists
 
@@ -86,4 +133,19 @@ looked up on that domain's web server.
 ## Local data
 
 Event caches, profiles, relay lists of other people, private messages and
-drafts stay on the device and can be wiped from the settings.
+drafts stay on the device. **Settings → Clear cache** empties the feed caches.
+**Signing out** removes everything the account left on the phone: the key, the
+wallet link (a Nostr Wallet Connect secret is the right to spend), decrypted
+messages and close-friends posts, the friends list, the web of trust, every
+cache and draft, and the account's own preferences (saved posts, muted people,
+blocks, watched stories). Nothing is included in Android backups.
+
+## What other servers learn
+
+Every image and video is fetched from the host a post names, which therefore
+sees your IP address and the time, as with any Nostr client; Mialuna only
+fetches `http(s)` addresses of public hosts. Opening a profile whose name is
+`name@domain` makes one request to that domain to verify it (no redirects, no
+credentials, nothing but the answer is read). Zaps ask the recipient's Lightning
+server for an invoice; the invoice amount is checked against the one you chose
+before the wallet is asked to pay.

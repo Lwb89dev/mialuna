@@ -16,6 +16,9 @@ import '../private/close_friends.dart';
 import '../private/close_friends_screen.dart';
 import '../profile/profile_widgets.dart';
 import '../social/moderation_controller.dart';
+import '../stories/story_views_setting.dart';
+import 'system_notifications_tile.dart';
+import '../trust/trust_section.dart';
 import 'settings_controller.dart';
 import 'support_section.dart';
 
@@ -405,6 +408,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
           const SizedBox(height: 24),
+          const SystemNotificationsTile(),
+          const SizedBox(height: 16),
+          const TrustSection(),
+          const SizedBox(height: 16),
+          const StoryViewsSetting(),
+          const SizedBox(height: 24),
           Text(context.l10n.storage, style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           OutlinedButton.icon(
@@ -451,7 +460,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   void _addRelay(AppSettings settings) {
     final url = normalizeRelayUrl(_relayController.text);
-    if (url == null) {
+    if (url == null || !isAcceptableRelayUrl(url)) {
       _toast(context.l10n.invalidRelayAddress);
       return;
     }

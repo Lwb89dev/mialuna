@@ -1,3 +1,5 @@
+import '../text/hashtags.dart';
+
 /// Central branding policy for the official hashtag. Every media post
 /// published through Mialuna carries #mialuna; this is the single place
 /// where that rule lives.
@@ -14,7 +16,7 @@ abstract final class MialunaTag {
   }
 
   static bool hasHashtag(String caption) =>
-      RegExp('#$hashtag\\b', caseSensitive: false).hasMatch(caption);
+      Hashtags.extract(caption).contains(hashtag);
 
   /// Ensures the `["t", "mialuna"]` tag exists exactly once.
   static List<List<String>> applyToTags(List<List<String>> tags) {

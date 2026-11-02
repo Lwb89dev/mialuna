@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../../l10n/strings.dart';
+import '../net/safe_http.dart';
 import '../nostr/bech32.dart';
+import 'bolt11.dart';
 import '../nostr/event.dart';
 import '../nostr/signer.dart';
 
@@ -51,31 +53,40 @@ class ZapReceipt {
     this.eventId,
   });
 
-  /// Extracts the embedded zap request from the receipt's `description`
-  /// tag. Returns null when the receipt is malformed.
+  /// Extracts the zap request embedded in the receipt's `description` tag.
+  /// Returns null when the receipt is malformed — or when it cannot be
+  /// trusted to say who zapped: the request must be a kind 9734 whose
+  /// signature checks out (so nobody can put somebody else's name on a zap)
+  /// and that is addressed to the same person as the receipt. The amount is
+  /// the one of the paid invoice (`bolt11`), which is what was actually
+  /// asked for, rather than what the sender claims.
   static ZapReceipt? fromEvent(NostrEvent event) {
     if (event.kind != NostrKinds.zapReceipt) return null;
     final description = event.firstTagValue('description');
     if (description == null) return null;
     try {
-      final request = jsonDecode(description) as Map<String, dynamic>;
-      final sender = request['pubkey'] as String?;
-      if (sender == null) return null;
-      final tags = (request['tags'] as List?) ?? const [];
-      var amountMsats = 0;
-      String? eventId;
-      for (final tag in tags) {
-        if (tag is! List || tag.length < 2) continue;
-        if (tag[0] == 'amount') {
-          amountMsats = int.tryParse('${tag[1]}') ?? 0;
-        } else if (tag[0] == 'e') {
-          eventId = '${tag[1]}';
-        }
+      final request = NostrEvent.fromJson(
+        jsonDecode(description) as Map<String, dynamic>,
+      );
+      if (request.kind != NostrKinds.zapRequest ||
+          !verifyEventSignature(request) ||
+          request.firstTagValue('p') != event.firstTagValue('p')) {
+        return null;
       }
+      var requested = 0;
+      String? eventId;
+      for (final tag in request.tags) {
+        if (tag.length < 2) continue;
+        if (tag[0] == 'amount') requested = int.tryParse(tag[1]) ?? 0;
+        if (tag[0] == 'e') eventId = tag[1];
+      }
+      final bolt11 = event.firstTagValue('bolt11');
+      final paid = bolt11 == null ? null : Bolt11.amountMsats(bolt11);
+      final msats = paid?.toInt() ?? requested;
       return ZapReceipt(
-        sender: sender,
-        amountSats: amountMsats ~/ 1000,
-        comment: request['content'] as String? ?? '',
+        sender: request.pubkey,
+        amountSats: msats ~/ 1000,
+        comment: request.content,
         eventId: eventId,
       );
     } catch (_) {
@@ -98,37 +109,49 @@ class ZapService {
     return profileJson['lud06'] as String?; // bech32 LNURL
   }
 
-  /// Fetches the recipient's LNURL-pay parameters (callback, limits).
+  /// `name@domain.tld`, nothing else: no port, path, query or credentials
+  /// can ride along in a Lightning address.
+  static final _lud16 = RegExp(
+    r'^([a-z0-9._+-]{1,64})@([a-z0-9-]+(?:\.[a-z0-9-]+)+)$',
+  );
+
+  /// Fetches the recipient's LNURL-pay parameters (callback, limits). Only
+  /// public https hosts are contacted (see [SafeHttp]).
   Future<LnurlPayInfo> fetchPayInfo(String addressOrLnurl) async {
     final Uri wellKnown;
     if (addressOrLnurl.contains('@')) {
-      final parts = addressOrLnurl.split('@');
-      wellKnown = Uri.parse(
-        'https://${parts[1]}/.well-known/lnurlp/${parts[0]}',
-      );
+      final m = _lud16.firstMatch(addressOrLnurl.trim().toLowerCase());
+      if (m == null) throw const ZapException('Invalid Lightning address');
+      wellKnown = Uri.https(m.group(2)!, '/.well-known/lnurlp/${m.group(1)}');
     } else {
       // lud06: bech32-encoded LNURL
       final (hrp, data) = Bech32.decode(addressOrLnurl);
       if (hrp != 'lnurl') throw const ZapException('Invalid lud06');
       wellKnown = Uri.parse(utf8.decode(data));
     }
-    final resp = await _http.get(wellKnown);
-    if (resp.statusCode != 200) {
-      throw ZapException('LNURL endpoint unreachable (${resp.statusCode})');
+    final Object? decoded;
+    try {
+      decoded = await SafeHttp.getJson(wellKnown, client: _http);
+    } on SafeHttpException catch (e) {
+      throw ZapException('LNURL endpoint: ${e.message}');
     }
-    final json = jsonDecode(resp.body) as Map<String, dynamic>;
+    if (decoded is! Map) throw const ZapException('LNURL answer unreadable');
+    final json = decoded;
     if (json['allowsNostr'] != true) {
       throw ZapException(AppStrings.current.zapNotSupported);
     }
-    final callback = json['callback'] as String?;
-    if (callback == null) throw const ZapException('LNURL callback missing');
-    final minMsats = json['minSendable'] as int? ?? 1000;
-    final maxMsats = json['maxSendable'] as int? ?? 100000000000;
+    final callback = json['callback'];
+    if (callback is! String || Uri.tryParse(callback)?.scheme != 'https') {
+      throw const ZapException('LNURL callback missing or not https');
+    }
+    int whole(Object? v, int fallback) => v is num ? v.toInt() : fallback;
+    final minMsats = whole(json['minSendable'], 1000);
+    final maxMsats = whole(json['maxSendable'], 100000000000);
     return LnurlPayInfo(
       callback: callback,
       minSats: (minMsats / 1000).ceil(),
       maxSats: maxMsats ~/ 1000,
-      commentAllowed: json['commentAllowed'] as int? ?? 0,
+      commentAllowed: whole(json['commentAllowed'], 0),
     );
   }
 
@@ -164,21 +187,32 @@ class ZapService {
       content: comment,
     );
 
-    final uri = Uri.parse(info.callback).replace(
+    final callback = Uri.parse(info.callback);
+    final uri = callback.replace(
+      // A callback may carry a query of its own (`?k1=…`): keep it.
       queryParameters: {
+        ...callback.queryParameters,
         'amount': '$amountMsats',
         'nostr': jsonEncode(zapRequest.toJson()),
         if (comment.isNotEmpty) 'comment': comment,
       },
     );
-    final resp = await _http.get(uri);
-    if (resp.statusCode != 200) {
-      throw ZapException('LNURL callback failed (${resp.statusCode})');
+    final Object? decoded;
+    try {
+      decoded = await SafeHttp.getJson(uri, client: _http);
+    } on SafeHttpException catch (e) {
+      throw ZapException('LNURL callback: ${e.message}');
     }
-    final json = jsonDecode(resp.body) as Map<String, dynamic>;
-    final pr = json['pr'] as String?;
-    if (pr == null) {
-      throw ZapException(json['reason'] as String? ?? 'No invoice returned');
+    final json = decoded is Map ? decoded : const {};
+    final pr = json['pr'];
+    if (pr is! String) {
+      final reason = json['reason'];
+      throw ZapException(reason is String ? reason : 'No invoice returned');
+    }
+    // What would be paid must be what was asked for: a Nostr Wallet Connect
+    // wallet pays at once, with no screen to check the amount on.
+    if (Bolt11.amountMsats(pr) != BigInt.from(amountMsats)) {
+      throw ZapException(AppStrings.current.zapInvoiceMismatch);
     }
     return ZapInvoice(pr, amountSats);
   }

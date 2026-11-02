@@ -20,11 +20,16 @@ device (or another platform), [>] being worked on now, [ ] not started.
 
 - [x] Stories (kind 20/22 + NIP-40 + `mialuna.story` label), viewer, seen/unseen ring
 - [x] Discover tab (Scopri): global media grid, hashtag / words search, `#mialuna`
+- [x] Texts over stories, written right on the photo like Instagram (drag / pinch / rotate,
+  fonts, backgrounds, size slider) with tappable hashtags
+- [x] Story button always in the rail (your picture with a plus), a second circle with your
+  stories once published, rings divided into one part per story of the last 24 hours
 - [x] People search by name (local profiles, NIP-50 relays, NIP-05)
 
 ## Phase 4 — Polish and social
 
 - [x] Notifications, zaps (NIP-57, NWC), bookmarks and mute lists (NIP-51), block, reports
+- [x] Unread indicators on the bell and on the paper plane of Home
 - [x] Photo editor (crop, rotate, flip, light), alt text
 - [x] Light / dark / follow-system theme (Settings), Lightning support button
 
@@ -87,9 +92,16 @@ encrypted in memory, limited to 120 MB).
 
 ## Next
 
+- [x] Web of trust against spam (after Outkast): comments, notifications, close-friends
+  posts, message requests; zap receipts must carry a signed request addressed to you
+- [x] Android system notifications for reactions, comments, zaps, followers and messages while
+  the app is running in the background (no push server)
+- [x] Hardening pass: network policy, safe fetching of third-party servers, `FLAG_SECURE` on
+  private screens, no backups, R8, sign-out wipes the account, pinned CI actions
+- [x] Who watched your stories, from the note (gift-wrapped receipts to the author)
 - [ ] Resumable / chunked uploads and a foreground service for big videos
 - [ ] Drift/SQLite instead of the JSON cache
-- [ ] Notifications while the app is closed (needs a relay-side push or a foreground service)
+- [ ] Notifications while the process is dead (needs a relay-side push or a foreground service)
 - [ ] Publishing to NIP-96 servers as a fallback
 - [~] iOS: the Swift video-cover bridge and Amber-less flows have never been compiled or run
 

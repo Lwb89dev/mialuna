@@ -1379,4 +1379,241 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get languageItalian => 'Italiano';
+
+  @override
+  String get cannotEditPhoto => 'Questa foto non si può modificare qui.';
+
+  @override
+  String notificationsNew(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nuove notifiche',
+      one: '1 nuova notifica',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String messagesUnread(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count messaggi non letti',
+      one: '1 messaggio non letto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get done => 'Fatto';
+
+  @override
+  String get storyAddText => 'Aggiungi testo';
+
+  @override
+  String get storyEditText => 'Modifica testo';
+
+  @override
+  String get storyTextHint => 'Scrivi qualcosa… gli #hashtag sono cliccabili';
+
+  @override
+  String get storyTextsHelp =>
+      'Tocca la foto per scrivere. Trascina per spostare, pizzica per ingrandire e ruotare, tocca un testo per modificarlo.';
+
+  @override
+  String storyTextsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count testi',
+      one: '1 testo',
+      zero: 'Nessun testo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get storyFontClassic => 'Classico';
+
+  @override
+  String get storyFontBold => 'Grassetto';
+
+  @override
+  String get storyFontSerif => 'Serif';
+
+  @override
+  String get storyFontMono => 'Mono';
+
+  @override
+  String get storyFontItalic => 'Corsivo';
+
+  @override
+  String get storyTextBackground => 'Sfondo del testo';
+
+  @override
+  String get storyTextColor => 'Colore del testo';
+
+  @override
+  String storyTextLimit(int max) {
+    return 'Puoi aggiungere al massimo $max testi.';
+  }
+
+  @override
+  String get wotTitle => 'Rete di fiducia';
+
+  @override
+  String get wotEnable => 'Filtra lo spam con la tua rete di fiducia';
+
+  @override
+  String wotExplain(int min) {
+    return 'Nasconde commenti, notifiche, post privati e messaggi di chi non segui e non è seguito da almeno $min delle persone che segui. Calcolata su questo telefono dalle liste dei follow pubbliche; non viene inviato nulla a nessun server. Scopri non viene mai filtrato.';
+  }
+
+  @override
+  String get wotRefresh => 'Aggiorna la rete ora';
+
+  @override
+  String get wotStatusIdle =>
+      'Non ancora calcolata. Attiva il filtro, o aggiorna, per costruire la tua rete.';
+
+  @override
+  String wotStatusDiscovering(int done, int total) {
+    return 'Controllo chi seguono i tuoi follow… $done di $total';
+  }
+
+  @override
+  String wotStatusComplete(int direct, int indirect, Object when) {
+    return 'La tua rete: $direct persone che segui più $indirect seguite da abbastanza di loro. Aggiornata $when.';
+  }
+
+  @override
+  String wotStatusFailed(Object reason) {
+    return 'Impossibile calcolare la rete: $reason';
+  }
+
+  @override
+  String get wotNoFollows => 'non segui ancora nessuno';
+
+  @override
+  String get messageRequests => 'Richieste di messaggi';
+
+  @override
+  String messageRequestsSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count conversazioni da fuori della tua rete di fiducia',
+      one: '1 conversazione da fuori della tua rete di fiducia',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get messageRequestsHint =>
+      'Da persone fuori dalla tua rete di fiducia. Non contano come non lette. Rispondi per spostare una conversazione nella posta in arrivo.';
+
+  @override
+  String get storyViewsSetting => 'Fai sapere che ho visto le loro storie';
+
+  @override
+  String get storyViewsSettingExplain =>
+      'Quando guardi una storia, all\'autore arriva una ricevuta cifrata che solo lui può leggere. Riporta il tuo nome accanto al suo; i relay non vedono nulla. Disattivalo per guardare senza lasciare traccia.';
+
+  @override
+  String storySeenBy(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Visto da $count persone',
+      one: 'Visto da 1 persona',
+      zero: 'Nessuna visualizzazione',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get storyViewsEmpty =>
+      'Nessuno ha ancora guardato questa storia, oppure le ricevute non ti sono arrivate.';
+
+  @override
+  String get storyViewsHint =>
+      'Mandano la ricevuta solo le persone che lo consentono, quindi il numero reale può essere più alto.';
+
+  @override
+  String get systemNotifications => 'Notifiche di sistema';
+
+  @override
+  String get systemNotificationsExplain =>
+      'Mostra una notifica sul telefono quando arriva qualcosa di nuovo mentre Mialuna è in background. I messaggi privati non mostrano mai il testo, nemmeno nella schermata di blocco. Android mette in pausa le app che restano a lungo in background, quindi le notifiche arrivano finché Mialuna è ancora in esecuzione.';
+
+  @override
+  String get systemNotificationsBlocked =>
+      'Le notifiche sono disattivate per Mialuna nelle impostazioni del telefono.';
+
+  @override
+  String get systemNotificationsOpenSettings => 'Apri impostazioni';
+
+  @override
+  String get systemNotificationMessage => 'ti ha scritto un messaggio privato';
+
+  @override
+  String get systemNotificationNewMessage => 'Nuovo messaggio privato';
+
+  @override
+  String get systemNotificationNew => 'Nuova notifica';
+
+  @override
+  String get notificationChannelSocial => 'Reazioni, commenti, zap e follower';
+
+  @override
+  String get notificationChannelMessages => 'Messaggi privati';
+
+  @override
+  String get zapInvoiceMismatch =>
+      'La fattura non corrisponde all\'importo scelto. Non è stato pagato nulla.';
+
+  @override
+  String get storyYourStory => 'La tua storia';
+
+  @override
+  String get storyNew => 'Nuova storia';
+
+  @override
+  String get storyAddSemantics => 'Aggiungi alla tua storia';
+
+  @override
+  String storyOwnRailLabel(int count, Object state) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count storie',
+      one: '1 storia',
+    );
+    return 'La tua storia, $_temp0, $state';
+  }
+
+  @override
+  String get storyTextSize => 'Dimensione del testo';
+
+  @override
+  String get storyPickPrompt => 'Scegli una foto o un video per la tua storia';
+
+  @override
+  String get storyEditPhoto => 'Modifica foto';
+
+  @override
+  String get storyCaption => 'Didascalia';
+
+  @override
+  String get storyDiscardTitle => 'Scartare questa storia?';
+
+  @override
+  String get storyDiscard => 'Scarta';
+
+  @override
+  String get storyShare => 'Condividi';
+
+  @override
+  String get storyShared => 'Storia condivisa';
 }

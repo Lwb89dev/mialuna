@@ -220,6 +220,24 @@ class SettingsController extends Notifier<AppSettings> {
     await _persist();
   }
 
+  /// Signing out: the relays stay (they are public), but the list no longer
+  /// belongs to anyone, so the next account neither inherits nor publishes
+  /// the previous one's edits.
+  Future<void> detachAccount() async {
+    state = AppSettings(
+      relays: state.relays,
+      blossomServers: state.blossomServers,
+      relayListOwner: null,
+      relayListCreatedAt: 0,
+      blossomListCreatedAt: 0,
+      relayListDirty: false,
+      dataSaver: state.dataSaver,
+      themeMode: state.themeMode,
+      language: state.language,
+    );
+    await _persist();
+  }
+
   /// Claims the current list for [pubkey] without changing it (first login
   /// of an account that has no published list yet).
   Future<void> claimRelayList(String pubkey) async {

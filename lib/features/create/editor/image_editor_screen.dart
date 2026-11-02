@@ -24,7 +24,7 @@ class ImageEditorScreen extends StatefulWidget {
     BuildContext context, {
     required Uint8List bytes,
     String mimeType = 'image/jpeg',
-  }) => Navigator.of(context).push<Uint8List>(
+  }) => Navigator.of(context, rootNavigator: true).push<Uint8List>(
     MaterialPageRoute(
       builder: (_) => ImageEditorScreen(bytes: bytes, mimeType: mimeType),
     ),
@@ -38,6 +38,10 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
   late final img.Image _source;
   late final img.Image _previewSource;
   late Uint8List _previewBytes;
+
+  /// The bytes are a format the `image` package cannot read (HEIC, a
+  /// corrupt file…): the screen says so instead of crashing.
+  bool _undecodable = false;
 
   ImageEdit _edit = const ImageEdit();
   CropShape _shape = CropShape.free;
@@ -56,7 +60,8 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
     super.initState();
     final decoded = img.decodeImage(widget.bytes);
     if (decoded == null) {
-      throw ArgumentError('undecodable image');
+      _undecodable = true;
+      return;
     }
     _source = decoded;
     _previewSource = img.copyResize(
@@ -124,6 +129,25 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    if (_undecodable) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          title: Text(context.l10n.edit),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Text(
+              context.l10n.cannotEditPhoto,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white70),
+            ),
+          ),
+        ),
+      );
+    }
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(

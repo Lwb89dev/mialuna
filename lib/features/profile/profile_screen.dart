@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
+import '../../app/sign_out.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/event.dart';
 import '../../core/nostr/filter.dart';
@@ -20,7 +21,6 @@ import '../explore/explore_screen.dart';
 import '../feed/widgets/post_card.dart';
 import '../messages/chat_screen.dart';
 import '../messages/dm_controller.dart';
-import '../private/private_posts.dart';
 import '../settings/settings_screen.dart';
 import '../social/follow_controller.dart';
 import '../social/moderation_controller.dart';
@@ -207,7 +207,7 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(meta?.label ?? ProfileMetadata.shortPubkey(target)),
+        title: Text(meta?.label ?? ProfileMetadata.shortNpub(target)),
         actions: [
           if (isSelf) ...[
             IconButton(
@@ -221,10 +221,9 @@ class ProfileScreen extends ConsumerWidget {
               icon: const Icon(Icons.logout),
               tooltip: context.l10n.signOut,
               onPressed: () async {
-                // Close-friends posts and decrypted videos leave with you.
-                await ref.read(privatePostsProvider.notifier).clear();
-                await ref.read(privateMediaProvider).cleanUp(everything: true);
-                await ref.read(authProvider.notifier).logout();
+                // The key, the wallet link, decrypted messages and close
+                // friends' posts, caches and preferences all leave with you.
+                await ref.read(signOutProvider)();
                 if (context.mounted) context.go('/login');
               },
             ),
@@ -395,10 +394,9 @@ class _ProfileHeader extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            meta?.label ?? ProfileMetadata.shortPubkey(pubkey),
-            style: theme.textTheme.titleMedium,
-          ),
+          // With no name the npub *is* the name: shown once, still copyable.
+          if (meta?.givenName != null)
+            Text(meta!.label, style: theme.textTheme.titleMedium),
           if (meta?.handle != null)
             Text(
               meta!.handle!,
@@ -406,6 +404,11 @@ class _ProfileHeader extends ConsumerWidget {
                 color: theme.colorScheme.outline,
               ),
             ),
+          // The key right under the name: who this really is, one tap to copy.
+          _NpubLine(
+            npub: npub,
+            style: meta?.givenName == null ? theme.textTheme.titleMedium : null,
+          ),
           if (nip05 != null)
             Padding(
               padding: const EdgeInsets.only(top: 2),
@@ -482,27 +485,10 @@ class _ProfileHeader extends ConsumerWidget {
               ],
             ],
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(
-                '${npub.substring(0, 14)}…${npub.substring(npub.length - 6)}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.outline,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.copy, size: 18),
-                tooltip: context.l10n.copyNpub,
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: npub));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(context.l10n.npubCopied)),
-                  );
-                },
-              ),
-              if (isSelf)
+          if (isSelf) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              children: [
                 Chip(
                   avatar: const Icon(Icons.key, size: 16),
                   label: Text(switch (auth.signer.type) {
@@ -512,8 +498,9 @@ class _ProfileHeader extends ConsumerWidget {
                     SignerType.guest => context.l10n.loginGuest,
                   }),
                 ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -592,6 +579,53 @@ class _MediaGrid extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// `npub1abc…xyz` that copies the whole key when tapped.
+class _NpubLine extends StatelessWidget {
+  final String npub;
+
+  /// Overrides the quiet caption style (the npub standing in for a name).
+  final TextStyle? style;
+  const _NpubLine({required this.npub, this.style});
+
+  void _copy(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: npub));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(context.l10n.npubCopied)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final style =
+        this.style ??
+        Theme.of(context).textTheme.bodySmall
+            ?.copyWith(color: Theme.of(context).colorScheme.outline);
+    return Tooltip(
+      message: context.l10n.copyNpub,
+      child: InkWell(
+        onTap: () => _copy(context),
+        borderRadius: BorderRadius.circular(6),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  '${npub.substring(0, 14)}…${npub.substring(npub.length - 6)}',
+                  style: style,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Icon(Icons.copy, size: 14, color: style?.color),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -59,7 +59,7 @@ class BunkerSigner extends Signer {
     final relays = [
       for (final r in uri.queryParametersAll['relay'] ?? const <String>[])
         ?normalizeRelayUrl(r),
-    ];
+    ].where(isAcceptableRelayUrl).toList();
     if (relays.isEmpty) {
       throw BunkerException(AppStrings.current.bunkerNoRelay);
     }

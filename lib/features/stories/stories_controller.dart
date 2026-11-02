@@ -40,11 +40,17 @@ class StoriesController extends Notifier<StoriesState> {
   Timer? _expiryTimer;
   Future<void>? _running;
 
+  /// Loads finish on their own schedule: one that ends after the provider
+  /// is gone must not touch `ref`.
+  bool _disposed = false;
+
   static const storyWindowSeconds = 86400;
 
   @override
   StoriesState build() {
+    _disposed = false;
     ref.onDispose(() {
+      _disposed = true;
       _flushTimer?.cancel();
       _expiryTimer?.cancel();
     });
@@ -86,11 +92,12 @@ class StoriesController extends Notifier<StoriesState> {
     try {
       await ref
           .read(followListProvider.notifier)
-          .ready
+          .usable
           .timeout(const Duration(seconds: 10));
     } on TimeoutException {
       // Use whatever has arrived.
     }
+    if (_disposed) return null; // the wait outlived the provider
     return {...ref.read(followListProvider), me};
   }
 
@@ -101,6 +108,7 @@ class StoriesController extends Notifier<StoriesState> {
         final since =
             DateTime.now().millisecondsSinceEpoch ~/ 1000 - storyWindowSeconds;
         final authors = await _followedAuthors();
+        if (_disposed) return;
         _allowed = authors;
 
         List<NostrFilter> filtersFor(Iterable<String>? subset) {
@@ -179,8 +187,17 @@ class StoriesController extends Notifier<StoriesState> {
     }();
   }
 
+  /// A story you have just published shows up in the rail at once, without
+  /// waiting for a relay to hand it back.
+  void addPublished(NostrEvent e) {
+    _ingest(e);
+    _flushTimer?.cancel();
+    _flushTimer = null;
+    _regroup();
+  }
+
   void _ingest(NostrEvent e) {
-    if (_byId.containsKey(e.id)) return;
+    if (_disposed || _byId.containsKey(e.id)) return;
     final post = MediaPost.tryParse(e);
     if (post == null || !post.isStory || post.isExpired()) return;
     _byId[e.id] = post;
@@ -191,6 +208,7 @@ class StoriesController extends Notifier<StoriesState> {
   }
 
   void _regroup() {
+    if (_disposed) return;
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final blocked = ref.read(blockProvider);
     final muted = ref.read(muteProvider);
@@ -230,8 +248,8 @@ final storiesProvider = NotifierProvider<StoriesController, StoriesState>(
   StoriesController.new,
 );
 
-/// Stories already watched, kept on this device only (no viewer tracking
-/// ever leaves it).
+/// Stories already watched, kept on this device. Whether the author hears
+/// about it is a separate, opt-out matter (see `story_views.dart`).
 class SeenStories extends Notifier<Set<String>> {
   static const _key = 'mialuna_seen_stories';
 

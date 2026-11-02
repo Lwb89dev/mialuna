@@ -1,7 +1,6 @@
-import 'dart:convert';
-
 import 'package:http/http.dart' as http;
 
+import '../net/safe_http.dart';
 import 'relay.dart' show isPublicHost;
 
 /// NIP-05: `name@domain` identifiers resolved through
@@ -17,7 +16,8 @@ abstract final class Nip05 {
       input.trim().contains('.');
 
   /// The hex pubkey [identifier] maps to, or null. Never throws; only public
-  /// hosts are contacted.
+  /// hosts are contacted (by name and by address), no redirect is followed and
+  /// the answer is capped (see [SafeHttp]).
   static Future<String?> resolve(
     String identifier, {
     http.Client? client,
@@ -28,23 +28,20 @@ abstract final class Nip05 {
     final name = match.group(1) ?? '_';
     final domain = match.group(2)!;
     if (!isPublicHost(domain)) return null;
-    final http0 = client ?? http.Client();
     try {
-      final response = await http0
-          .get(Uri.https(domain, '/.well-known/nostr.json', {'name': name}))
-          .timeout(timeout);
-      if (response.statusCode != 200) return null;
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      final names = json['names'] as Map<String, dynamic>?;
-      final pubkey = names?[name];
+      final json = await SafeHttp.getJson(
+        Uri.https(domain, '/.well-known/nostr.json', {'name': name}),
+        client: client,
+        timeout: timeout,
+      );
+      final names = json is Map ? json['names'] : null;
+      final pubkey = names is Map ? names[name] : null;
       if (pubkey is String && RegExp(r'^[0-9a-f]{64}$').hasMatch(pubkey)) {
         return pubkey;
       }
       return null;
     } catch (_) {
       return null;
-    } finally {
-      if (client == null) http0.close();
     }
   }
 

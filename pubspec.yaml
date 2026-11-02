@@ -1,7 +1,7 @@
 name: mialuna
 description: "Mialuna — Your moments, under the same moon. A visual social network powered by Nostr."
 publish_to: 'none'
-version: 0.15.0+4
+version: 0.16.0+5
 
 environment:
   sdk: ^3.13.7
@@ -36,11 +36,17 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
 
+# Regenerate with `dart run flutter_launcher_icons` after changing the icon.
+# assets/icons/icon.png has transparent corners. iOS wants an opaque square it
+# rounds itself, and Android's adaptive icon draws the picture over a gradient
+# sampled from it: both derived files live in tool/launcher/ (not bundled).
 flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icons/icon.png"
-  adaptive_icon_background: "#20243D"
+  image_path_ios: "tool/launcher/ios_icon.png"
+  remove_alpha_ios: true
+  adaptive_icon_background: "tool/launcher/adaptive_background.png"
   adaptive_icon_foreground: "assets/icons/icon.png"
 
 flutter:

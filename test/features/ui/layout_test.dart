@@ -1,8 +1,11 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
+import 'package:image_picker/image_picker.dart';
 import 'package:mialuna/app/providers.dart';
 import 'package:mialuna/core/auth/auth_controller.dart';
 import 'package:mialuna/core/nostr/event.dart';
@@ -11,19 +14,29 @@ import 'package:mialuna/core/nostr/relay_pool.dart';
 import 'package:mialuna/core/nostr/signer.dart';
 import 'package:mialuna/core/storage/local_cache.dart';
 import 'package:mialuna/core/theme/mialuna_theme.dart';
+import 'package:mialuna/features/create/create_controller.dart';
 import 'package:mialuna/features/create/create_screen.dart';
 import 'package:mialuna/features/explore/explore_screen.dart';
+import 'package:mialuna/features/feed/feed_screen.dart';
 import 'package:mialuna/features/feed/widgets/post_card.dart';
 import 'package:mialuna/features/messages/chat_screen.dart';
 import 'package:mialuna/features/messages/dm_controller.dart';
 import 'package:mialuna/features/messages/inbox_screen.dart';
+import 'package:mialuna/features/notifications/notifications_controller.dart';
 import 'package:mialuna/features/notifications/notifications_screen.dart';
 import 'package:mialuna/features/private/close_friends.dart';
 import 'package:mialuna/features/private/close_friends_screen.dart';
 import 'package:mialuna/features/profile/profile_screen.dart';
 import 'package:mialuna/features/settings/settings_screen.dart';
+import 'package:mialuna/features/stories/stories_controller.dart';
+import 'package:mialuna/features/stories/stories_rail.dart';
+import 'package:mialuna/features/stories/story_composer_screen.dart';
+import 'package:mialuna/features/stories/story_text_editor.dart';
+import 'package:mialuna/core/nostr/models/story_text.dart';
 import 'package:mialuna/l10n/strings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../support/story_fixtures.dart';
 
 class _FixedAuth extends AuthController {
   final Signer signer;
@@ -41,6 +54,72 @@ class _FakeDm extends DmController {
   // The real one schedules a disk write; not needed for layout checks.
   @override
   void markRead(String peer) {}
+}
+
+class _FakeNotifications extends NotificationsController {
+  final NotificationsState fixed;
+  _FakeNotifications(this.fixed);
+  @override
+  NotificationsState build() => fixed;
+}
+
+NotificationsState unreadNotifications(int count) => NotificationsState(
+  items: [
+    for (var i = 0; i < count; i++)
+      NotificationItem(
+        event: NostrEvent(
+          id: '$i'.padLeft(64, '0'),
+          pubkey: _peer,
+          createdAt: 1700000000 + i,
+          kind: NostrKinds.reaction,
+          tags: const [],
+          content: '+',
+          sig: '',
+        ),
+        kind: NotificationKind.reaction,
+        actor: _peer,
+      ),
+  ],
+);
+
+class _FakeStories extends StoriesController {
+  final List<StoryGroup> groups;
+  _FakeStories(this.groups);
+  @override
+  StoriesState build() => StoriesState(groups: groups, isLoading: false);
+}
+
+Uint8List _picture() {
+  final image = img.Image(width: 40, height: 30);
+  img.fill(image, color: img.ColorRgb8(220, 90, 50));
+  return Uint8List.fromList(img.encodeJpg(image));
+}
+
+/// A composer holding one picture, with no network behind it.
+class _StoryComposer extends ComposerController {
+  final bool withPicture;
+  _StoryComposer({this.withPicture = true});
+
+  @override
+  ComposerState build() => ComposerState(
+    mode: ComposerMode.story,
+    media: withPicture
+        ? [
+            PickedMedia(
+              file: XFile.fromData(_picture(), name: 'a.jpg'),
+              bytes: _picture(),
+              mimeType: 'image/jpeg',
+            ),
+          ]
+        : const [],
+    overlays: const [
+      StoryText(text: 'Una frase lunga che va a capo #hashtag', y: 0.4),
+    ],
+  );
+
+  @override
+  Future<({Uint8List? bytes, double? aspect})> storyBackdrop() async =>
+      (bytes: _picture(), aspect: 40 / 30);
 }
 
 class _Friends extends CloseFriendsController {
@@ -286,6 +365,37 @@ void main() {
             await expectClean(tester, where);
           });
 
+          testWidgets('message requests · $where', (tester) async {
+            final requests = DmState(
+              conversations: {
+                _peer: Conversation(_peer, _messages, 0, isRequest: true),
+              },
+              inboxConfigured: true,
+            );
+            // The inbox points at them…
+            await pumpScreen(
+              tester,
+              const InboxScreen(),
+              size: entry.value,
+              textScale: scale,
+              dm: requests,
+            );
+            expect(
+              find.byIcon(Icons.mark_email_unread_outlined),
+              findsOneWidget,
+            );
+            await expectClean(tester, '$where (inbox)');
+            // …and this is where they are.
+            await pumpScreen(
+              tester,
+              const InboxScreen(requests: true),
+              size: entry.value,
+              textScale: scale,
+              dm: requests,
+            );
+            await expectClean(tester, '$where (requests)');
+          });
+
           testWidgets('chat · $where', (tester) async {
             await pumpScreen(
               tester,
@@ -420,6 +530,92 @@ void main() {
               find.byIcon(Icons.bookmark_border),
               findsNothing,
             ); // no saving
+            await expectClean(tester, where);
+          });
+
+          testWidgets('home bar with unread badges · $where', (tester) async {
+            await pumpScreen(
+              tester,
+              const FeedScreen(),
+              size: entry.value,
+              textScale: scale,
+              dm: DmState(
+                conversations: {
+                  _peer: Conversation(_peer, _messages, 0), // 6 from them
+                },
+                inboxConfigured: true,
+              ),
+              extra: [
+                notificationsProvider.overrideWith(
+                  () => _FakeNotifications(unreadNotifications(150)),
+                ),
+              ],
+            );
+            expect(find.text('99+'), findsOneWidget); // the bell
+            expect(find.text('6'), findsOneWidget); // the paper plane
+            await expectClean(tester, where);
+          });
+
+          testWidgets('stories rail · $where', (tester) async {
+            await pumpScreen(
+              tester,
+              const Scaffold(body: StoriesRail()),
+              size: entry.value,
+              textScale: scale,
+              extra: [
+                storiesProvider.overrideWith(
+                  () => _FakeStories([
+                    storiesOf(_me.publicKey, 3),
+                    storiesOf(_peer, 7),
+                    storiesOf('cd' * 32, 1, private: true),
+                  ]),
+                ),
+              ],
+            );
+            await expectClean(tester, where);
+          });
+
+          testWidgets('story composer · $where', (tester) async {
+            await pumpScreen(
+              tester,
+              const StoryComposerScreen(fresh: false),
+              size: entry.value,
+              textScale: scale,
+              extra: [composerProvider.overrideWith(_StoryComposer.new)],
+            );
+            await tester.pump(const Duration(milliseconds: 300));
+            await expectClean(tester, where);
+          });
+
+          testWidgets('story composer, nothing chosen · $where', (
+            tester,
+          ) async {
+            await pumpScreen(
+              tester,
+              const StoryComposerScreen(fresh: false),
+              size: entry.value,
+              textScale: scale,
+              extra: [
+                composerProvider.overrideWith(
+                  () => _StoryComposer(withPicture: false),
+                ),
+              ],
+            );
+            await expectClean(tester, where);
+          });
+
+          testWidgets('story text editor · $where', (tester) async {
+            await pumpScreen(
+              tester,
+              const StoryTextEditorScreen(
+                mediaAspect: 0.75,
+                initial: [StoryText(text: 'Ciao #mare')],
+              ),
+              size: entry.value,
+              textScale: scale,
+            );
+            await tester.tap(find.byTooltip(AppStrings.current.storyAddText));
+            await tester.pump(const Duration(milliseconds: 300));
             await expectClean(tester, where);
           });
 

@@ -17,6 +17,21 @@ abstract final class Nip51 {
     for (final tag in hashtags.toList()..sort()) ['t', tag],
   ];
 
+  /// Tags a list must keep when Mialuna republishes it. The lists are shared
+  /// with other clients, which add entries Mialuna does not understand
+  /// (addressable bookmarks, muted words and threads…): publishing only our
+  /// own tags would silently delete them. So [previous]'s tags whose name is
+  /// not in [managedNames] are carried over, followed by [managed].
+  static List<List<String>> keepingForeignTags(
+    NostrEvent? previous,
+    List<List<String>> managed, {
+    required Set<String> managedNames,
+  }) => [
+    for (final t in previous?.tags ?? const <List<String>>[])
+      if (t.isEmpty || !managedNames.contains(t[0])) t,
+    ...managed,
+  ];
+
   /// Bookmarked event ids from a kind 10003 event (empty for other kinds).
   static Set<String> bookmarkIds(NostrEvent event) {
     if (event.kind != NostrKinds.bookmarks) return const {};

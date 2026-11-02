@@ -21,6 +21,11 @@ lib/
     media/    media_sanitizer (metadata removal), media_cipher (AES-GCM),
               private_media (download + decrypt), blossom, video_frames
     storage/  local_cache
+    net/      safe_http (the only way to reach a server somebody else chose)
+    notify/   system_notifier (the Android notification bridge)
+    platform/ secure_window (FLAG_SECURE for private screens)
+    text/     hashtags (the one definition), clip (display cap)
+    trust/    the web of trust
     branding/ the #mialuna rule
     theme/
   features/
@@ -53,6 +58,18 @@ and every upload against `test/support/fake_blossom.dart`.
   decrypted once by the inbox pump and kept locally; the signer does the NIP-44
   (Amber requests are serialised and use its content provider first).
 - Kind 1 is never requested or rendered as a post.
+- **Stories**: `stories_controller` groups the last 24 hours by creator;
+  `stories_rail` shows the story button, your own circle and the others, each
+  ring (`story_ring`) divided into one part per story; `story_composer_screen`
+  is where a story is made and `story_canvas_editor` is the picture with its
+  texts, written in place — both drive the same `composerProvider` as the Create
+  tab. Texts travel as `story-text` tags, not pixels, so hashtags stay links.
+- **Notifications**: the controllers (`notifications_controller`,
+  `dm_controller`) call `SystemNotifications.post` for what arrives live;
+  the Android side is `NotifyBridge.kt`. Nothing is posted while the app is in
+  the foreground, for history, for message requests or for your own messages.
+- **Account data** is listed in `LocalCache.accountFiles` and removed by
+  `signOutProvider`: a new file kept per account must be added there.
 
 See [nostr-compatibility.md](nostr-compatibility.md) for the NIPs and Mialuna's
 own conventions, [ROADMAP.md](ROADMAP.md) for what is done and what is not,
