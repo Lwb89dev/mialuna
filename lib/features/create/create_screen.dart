@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../l10n/strings.dart';
+import '../stories/story_text_editor.dart';
 import '../private/close_friends.dart';
 import '../private/close_friends_screen.dart';
 import 'create_controller.dart';
@@ -74,6 +75,19 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
     if (saved != null) {
       ref.read(composerProvider.notifier).setAlt(index, saved);
     }
+  }
+
+  Future<void> _editStoryTexts() async {
+    final composer = ref.read(composerProvider.notifier);
+    final backdrop = await composer.storyBackdrop();
+    if (!mounted) return;
+    final texts = await StoryTextEditorScreen.show(
+      context,
+      imageBytes: backdrop.bytes,
+      mediaAspect: backdrop.aspect,
+      initial: ref.read(composerProvider).overlays,
+    );
+    if (texts != null) composer.setOverlays(texts);
   }
 
   Future<void> _publish() async {
@@ -244,7 +258,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                 itemBuilder: (context, i) {
                   final m = state.media[i];
                   return Padding(
-                    key: ValueKey(m.file.path + i.toString()),
+                    key: ObjectKey(m),
                     padding: const EdgeInsets.only(right: 8),
                     child: GestureDetector(
                       onTap: () => _editAlt(i),
@@ -329,6 +343,13 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                 },
               ),
             ),
+          if (state.mode == ComposerMode.story && state.media.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _StoryTextButton(
+              count: state.overlays.length,
+              onPressed: state.isPublishing ? null : _editStoryTexts,
+            ),
+          ],
           const SizedBox(height: 16),
           TextField(
             controller: _captionController,
@@ -401,6 +422,35 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Opens the editor that lays texts over a story's picture.
+class _StoryTextButton extends StatelessWidget {
+  final int count;
+  final VoidCallback? onPressed;
+  const _StoryTextButton({required this.count, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Wrap(
+      spacing: 12,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        OutlinedButton.icon(
+          onPressed: onPressed,
+          icon: const Icon(Icons.text_fields),
+          label: Text(count == 0 ? l10n.storyAddText : l10n.storyEditText),
+        ),
+        if (count > 0)
+          Text(
+            l10n.storyTextsCount(count),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+      ],
     );
   }
 }

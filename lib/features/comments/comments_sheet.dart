@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/models/media_event.dart';
+import '../../core/text/clip.dart';
 import '../../l10n/strings.dart';
 import '../profile/profile_widgets.dart';
 import '../social/interactions_controller.dart';
@@ -96,7 +97,7 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                         pubkey: c.author,
                         style: theme.textTheme.labelMedium,
                       ),
-                      subtitle: Text(c.text),
+                      subtitle: Text(clipForDisplay(c.text)),
                     );
                   },
                 ),
@@ -115,6 +116,7 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                 Expanded(
                   child: TextField(
                     controller: _controller,
+                    enableIMEPersonalizedLearning: false,
                     decoration: InputDecoration(
                       hintText: context.l10n.addComment,
                       border: const OutlineInputBorder(),

@@ -40,17 +40,25 @@ flutter build apk --debug
    storeFile=/absolute/path/mialuna-upload-key.jks
    ```
 
-3. Wire it into `android/app/build.gradle.kts`: load the `key.properties`
-   file and use a `signingConfigs { release { ... } }` block instead of the
-   debug signature. See the official guide:
-   https://docs.flutter.dev/deployment/android#signing-the-app
+3. `android/app/build.gradle.kts` already reads `android/key.properties` and
+   signs the release build with it. Without the file the release build is
+   signed with the debug key and Gradle warns: fine to try an APK, never to
+   publish one.
 
-4. Build:
+4. Build (code shrinking with R8 is on; keep the symbols to read crashes):
 
    ```bash
-   flutter build appbundle --release   # Play Store
-   flutter build apk --release         # direct distribution / F-Droid
+   flutter build appbundle --release --obfuscate --split-debug-info=build/symbols
+   flutter build apk --release --obfuscate --split-debug-info=build/symbols
    ```
+
+   The debug build installs next to the release one (`app.mialuna.social.debug`,
+   labelled "Mialuna Debug") and, unlike release, may talk plain HTTP to
+   `localhost`, `127.0.0.1` and `10.0.2.2` and trusts user-installed CAs — for
+   running against a local relay.
+
+   For store screenshots, `--dart-define=MIALUNA_SECURE_SCREENS=false` turns
+   off the screenshot block on private screens (never ship a build made so).
 
 ## F-Droid / IzzyOnDroid
 

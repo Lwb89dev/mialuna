@@ -8,6 +8,7 @@ import 'event.dart';
 import 'filter.dart';
 import 'nip04.dart';
 import 'nip44.dart';
+import 'relay.dart' show isAcceptableRelayUrl, normalizeRelayUrl;
 import 'relay_pool.dart';
 import 'signer.dart';
 
@@ -43,7 +44,12 @@ class NwcConnection {
         parsed.host.length != 64) {
       throw NwcException(AppStrings.current.nwcInvalidUri);
     }
-    final relays = parsed.queryParametersAll['relay'] ?? const [];
+    final relays = [
+      for (final r in parsed.queryParametersAll['relay'] ?? const <String>[])
+        if (normalizeRelayUrl(r) != null &&
+            isAcceptableRelayUrl(normalizeRelayUrl(r)!))
+          normalizeRelayUrl(r)!,
+    ];
     if (relays.isEmpty) {
       throw NwcException(AppStrings.current.nwcNoRelay);
     }

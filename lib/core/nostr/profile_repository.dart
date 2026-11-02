@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'event.dart';
 import 'filter.dart';
+import 'nip19.dart';
 import 'relay_pool.dart';
 
 /// NIP-01 kind 0 profile metadata.
@@ -35,12 +36,16 @@ class ProfileMetadata {
     this.createdAt = 0,
   });
 
-  /// Best human-readable name, never empty.
-  String get label => displayName?.isNotEmpty == true
-      ? displayName!
+  /// The name the person gave themselves, null when they set none.
+  String? get givenName => displayName?.isNotEmpty == true
+      ? displayName
       : name?.isNotEmpty == true
-      ? name!
-      : shortPubkey(pubkey);
+      ? name
+      : null;
+
+  /// Best human-readable name, never empty: the person's own, or their
+  /// shortened npub.
+  String get label => givenName ?? shortNpub(pubkey);
 
   /// `@handle` style secondary name when it differs from [label].
   String? get handle {
@@ -49,8 +54,16 @@ class ProfileMetadata {
     return '@$n';
   }
 
-  static String shortPubkey(String pubkey) =>
-      pubkey.length >= 8 ? '${pubkey.substring(0, 8)}…' : pubkey;
+  /// `npub1abcdefghij…xyz123`: what stands for a person with no name. Falls
+  /// back to the start of the hex key for something that is not a pubkey.
+  static String shortNpub(String pubkey) {
+    try {
+      final npub = Nip19.encodeNpub(pubkey);
+      return '${npub.substring(0, 14)}…${npub.substring(npub.length - 6)}';
+    } catch (_) {
+      return pubkey.length >= 8 ? '${pubkey.substring(0, 8)}…' : pubkey;
+    }
+  }
 
   static String? _str(dynamic v) {
     if (v == null) return null;

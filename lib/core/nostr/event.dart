@@ -145,6 +145,10 @@ abstract final class NostrKinds {
   static const fileMessage = 15; // NIP-17
   static const giftWrap = 1059; // NIP-59
   static const dmRelayList = 10050; // NIP-17
+
+  /// Mialuna convention: "I watched these stories", a rumor gift-wrapped to
+  /// the story's author only (see `features/stories/story_views.dart`).
+  static const storyView = 1417;
   static const blossomServerList = 10063; // BUD-03
   static const followSet = 30000; // NIP-51 categorised people list
   static const addressableVideo = 34235;

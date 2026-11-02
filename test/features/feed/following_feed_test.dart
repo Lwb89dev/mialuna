@@ -38,6 +38,23 @@ Future<NostrEvent> photo(Signer s, String text, {int? at}) => signed(
   ],
 );
 
+Future<NostrEvent> story(Signer s, String text, {required int at}) => signed(
+  s,
+  kind: 20,
+  content: text,
+  createdAt: at,
+  tags: [
+    [
+      'imeta',
+      'url https://cdn.example.com/${text.hashCode.abs()}.jpg',
+      'dim 800x1000',
+    ],
+    ['L', 'mialuna.story'],
+    ['l', 'story', 'mialuna.story'],
+    ['expiration', '${at + 86400}'],
+  ],
+);
+
 void main() {
   late FakeRelay relay;
   late NsecSigner me;
@@ -194,5 +211,64 @@ void main() {
     final c = app(me);
     final state = await settled(c, FeedMode.following);
     expect(state.posts.map((p) => p.caption), ['ok']);
+  });
+
+  group('paging through a prolific story poster', () {
+    // A relay answers with the newest events first and stops at the
+    // filter's limit (20 per chunk here). Stories are events too.
+    test('a first page made only of stories still finds the posts', () async {
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      for (var i = 0; i < 25; i++) {
+        relay.add(await story(bob, 'story-$i', at: now - 10 - i));
+      }
+      for (var i = 0; i < 3; i++) {
+        relay.add(await photo(bob, 'post-$i', at: now - 1000 - i));
+      }
+
+      final c = app(me);
+      await settled(c, FeedMode.following);
+      await c.read(feedProvider(FeedMode.following).notifier).whenIdle();
+      final state = c.read(feedProvider(FeedMode.following));
+      expect(state.posts.map((p) => p.caption).toSet(), {
+        'post-0',
+        'post-1',
+        'post-2',
+      });
+      expect(state.error, isNull);
+    });
+
+    test('a page of stories in the middle does not end the feed', () async {
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      for (var i = 0; i < 10; i++) {
+        relay.add(await photo(bob, 'new-$i', at: now - 100 - i));
+      }
+      for (var i = 0; i < 30; i++) {
+        relay.add(await story(bob, 'story-$i', at: now - 1000 - i));
+      }
+      for (var i = 0; i < 10; i++) {
+        relay.add(await photo(bob, 'old-$i', at: now - 5000 - i));
+      }
+
+      final c = app(me);
+      await settled(c, FeedMode.following);
+      final ctl = c.read(feedProvider(FeedMode.following).notifier);
+      await ctl.whenIdle(); // the first flush shows posts before the load ends
+      expect(c.read(feedProvider(FeedMode.following)).posts, hasLength(10));
+
+      await ctl.loadMore();
+      var state = c.read(feedProvider(FeedMode.following));
+      expect(
+        state.posts.map((p) => p.caption).where((t) => t.startsWith('old-')),
+        hasLength(10),
+        reason: 'the posts behind the stories were never reached',
+      );
+      expect(state.hasMore, true);
+
+      // Nothing older is left: the feed says so instead of looping.
+      await ctl.loadMore();
+      state = c.read(feedProvider(FeedMode.following));
+      expect(state.hasMore, false);
+      expect(state.posts, hasLength(20));
+    });
   });
 }

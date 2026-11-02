@@ -32,6 +32,8 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MediaBridge.register(flutterEngine)
+        NotifyBridge.register(this, flutterEngine, intent)
+        WindowBridge.register(this, flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
             .setMethodCallHandler { call, result ->
                 val currentUser = call.argument<String>("current_user")
@@ -169,6 +171,12 @@ class MainActivity : FlutterActivity() {
             pendingResult = null
             result.error("LAUNCH_FAILED", e.message, null)
         }
+    }
+
+    /** The app was already running when a notification was tapped. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        NotifyBridge.onNewIntent(intent)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

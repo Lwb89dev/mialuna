@@ -10,9 +10,13 @@ import '../../core/nostr/nip59.dart';
 import '../../core/nostr/relay.dart';
 import '../../core/nostr/relay_pool.dart';
 import '../../core/nostr/signer.dart';
+import '../../core/notify/system_notifier.dart';
 import '../../l10n/strings.dart';
+import '../notifications/system_notifications.dart';
 import '../private/private_posts.dart';
 import '../social/moderation_controller.dart';
+import '../stories/story_views.dart';
+import '../trust/web_of_trust_controller.dart';
 
 /// Relays suggested when a user turns on private messages for the first
 /// time (kind 10050). They accept gift wraps without authentication.
@@ -86,7 +90,17 @@ class Conversation {
   /// synced on this device (history that predates it is not "new").
   final int lastRead;
 
-  const Conversation(this.peer, this.messages, this.lastRead);
+  /// Written by somebody outside your web of trust (and never answered by
+  /// you): it waits in "message requests" instead of the inbox, and does not
+  /// count as unread. Only with the web of trust filter on.
+  final bool isRequest;
+
+  const Conversation(
+    this.peer,
+    this.messages,
+    this.lastRead, {
+    this.isRequest = false,
+  });
 
   DmMessage? get last => messages.isEmpty ? null : messages.last;
   int get unread =>
@@ -112,14 +126,21 @@ class DmState {
     this.supported = true,
   });
 
-  List<Conversation> get sorted {
-    final list =
-        conversations.values.where((c) => c.messages.isNotEmpty).toList()
-          ..sort((a, b) => b.last!.createdAt.compareTo(a.last!.createdAt));
-    return list;
-  }
+  List<Conversation> _sortedWhere(bool Function(Conversation) test) =>
+      conversations.values
+          .where((c) => c.messages.isNotEmpty && test(c))
+          .toList()
+        ..sort((a, b) => b.last!.createdAt.compareTo(a.last!.createdAt));
 
-  int get unreadCount => conversations.values.fold(0, (n, c) => n + c.unread);
+  /// The inbox: everything except message requests.
+  List<Conversation> get sorted => _sortedWhere((c) => !c.isRequest);
+
+  /// Conversations started by people outside your web of trust.
+  List<Conversation> get requests => _sortedWhere((c) => c.isRequest);
+
+  int get unreadCount => conversations.values
+      .where((c) => !c.isRequest)
+      .fold(0, (n, c) => n + c.unread);
 
   DmState copyWith({
     Map<String, Conversation>? conversations,
@@ -152,6 +173,10 @@ class DmController extends Notifier<DmState> {
   Future<void> _queue = Future.value();
   int _newestWrap = 0;
   int _baseline = 0; // first sync time (seconds); 0 = not synced yet
+
+  /// The inbox has caught up with what was stored: a message that arrives
+  /// from now on is news, and may deserve a notification on the phone.
+  bool _live = false;
   String? _pub;
 
   /// Bumped on every rebuild/dispose so work started for a previous account
@@ -169,9 +194,13 @@ class DmController extends Notifier<DmState> {
       _sub?.close();
       _saveTimer?.cancel();
     });
+    ref.listen(trustFilterProvider, (_, _) {
+      if (_messages.isNotEmpty) _publishState();
+    });
     _messages.clear();
     _seenWraps.clear();
     _lastRead.clear();
+    _live = false;
     _baseline = 0;
     _inboxCache.clear();
     _sub?.close();
@@ -239,6 +268,7 @@ class DmController extends Notifier<DmState> {
           _scheduleSave();
         }
         _publishState(loading: false);
+        _live = true;
       });
     });
   }
@@ -276,6 +306,15 @@ class DmController extends Notifier<DmState> {
       ref.read(privatePostsProvider.notifier).ingest(rumor);
       return;
     }
+    // Somebody tells you they watched your stories.
+    if (rumor.kind == NostrKinds.storyView) {
+      if (ref.read(blockProvider).contains(rumor.pubkey) ||
+          ref.read(muteProvider).contains(rumor.pubkey)) {
+        return;
+      }
+      ref.read(storyViewsProvider.notifier).ingest(rumor);
+      return;
+    }
     if (rumor.kind != NostrKinds.chatMessage &&
         rumor.kind != NostrKinds.fileMessage) {
       return;
@@ -309,6 +348,35 @@ class DmController extends Notifier<DmState> {
     );
     _publishState();
     _scheduleSave();
+    if (!fromMe) _announce(peer, rumor.createdAt);
+  }
+
+  /// A message from somebody else, unread, in a conversation that is not a
+  /// request: the phone is told. Its sender and text never reach the lock
+  /// screen: the notification only says that a private message came.
+  void _announce(String peer, int createdAt) {
+    if (!_live || createdAt <= _readUpTo(peer)) return;
+    final conversation = state.conversations[peer];
+    if (conversation == null || conversation.isRequest) return;
+    final generation = _generation;
+    unawaited(() async {
+      final name = await displayNameOf(ref, peer);
+      if (generation != _generation) return;
+      final l10n = AppStrings.current;
+      await ref
+          .read(systemNotificationsProvider)
+          .post(
+            SystemNotification(
+              channel: NotifyChannel.messages,
+              id: notificationIdFor(peer),
+              title: name,
+              body: l10n.systemNotificationMessage,
+              publicTitle: 'Mialuna',
+              publicBody: l10n.systemNotificationNewMessage,
+              route: 'chat:$peer',
+            ),
+          );
+    }());
   }
 
   void _publishState({bool? loading}) {
@@ -316,18 +384,33 @@ class DmController extends Notifier<DmState> {
     for (final m in _messages.values) {
       byPeer.putIfAbsent(m.peer, () => []).add(m);
     }
+    final trust = ref.read(trustFilterProvider);
     state = state.copyWith(
       conversations: {
         for (final e in byPeer.entries)
           e.key: Conversation(
             e.key,
             e.value..sort((a, b) => a.createdAt.compareTo(b.createdAt)),
-            (_lastRead[e.key] ?? 0) > _baseline ? _lastRead[e.key]! : _baseline,
+            _readUpTo(e.key),
+            // Once you have written to somebody they are no stranger.
+            isRequest: !trust.allows(e.key) && !e.value.any((m) => m.fromMe),
           ),
       },
       loading: loading,
     );
   }
+
+  /// Everything up to the returned time counts as read for [peer]. Until the
+  /// first sync has finished (`_baseline == 0`) the inbox is still filling up
+  /// with history, none of which is new: without this the unread badge would
+  /// flash a big number and then vanish.
+  int _readUpTo(String peer) {
+    if (_baseline == 0) return _everythingRead;
+    final read = _lastRead[peer] ?? 0;
+    return read > _baseline ? read : _baseline;
+  }
+
+  static const _everythingRead = 1 << 50;
 
   // ── persistence ─────────────────────────────────────────────────────
 

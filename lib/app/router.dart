@@ -17,9 +17,14 @@ import 'providers.dart';
 /// `main()` with the persisted value before the app starts.
 final onboardingDoneProvider = Provider<bool>((ref) => false);
 
+/// The app's root navigator: a tapped system notification opens its screen on
+/// top of everything with it.
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final routerProvider = Provider<GoRouter>((ref) {
   final onboardingDone = ref.watch(onboardingDoneProvider);
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: onboardingDone ? '/home' : '/onboarding',
     routes: [
       GoRoute(

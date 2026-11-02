@@ -19,6 +19,10 @@ class FakeRelay {
   /// When set, every published event is refused with this message.
   String? rejectWith;
 
+  /// A relay that accepts connections and then never answers a request (no
+  /// events, no EOSE): a slow or dead one, as seen from a client.
+  bool silent = false;
+
   late HttpServer _server;
   final List<_Conn> _conns = [];
 
@@ -70,6 +74,7 @@ class FakeRelay {
     switch (msg[0]) {
       case 'REQ':
         reqCount++;
+        if (silent) return;
         final id = msg[1] as String;
         final filters = [
           for (final f in msg.skip(2)) _filterFrom(f as Map<String, dynamic>),
@@ -82,9 +87,17 @@ class FakeRelay {
           return;
         }
         conn.subs[id] = filters;
-        for (final e in stored) {
-          if (filters.any((f) => f.matches(e))) {
-            conn.send(['EVENT', id, e.toJson()]);
+        // Like a real relay: newest first, and `limit` caps each filter.
+        final sent = <String>{};
+        for (final f in filters) {
+          var matching = stored.where(f.matches).toList()
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          final limit = f.filter.limit;
+          if (limit != null && matching.length > limit) {
+            matching = matching.sublist(0, limit);
+          }
+          for (final e in matching) {
+            if (sent.add(e.id)) conn.send(['EVENT', id, e.toJson()]);
           }
         }
         conn.send(['EOSE', id]);

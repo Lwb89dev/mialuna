@@ -11,6 +11,7 @@ import '../../core/nostr/models/media_event.dart';
 import '../../core/nostr/relay_pool.dart';
 import '../private/private_delivery.dart';
 import '../private/private_posts.dart';
+import '../trust/web_of_trust_controller.dart';
 import 'moderation_controller.dart';
 
 class PostInteractions {
@@ -118,6 +119,10 @@ class InteractionsRepository {
     String postId, {
     String? me,
     Set<String> blocked = const {},
+
+    /// Comments are kept only from accounts this lets through (the web of
+    /// trust). Likes are counted from everyone.
+    bool Function(String pubkey)? allowCommenter,
   }) {
     final data = _data[postId];
     if (data == null) return const PostInteractions();
@@ -127,7 +132,9 @@ class InteractionsRepository {
     };
     final comments = [
       for (final c in data.comments.values)
-        if (!blocked.contains(c.author)) c,
+        if (!blocked.contains(c.author) &&
+            (allowCommenter?.call(c.author) ?? true))
+          c,
     ]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
     return PostInteractions(
       likeCount: likers.length,
@@ -187,19 +194,35 @@ class InteractionsController
     final repo = ref.watch(interactionsRepositoryProvider);
     final blocked = ref.watch(blockProvider);
     final me = ref.watch(authProvider).publicKey;
+    final trust = ref.watch(trustFilterProvider);
+    // The author of the post may always be heard on it.
+    bool allow(String pk) => pk == arg.author || trust.allows(pk);
     // Keep counts for a while after the card leaves the screen, so scrolling
     // back does not flash zeros.
     final link = ref.keepAlive();
     final keep = Timer(const Duration(minutes: 2), link.close);
     final sub = repo.changes.where((id) => id == arg.id).listen((_) {
-      state = repo.snapshot(arg.id, me: me, blocked: blocked);
+      state = repo.snapshot(
+        arg.id,
+        me: me,
+        blocked: blocked,
+        allowCommenter: allow,
+      );
     });
     ref.onDispose(() {
       keep.cancel();
+      // A rebuild creates a new link: leaving this one open would keep the
+      // provider alive for good.
+      link.close();
       sub.cancel();
     });
     repo.request(arg.id);
-    return repo.snapshot(arg.id, me: me, blocked: blocked);
+    return repo.snapshot(
+      arg.id,
+      me: me,
+      blocked: blocked,
+      allowCommenter: allow,
+    );
   }
 
   /// Likes the post, or takes the like back (NIP-09 deletion of the

@@ -5,14 +5,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../app/providers.dart';
+import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/models/media_event.dart';
+import '../../core/platform/secure_window.dart';
+import '../../core/text/clip.dart';
 import '../../l10n/strings.dart';
+import '../explore/hashtag_link.dart';
+import '../feed/widgets/hashtag_text.dart';
 import '../feed/widgets/inline_video.dart';
 import '../feed/widgets/nostr_image.dart';
 import '../feed/widgets/post_card.dart' show closeFriendsGreen;
 import '../messages/send_to_sheet.dart';
 import '../profile/profile_widgets.dart';
 import 'stories_controller.dart';
+import 'story_text_view.dart';
+import 'story_views.dart';
+import 'story_views_sheet.dart';
 
 /// Full-screen story viewer: progress bars, tap to advance/go back,
 /// long-press to pause, swipe between creators.
@@ -32,6 +40,10 @@ class StoryViewerScreen extends ConsumerStatefulWidget {
 
 class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen> {
   static const _photoDuration = Duration(seconds: 5);
+  static const _captionStyle = TextStyle(
+    color: Colors.white,
+    shadows: [Shadow(blurRadius: 4, color: Colors.black87)],
+  );
 
   late PageController _pageController;
   late int _groupIndex;
@@ -42,27 +54,39 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen> {
   bool _paused = false;
   int _generation = 0; // invalidates in-flight video initialisations
 
+  /// Kept for [dispose]: a widget's `ref` is gone by then, and the receipts
+  /// still have to leave.
+  late final ProviderContainer _container;
+
   StoryGroup get _group => widget.groups[_groupIndex];
   MediaPost get _story => _group.stories[_storyIndex];
+  bool get _isOwn => _group.author == ref.read(authProvider).publicKey;
 
   @override
   void initState() {
     super.initState();
+    _container = ProviderScope.containerOf(context, listen: false);
     _groupIndex = widget.initialGroup;
     _pageController = PageController(initialPage: _groupIndex);
-    // First unseen story of the creator, like Instagram.
-    final seen = ref.read(seenStoriesProvider);
-    final firstUnseen = _group.stories.indexWhere((s) => !seen.contains(s.id));
-    _storyIndex = firstUnseen < 0 ? 0 : firstUnseen;
+    _storyIndex = _firstUnseenIndex();
     WidgetsBinding.instance.addPostFrameCallback((_) => _startStory());
   }
 
   @override
   void dispose() {
+    // Whoever's stories were being watched is told (if the viewer allows it).
+    unawaited(_container.read(storyViewReporterProvider).flush());
     _timer?.cancel();
     _video?.dispose();
     _pageController.dispose();
     super.dispose();
+  }
+
+  /// First unseen story of the current creator, like Instagram.
+  int _firstUnseenIndex() {
+    final seen = ref.read(seenStoriesProvider);
+    final firstUnseen = _group.stories.indexWhere((s) => !seen.contains(s.id));
+    return firstUnseen < 0 ? 0 : firstUnseen;
   }
 
   void _startStory() {
@@ -74,6 +98,7 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen> {
     _generation++;
     final story = _story;
     ref.read(seenStoriesProvider.notifier).markSeen(story.id);
+    unawaited(ref.read(storyViewReporterProvider).viewed(story));
     final item = story.media.first;
     if (item.isVideo) {
       _initVideo(item, _generation);
@@ -154,6 +179,8 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen> {
         duration: _transition,
         curve: Curves.easeOut,
       );
+    } else {
+      _startStory(); // first story of the first creator: play it again
     }
   }
 
@@ -166,6 +193,20 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen> {
     }
   }
 
+  /// A tapped #hashtag opens the search for it; the story waits meanwhile.
+  Future<void> _openHashtag(String tag) async {
+    _setPaused(true);
+    await openHashtagSearch(context, tag);
+    if (mounted) _setPaused(false);
+  }
+
+  /// Your own story: who watched it.
+  Future<void> _showViewers() async {
+    _setPaused(true);
+    await StoryViewersSheet.show(context, _story.id);
+    if (mounted) _setPaused(false);
+  }
+
   Future<void> _sendToFriends() async {
     _setPaused(true);
     await SendToSheet.show(context, _story);
@@ -174,31 +215,44 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: PageView.builder(
-        controller: _pageController,
-        itemCount: widget.groups.length,
-        onPageChanged: (i) {
-          _groupIndex = i;
-          _storyIndex = 0;
-          _startStory();
-        },
-        itemBuilder: (context, index) {
-          if (index != _groupIndex) {
-            // Neighbour while swiping: static first frame, no playback.
-            final first = widget.groups[index].stories.first.media.first;
-            return Stack(
-              fit: StackFit.expand,
-              children: [
-                first.isVideo
-                    ? VideoPoster(item: first)
-                    : NostrImage(item: first, fit: BoxFit.contain),
-              ],
+    // A close-friends story is for them only: no screenshots of it either.
+    return SecureScreen(
+      enabled: widget.groups.any((g) => g.hasPrivate),
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: PageView.builder(
+          controller: _pageController,
+          itemCount: widget.groups.length,
+          onPageChanged: (i) {
+            // Moving on from this creator: tell them what was watched.
+            unawaited(
+              ref.read(storyViewReporterProvider).flush(author: _group.author),
             );
-          }
-          return _buildActive(context);
-        },
+            _groupIndex = i;
+            _storyIndex = _firstUnseenIndex();
+            _startStory();
+          },
+          itemBuilder: (context, index) {
+            if (index != _groupIndex) {
+              // Neighbour while swiping: static first frame, no playback.
+              final firstStory = widget.groups[index].stories.first;
+              final first = firstStory.media.first;
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  first.isVideo
+                      ? VideoPoster(item: first)
+                      : NostrImage(item: first, fit: BoxFit.contain),
+                  StoryOverlayLayer(
+                    texts: firstStory.overlays,
+                    mediaAspect: first.aspectRatio,
+                  ),
+                ],
+              );
+            }
+            return _buildActive(context);
+          },
+        ),
       ),
     );
   }
@@ -241,6 +295,32 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen> {
                   )
           else
             NostrImage(item: item, postId: story.id, fit: BoxFit.contain),
+          // Texts laid over the picture; their hashtags can be tapped.
+          Positioned.fill(
+            child: StoryOverlayLayer(
+              texts: story.overlays,
+              mediaAspect: item.aspectRatio,
+              onHashtagTap: _openHashtag,
+            ),
+          ),
+          // A fade under the bars and the name, so they read on a bright sky.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: top + 96,
+            child: const IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0x73000000), Color(0x00000000)],
+                  ),
+                ),
+              ),
+            ),
+          ),
           // Progress bars.
           Positioned(
             top: top + 8,
@@ -291,6 +371,26 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen> {
                     ),
                   ),
                 ),
+                if (_isOwn)
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final count = ref.watch(
+                        storyViewsProvider.select((s) => s.countOf(story.id)),
+                      );
+                      return TextButton.icon(
+                        onPressed: _showViewers,
+                        icon: const Icon(
+                          Icons.visibility_outlined,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        label: Text(
+                          '$count',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      );
+                    },
+                  ),
                 if (story.isPrivate)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -331,12 +431,14 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen> {
               left: 16,
               right: 16,
               bottom: MediaQuery.paddingOf(context).bottom + 24,
-              child: Text(
-                story.caption,
-                style: const TextStyle(
-                  color: Colors.white,
-                  shadows: [Shadow(blurRadius: 4, color: Colors.black87)],
+              child: HashtagText(
+                clipForDisplay(story.caption),
+                style: _captionStyle,
+                tagStyle: _captionStyle.copyWith(
+                  fontWeight: FontWeight.w800,
+                  decoration: TextDecoration.underline,
                 ),
+                onHashtagTap: _openHashtag,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),

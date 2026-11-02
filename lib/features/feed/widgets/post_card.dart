@@ -6,14 +6,17 @@ import 'package:intl/intl.dart' show DateFormat;
 
 import '../../../core/auth/auth_controller.dart';
 import '../../../core/nostr/models/media_event.dart';
+import '../../../core/text/clip.dart';
 import '../../../l10n/strings.dart';
 import '../../comments/comments_sheet.dart';
+import '../../explore/hashtag_link.dart';
 import '../../messages/send_to_sheet.dart';
 import '../../messages/share_utils.dart';
 import '../../profile/profile_widgets.dart';
 import '../../social/interactions_controller.dart';
 import '../../social/moderation_controller.dart';
 import '../../social/zap_sheet.dart';
+import 'hashtag_text.dart';
 import 'inline_video.dart';
 import 'nostr_image.dart';
 import 'pinch_zoom.dart';
@@ -39,8 +42,12 @@ class PostCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final interactions = ref.watch(interactionsProvider(post));
-    final isGuest = ref.watch(authProvider).isGuest;
-    final saved = ref.watch(bookmarksProvider).contains(post.id);
+    final isGuest = ref.watch(authProvider.select((a) => a.isGuest));
+    // Only this post's bookmark, not the whole set: saving one post must not
+    // rebuild every card on screen.
+    final saved = ref.watch(
+      bookmarksProvider.select((b) => b.contains(post.id)),
+    );
     final isPrivate = post.isPrivate;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -205,7 +212,10 @@ class PostCard extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: CaptionText(
                 caption: post.caption,
-                onHashtagTap: onHashtagTap,
+                // A post opened on its own (from Discover, a message, a
+                // profile) has no parent screen to handle the tap.
+                onHashtagTap:
+                    onHashtagTap ?? (tag) => openHashtagSearch(context, tag),
               ),
             )
           else
@@ -524,35 +534,15 @@ class _CaptionTextState extends State<CaptionText> {
       r.dispose();
     }
     _recognizers.clear();
-    final caption = widget.caption;
-    final spans = <InlineSpan>[];
-    var last = 0;
-    for (final m in RegExp(r'#(\w+)').allMatches(caption)) {
-      if (m.start > last) {
-        spans.add(TextSpan(text: caption.substring(last, m.start)));
-      }
-      final tag = m.group(1)!;
-      TapGestureRecognizer? recognizer;
-      if (widget.onHashtagTap != null) {
-        recognizer = TapGestureRecognizer()
-          ..onTap = () => widget.onHashtagTap!(tag);
-        _recognizers.add(recognizer);
-      }
-      spans.add(
-        TextSpan(
-          text: m.group(0),
-          style: TextStyle(
-            color: theme.colorScheme.secondary,
-            fontWeight: FontWeight.w600,
-          ),
-          recognizer: recognizer,
-        ),
-      );
-      last = m.end;
-    }
-    if (last < caption.length) {
-      spans.add(TextSpan(text: caption.substring(last)));
-    }
+    final spans = hashtagSpans(
+      clipForDisplay(widget.caption),
+      tagStyle: TextStyle(
+        color: theme.colorScheme.secondary,
+        fontWeight: FontWeight.w600,
+      ),
+      onTap: widget.onHashtagTap,
+      recognizers: _recognizers,
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {

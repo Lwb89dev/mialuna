@@ -184,7 +184,6 @@ class _NostrImageState extends ConsumerState<NostrImage> {
           imageUrl: _urls[_index],
           fit: widget.fit,
           memCacheWidth: cacheWidth,
-          maxWidthDiskCache: 1600,
           fadeInDuration: const Duration(milliseconds: 150),
           placeholder: (_, _) =>
               ColoredBox(color: colors.surfaceContainerHighest),

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart' show DateFormat;
 import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/nip19.dart';
 import '../../l10n/strings.dart';
+import '../../core/platform/secure_window.dart';
 import '../profile/profile_widgets.dart';
 import '../search/people_search.dart';
 import 'chat_screen.dart';
@@ -39,7 +40,10 @@ String previewOf(DmMessage m) {
 }
 
 class InboxScreen extends ConsumerWidget {
-  const InboxScreen({super.key});
+  /// Shows the message requests (conversations started by people outside
+  /// your web of trust) instead of the inbox.
+  final bool requests;
+  const InboxScreen({super.key, this.requests = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -63,10 +67,34 @@ class InboxScreen extends ConsumerWidget {
         text: context.l10n.signerNoPrivateMessagesLong,
       );
     } else {
-      final conversations = dm.sorted;
+      final conversations = requests ? dm.requests : dm.sorted;
       body = ListView(
         children: [
-          if (dm.inboxConfigured == false) _SetupBanner(),
+          if (requests)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                context.l10n.messageRequestsHint,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+            )
+          else if (dm.requests.isNotEmpty)
+            ListTile(
+              leading: const Icon(Icons.mark_email_unread_outlined),
+              title: Text(context.l10n.messageRequests),
+              subtitle: Text(
+                context.l10n.messageRequestsSubtitle(dm.requests.length),
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const InboxScreen(requests: true),
+                ),
+              ),
+            ),
+          if (dm.inboxConfigured == false && !requests) _SetupBanner(),
           if (dm.error != null)
             ListTile(
               leading: Icon(
@@ -84,7 +112,7 @@ class InboxScreen extends ConsumerWidget {
               padding: EdgeInsets.all(32),
               child: Center(child: CircularProgressIndicator()),
             )
-          else if (conversations.isEmpty)
+          else if (conversations.isEmpty && !requests)
             Padding(
               padding: const EdgeInsets.all(32),
               child: Text(
@@ -162,19 +190,23 @@ class InboxScreen extends ConsumerWidget {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(context.l10n.messages),
-        actions: [
-          if (!auth.isGuest && dm.supported)
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              tooltip: context.l10n.newMessage,
-              onPressed: () => _newChat(context, ref),
-            ),
-        ],
+    return SecureScreen(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            requests ? context.l10n.messageRequests : context.l10n.messages,
+          ),
+          actions: [
+            if (!auth.isGuest && dm.supported && !requests)
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                tooltip: context.l10n.newMessage,
+                onPressed: () => _newChat(context, ref),
+              ),
+          ],
+        ),
+        body: body,
       ),
-      body: body,
     );
   }
 
@@ -320,6 +352,7 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
                 controller: _controller,
                 autofocus: true,
                 onChanged: ref.read(peopleSearchProvider.notifier).setQuery,
+                enableIMEPersonalizedLearning: false,
                 decoration: InputDecoration(
                   hintText: context.l10n.searchByNameOrUsername,
                   prefixIcon: const Icon(Icons.search),

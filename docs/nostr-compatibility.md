@@ -44,6 +44,26 @@ Mialuna implements and with which conventions.
   `["L","mialuna.story"]` / `["l","story","mialuna.story"]`. Convention
   documented here until broader standards emerge; clients that do not know
   it see ordinary expiring media events.
+- **Texts over stories** (Instagram-style text stickers): a story may carry up
+  to 8 tags `["story-text", "<json>"]`. They are *not* baked into the picture,
+  so the `#hashtags` in them stay tappable. The JSON is
+  `{"t": text, "x": 0.5, "y": 0.4, "s": 1, "r": 0, "c": "ffffff",
+  "f": "bold", "b": "solid"}`:
+  `t` the text (max 200 characters), `x`/`y` its centre as a fraction (0–1) of
+  the picture's width/height, `s` the size (1 = 6.2 % of the picture's width,
+  0.4–5), `r` the rotation in radians, `c` the colour as `rrggbb`, `f` the font
+  (`classic`, `bold`, `serif`, `mono`, `italic`) and `b` the background
+  (`none`, `solid`, `veil`). Readers clamp every number and fall back to the
+  default for unknown fonts; a tag that is not valid JSON or has no text is
+  ignored. The hashtags of the texts are also published as `t` tags. Other
+  clients ignore the tag and show the plain picture.
+- **Hashtags** are `#` followed by letters, marks, digits or `_` of any script
+  (`#città`, `#東京`), not glued to a previous word. Published as lower-case
+  `t` tags.
+- **Lists shared with other clients** (mute list 10000, bookmarks 10003) are
+  republished keeping every tag Mialuna does not manage (`word`, `e`, `a`,
+  `r`…) and the event's `content` (private entries are never read nor
+  rewritten), and only after the relay copy has been read.
 
 ## Private messages (NIP-17)
 
@@ -57,7 +77,53 @@ Mialuna implements and with which conventions.
   reference (relay hints, author and kind included) in the message text.
   Other NIP-17 clients show it as a link; Mialuna renders a preview card.
 - Group chats (several `p` tags) are ignored for now.
-- History older than the first sync on a device is not counted as unread.
+- History older than the first sync on a device is not counted as unread —
+  not even briefly while the inbox is still loading.
+- The number on the paper plane of Home is the count of unread messages; the
+  bell counts notifications (reactions, comments, zaps, new followers) newer
+  than the last time the notifications screen was open. A follower's updated
+  follow list is not a new follower, and a `-` reaction is not a notification.
+
+## Story views
+
+Who watched a story is not asked of Blossom (a media server cannot know it);
+it lives in a message from the viewer to the author. The viewer sends a rumor
+of kind `1417` (Mialuna convention), `content` empty, with one `["e",
+<story id>]` tag per story watched (at most 30) and `["p", <author>]`,
+gift-wrapped (NIP-59) **to the author only** and published to the author's
+inbox relays (kind 10050, or NIP-65 read relays). One message per author when
+the viewer leaves that author's stories. The viewer's pubkey is the seal's.
+Authors ignore receipts not addressed to them, from themselves, from blocked
+or muted accounts, with a malformed id, or dated in the future. Other clients
+ignore the unknown rumor kind. Off with Settings → "Let people see that I
+viewed their stories"; on by default.
+
+## Zap receipts (NIP-57) and notifications
+
+A receipt (kind 9735) is shown as "X zapped you N sats" only when its
+`description` holds a kind 9734 zap request whose **signature verifies** (so
+the sender it names really made it), whose `p` tag is the same as the
+receipt's, and — for the amount — the receipt's own `bolt11` invoice is read
+(the request's `amount` tag is the fallback). Anything else is shown as a
+plain notification from the receipt's author, with no amount. Mialuna does not
+check that the receipt was issued by the recipient's Lightning provider
+(`nostrPubkey` of their LNURL), so a receipt proves who *claims* to have paid,
+not that a payment happened.
+
+The Android notifications of the app (reaction, comment, zap, follower,
+private message) are produced on the device from these same events: there is
+no push service. A private-message notification carries only the sender.
+
+## Web of trust
+
+After Outkast's: the network is your follows plus every account followed by at
+least 10 of them (kind 3 of each follow read in chunks of 50, newest per
+author), computed on the device, cached per account, refreshed after 12 hours
+and on demand, opt-in, and only active once a network was computed. It filters
+what strangers can push at you — comments on posts, reactions/comments/zaps in
+Notifications (new followers stay visible), close-friends posts and stories,
+and private messages (kept as "message requests", not counted as unread, until
+you answer). Discover and Reels are never filtered.
 
 ## Media hygiene
 

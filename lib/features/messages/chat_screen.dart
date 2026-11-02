@@ -7,6 +7,8 @@ import '../../l10n/strings.dart';
 import '../feed/widgets/inline_video.dart';
 import '../feed/widgets/nostr_image.dart';
 import '../feed/widgets/post_card.dart';
+import '../../core/platform/secure_window.dart';
+import '../../core/text/clip.dart';
 import '../profile/profile_widgets.dart';
 import 'dm_controller.dart';
 import 'inbox_screen.dart';
@@ -64,87 +66,93 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (mounted) ref.read(dmProvider.notifier).markRead(widget.peer);
     });
 
-    return Scaffold(
-      appBar: AppBar(
-        titleSpacing: 0,
-        title: GestureDetector(
-          onTap: () => openProfile(context, widget.peer),
-          child: Row(
-            children: [
-              ProfileAvatar(pubkey: widget.peer, radius: 16, tappable: false),
-              const SizedBox(width: 10),
-              Flexible(
-                child: AuthorName(
-                  pubkey: widget.peer,
-                  tappable: false,
-                  style: theme.textTheme.titleMedium,
+    return SecureScreen(
+      child: Scaffold(
+        appBar: AppBar(
+          titleSpacing: 0,
+          title: GestureDetector(
+            onTap: () => openProfile(context, widget.peer),
+            child: Row(
+              children: [
+                ProfileAvatar(pubkey: widget.peer, radius: 16, tappable: false),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: AuthorName(
+                    pubkey: widget.peer,
+                    tappable: false,
+                    style: theme.textTheme.titleMedium,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: messages.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Text(
-                        context.l10n.chatEmptyHint,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.outline,
-                        ),
-                      ),
-                    ),
-                  )
-                : ListView.builder(
-                    reverse: true,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    itemCount: messages.length,
-                    itemBuilder: (context, i) => _Bubble(message: messages[i]),
-                  ),
-          ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 8, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      minLines: 1,
-                      maxLines: 5,
-                      textCapitalization: TextCapitalization.sentences,
-                      decoration: InputDecoration(
-                        hintText: context.l10n.messageHint,
-                        filled: true,
-                        isDense: true,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(22),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      onSubmitted: (_) => _send(),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  IconButton.filled(
-                    onPressed: _sending ? null : _send,
-                    icon: const Icon(Icons.send),
-                    tooltip: context.l10n.send,
-                  ),
-                ],
-              ),
+              ],
             ),
           ),
-        ],
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: messages.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Text(
+                          context.l10n.chatEmptyHint,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.outline,
+                          ),
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      reverse: true,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      itemCount: messages.length,
+                      itemBuilder: (context, i) =>
+                          _Bubble(message: messages[i]),
+                    ),
+            ),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 8, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _controller,
+                        minLines: 1,
+                        maxLines: 5,
+                        // What is said in private is not for the keyboard to
+                        // learn from.
+                        enableIMEPersonalizedLearning: false,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: InputDecoration(
+                          hintText: context.l10n.messageHint,
+                          filled: true,
+                          isDense: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(22),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        onSubmitted: (_) => _send(),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    IconButton.filled(
+                      onPressed: _sending ? null : _send,
+                      icon: const Icon(Icons.send),
+                      tooltip: context.l10n.send,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -186,7 +194,10 @@ class _Bubble extends StatelessWidget {
                 if (text.isNotEmpty) const SizedBox(height: 6),
               ],
               if (text.isNotEmpty)
-                SelectableText(text, style: TextStyle(color: fg)),
+                SelectableText(
+                  clipForDisplay(text),
+                  style: TextStyle(color: fg),
+                ),
               const SizedBox(height: 2),
               Row(
                 mainAxisSize: MainAxisSize.min,

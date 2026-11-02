@@ -38,7 +38,9 @@ class ProfileAvatar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final meta = ref.watch(profileProvider(pubkey));
     final picture = meta?.picture;
-    final initials = (meta?.label ?? pubkey).replaceAll('…', '');
+    // Initials of the name, or of the key when there is none (never of the
+    // "npub1…" that stands in for a missing name).
+    final initials = (meta?.givenName ?? pubkey).replaceAll('…', '');
     final avatar = CircleAvatar(
       radius: radius,
       backgroundColor: _colorFor(pubkey),
@@ -88,7 +90,7 @@ class AuthorName extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final meta = ref.watch(profileProvider(pubkey));
     final text = Text(
-      meta?.label ?? ProfileMetadata.shortPubkey(pubkey),
+      meta?.label ?? ProfileMetadata.shortNpub(pubkey),
       style: style,
       maxLines: maxLines,
       overflow: TextOverflow.ellipsis,

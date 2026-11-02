@@ -1,5 +1,7 @@
+import '../../text/hashtags.dart';
 import '../event.dart';
 import '../relay.dart' show isPublicHost;
+import 'story_text.dart';
 
 /// Hosts whose URLs are web pages, not media files. Posts pointing at them
 /// (seen in the wild as kind 21/22 events carrying YouTube watch URLs) can
@@ -269,6 +271,9 @@ class MediaPost {
   final bool isStory;
   final int? expiresAt;
 
+  /// Texts laid over a story (see [StoryText]); always empty for other posts.
+  final List<StoryText> overlays;
+
   /// Close-friends post: it reached this device inside a gift wrap, its media
   /// is encrypted, and [recipients] is the audience the author injected.
   final bool isPrivate;
@@ -284,6 +289,7 @@ class MediaPost {
     this.sensitiveReason,
     required this.isStory,
     this.expiresAt,
+    this.overlays = const [],
     this.isPrivate = false,
     this.recipients = const [],
   });
@@ -420,6 +426,7 @@ class MediaPost {
       sensitiveReason: contentWarning,
       isStory: storyMarker,
       expiresAt: event.expiration,
+      overlays: storyMarker ? StoryText.fromTags(event.tags) : const [],
       isPrivate: event.tags.any(
         (t) =>
             t.length > 1 && t[0] == audienceTag && t[1] == closeFriendsAudience,
@@ -439,7 +446,7 @@ class MediaPost {
   /// the caption without hashtags, or [fallback].
   static String deriveTitle(String caption, {String fallback = 'Mialuna'}) {
     for (final line in caption.split('\n')) {
-      final cleaned = line.replaceAll(RegExp(r'#\w+'), '').trim();
+      final cleaned = Hashtags.strip(line).trim();
       if (cleaned.isNotEmpty) {
         return cleaned.length > 80 ? '${cleaned.substring(0, 79)}…' : cleaned;
       }
@@ -462,6 +469,9 @@ class MediaPost {
 
     /// The close-friends audience, injected into the post. Null = public.
     List<String>? closeFriends,
+
+    /// Texts laid over a story. Their hashtags become `t` tags too.
+    List<StoryText> overlays = const [],
   }) {
     final tags = <List<String>>[
       for (final item in media) item.toImetaTag(),
@@ -483,13 +493,18 @@ class MediaPost {
         ['L', 'mialuna.story'],
         ['l', 'story', 'mialuna.story'],
       ],
+      if (isStory)
+        for (final text in overlays.take(StoryText.maxTexts)) text.toTag(),
       if (expiresAt != null) ['expiration', expiresAt.toString()],
     ];
     // Inline hashtags mentioned in the caption.
-    final mentionPattern = RegExp(r'#(\w+)');
     final existing = extraHashtags.map((t) => t.toLowerCase()).toSet();
-    for (final m in mentionPattern.allMatches(caption)) {
-      final tag = m.group(1)!.toLowerCase();
+    final written = [
+      caption,
+      if (isStory)
+        for (final o in overlays) o.text,
+    ];
+    for (final tag in written.expand(Hashtags.extract)) {
       if (existing.add(tag)) tags.add(['t', tag]);
     }
     return tags;

@@ -61,6 +61,11 @@ class CloseFriendsController extends Notifier<CloseFriendsState> {
   int _generation = 0;
   Future<void>? _syncing;
 
+  /// Completes when the list saved on this device has been read. Edits wait
+  /// for it: made earlier, they would start from an empty list and the file
+  /// would then overwrite them (or they would overwrite the file).
+  Future<void> _loaded = Future.value();
+
   String get _file => 'close_friends_$_pub.json';
 
   @override
@@ -76,7 +81,7 @@ class CloseFriendsController extends Notifier<CloseFriendsState> {
     _dirty = false;
     _syncing = null;
     if (pub == null) return const CloseFriendsState();
-    Future.microtask(() => _loadLocal(generation));
+    _loaded = Future.microtask(() => _loadLocal(generation));
     return const CloseFriendsState();
   }
 
@@ -102,6 +107,7 @@ class CloseFriendsController extends Notifier<CloseFriendsState> {
 
   /// Adds people; returns how many were added (the cap may refuse some).
   Future<int> add(Iterable<String> pubkeys) async {
+    await _loaded;
     final me = _pub;
     final members = [...state.members];
     var added = 0;
@@ -116,6 +122,7 @@ class CloseFriendsController extends Notifier<CloseFriendsState> {
   }
 
   Future<void> remove(String pubkey) async {
+    await _loaded;
     await _changed([...state.members]..remove(pubkey));
   }
 

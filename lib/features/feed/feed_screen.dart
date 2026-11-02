@@ -5,11 +5,13 @@ import 'package:go_router/go_router.dart';
 import '../../app/providers.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../l10n/strings.dart';
-import '../explore/explore_screen.dart';
+import '../explore/hashtag_link.dart';
 import '../feed/feed_controller.dart';
+import '../feed/widgets/count_badge.dart';
 import '../feed/widgets/post_card.dart';
 import '../messages/dm_controller.dart';
 import '../messages/inbox_screen.dart';
+import '../notifications/notifications_controller.dart';
 import '../notifications/notifications_screen.dart';
 import '../settings/settings_controller.dart';
 import '../stories/stories_controller.dart';
@@ -78,9 +80,19 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
   @override
   Widget build(BuildContext context) {
     final isGuest = ref.watch(authProvider.select((a) => a.isGuest));
+    // The saved session is still being read: this is not a guest, so neither
+    // the Discover feed nor the stories of "everybody" are started for it.
+    final restoring = ref.watch(authProvider.select((a) => a.restoring));
     final mode = isGuest ? FeedMode.discover : FeedMode.following;
-    final feed = ref.watch(feedProvider(mode));
-    final unread = ref.watch(dmProvider.select((s) => s.unreadCount));
+    final feed = restoring ? const FeedState() : ref.watch(feedProvider(mode));
+    final unreadMessages = isGuest
+        ? 0
+        : ref.watch(dmProvider.select((s) => s.unreadCount));
+    // Watching it here keeps the notifications subscription alive for the
+    // whole session, so the bell knows about news before it is opened.
+    final unseenNotifications = ref.watch(
+      notificationsProvider.select((s) => s.unreadCount),
+    );
     final theme = Theme.of(context);
 
     ref.listen(tabReselectProvider, (_, event) {
@@ -125,17 +137,23 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            tooltip: context.l10n.notifications,
+            icon: CountBadge(
+              count: unseenNotifications,
+              child: const Icon(Icons.notifications_outlined),
+            ),
+            tooltip: unseenNotifications > 0
+                ? context.l10n.notificationsNew(unseenNotifications)
+                : context.l10n.notifications,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const NotificationsScreen()),
             ),
           ),
           IconButton(
-            tooltip: context.l10n.messages,
-            icon: Badge(
-              isLabelVisible: unread > 0 && !isGuest,
-              label: Text('$unread'),
+            tooltip: unreadMessages > 0
+                ? context.l10n.messagesUnread(unreadMessages)
+                : context.l10n.messages,
+            icon: CountBadge(
+              count: unreadMessages,
               child: const Icon(Icons.send_outlined),
             ),
             onPressed: () => Navigator.of(context)
@@ -145,14 +163,20 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _refresh,
-        child: _buildBody(context, feed, mode),
+        child: _buildBody(context, feed, mode, restoring: restoring),
       ),
     );
   }
 
-  Widget _buildBody(BuildContext context, FeedState feed, FeedMode mode) {
+  Widget _buildBody(
+    BuildContext context,
+    FeedState feed,
+    FeedMode mode, {
+    bool restoring = false,
+  }) {
     final theme = Theme.of(context);
     final header = _FeedSwitch(guest: mode == FeedMode.discover);
+    final stories = restoring ? const SizedBox.shrink() : const StoriesRail();
     if (feed.posts.isEmpty) {
       // Always scrollable, so pull-to-refresh works on the empty states too.
       return ListView(
@@ -160,7 +184,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           header,
-          const StoriesRail(),
+          stories,
           if (feed.isLoading || feed.isRefreshing)
             for (var i = 0; i < 2; i++) const _PostSkeleton()
           else if (feed.followsNobody)
@@ -187,10 +211,14 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     return ListView.builder(
       controller: _scroll,
       physics: const AlwaysScrollableScrollPhysics(),
+      // Pictures start loading a couple of screens before they are reached,
+      // so scrolling does not show grey boxes.
+      // ignore: deprecated_member_use
+      cacheExtent: 1500,
       itemCount: feed.posts.length + 3,
       itemBuilder: (context, i) {
         if (i == 0) return header;
-        if (i == 1) return const StoriesRail();
+        if (i == 1) return stories;
         if (i == feed.posts.length + 2) {
           if (feed.isLoadingMore) {
             return const Padding(
@@ -223,11 +251,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
         return PostCard(
           key: ValueKey(post.id),
           post: post,
-          onHashtagTap: (tag) => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ExploreScreen(initialQuery: '#$tag'),
-            ),
-          ),
+          onHashtagTap: (tag) => openHashtagSearch(context, tag),
         );
       },
     );

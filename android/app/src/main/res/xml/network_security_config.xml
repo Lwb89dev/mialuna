@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Everything Mialuna talks to is HTTPS / WSS, and only certificates the
+     system trusts are accepted (not CAs a user, or malware, added). The debug
+     build overrides this file to allow a local relay (src/debug/res/xml). -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

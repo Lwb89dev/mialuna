@@ -39,6 +39,11 @@ class BookmarksController extends Notifier<Set<String>> {
   static const _prefsKey = 'mialuna_bookmarks';
   final Set<String> _synced = {};
 
+  /// The newest list event seen on the relays (or published by us): what we
+  /// republish keeps its entries and its `content` that are not ours.
+  NostrEvent? _remote;
+  Future<void>? _syncing;
+
   @override
   Set<String> build() {
     _load();
@@ -65,12 +70,18 @@ class BookmarksController extends Notifier<Set<String>> {
   /// per account). Local bookmarks are never deleted by the merge.
   Future<void> syncFromRelays(String pubkey) async {
     if (!_synced.add(pubkey)) return;
+    final done = _syncing = _sync(pubkey);
+    await done;
+  }
+
+  Future<void> _sync(String pubkey) async {
     try {
       final event = await _fetchNewestList(
         ref.read(relayPoolProvider),
         NostrKinds.bookmarks,
         pubkey,
       );
+      _remote = event;
       final remote = event == null ? <String>{} : Nip51.bookmarkIds(event);
       final merged = {...state, ...remote};
       if (merged.length != state.length) {
@@ -78,22 +89,39 @@ class BookmarksController extends Notifier<Set<String>> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setStringList(_prefsKey, merged.toList());
       }
-      if (event != null || state.isNotEmpty) await _publish();
+      if (event != null || state.isNotEmpty) await _publishNow();
     } catch (_) {
       _synced.remove(pubkey); // allow retry
     }
   }
 
+  /// Publishes the list, once the relay copy has been read: publishing
+  /// earlier would replace it with what this device alone knows.
   Future<void> _publish() async {
+    try {
+      await _syncing?.timeout(const Duration(seconds: 12));
+    } on TimeoutException {
+      // Go on with what is known.
+    }
+    await _publishNow();
+  }
+
+  Future<void> _publishNow() async {
     final signer = ref.read(authProvider).signer;
     if (!signer.canSign) return;
     try {
+      final previous = _remote;
       final event = await signer.signEvent(
         kind: NostrKinds.bookmarks,
-        tags: Nip51.bookmarkTags(state),
-        content: '',
+        tags: Nip51.keepingForeignTags(
+          previous,
+          Nip51.bookmarkTags(state),
+          managedNames: const {'e'},
+        ),
+        content: previous?.content ?? '',
       );
-      await ref.read(relayPoolProvider).publish(event);
+      final report = await ref.read(relayPoolProvider).publish(event);
+      if (report.publishedSomewhere) _remote = event;
     } catch (_) {}
   }
 }
@@ -122,6 +150,11 @@ class MuteController extends Notifier<MuteList> {
   static const _pubkeysKey = 'mialuna_muted';
   static const _hashtagsKey = 'mialuna_muted_hashtags';
   final Set<String> _synced = {};
+
+  /// See [BookmarksController]: other clients' mutes (words, threads,
+  /// private entries in `content`) survive our republishing.
+  NostrEvent? _remote;
+  Future<void>? _syncing;
 
   @override
   MuteList build() {
@@ -171,15 +204,21 @@ class MuteController extends Notifier<MuteList> {
   /// Merges the relay mute list into the local one (once per session).
   Future<void> syncFromRelays(String pubkey) async {
     if (!_synced.add(pubkey)) return;
+    final done = _syncing = _sync(pubkey);
+    await done;
+  }
+
+  Future<void> _sync(String pubkey) async {
     try {
       final event = await _fetchNewestList(
         ref.read(relayPoolProvider),
         NostrKinds.muteList,
         pubkey,
       );
+      _remote = event;
       if (event == null) {
         if (state.pubkeys.isNotEmpty || state.hashtags.isNotEmpty) {
-          await _publish();
+          await _publishNow();
         }
         return;
       }
@@ -192,22 +231,37 @@ class MuteController extends Notifier<MuteList> {
         await prefs.setStringList(_pubkeysKey, mergedPubkeys.toList());
         await prefs.setStringList(_hashtagsKey, mergedHashtags.toList());
       }
-      await _publish();
+      await _publishNow();
     } catch (_) {
       _synced.remove(pubkey);
     }
   }
 
   Future<void> _publish() async {
+    try {
+      await _syncing?.timeout(const Duration(seconds: 12));
+    } on TimeoutException {
+      // Go on with what is known.
+    }
+    await _publishNow();
+  }
+
+  Future<void> _publishNow() async {
     final signer = ref.read(authProvider).signer;
     if (!signer.canSign) return;
     try {
+      final previous = _remote;
       final event = await signer.signEvent(
         kind: NostrKinds.muteList,
-        tags: Nip51.muteTags(state.pubkeys, hashtags: state.hashtags),
-        content: '',
+        tags: Nip51.keepingForeignTags(
+          previous,
+          Nip51.muteTags(state.pubkeys, hashtags: state.hashtags),
+          managedNames: const {'p', 't'},
+        ),
+        content: previous?.content ?? '',
       );
-      await ref.read(relayPoolProvider).publish(event);
+      final report = await ref.read(relayPoolProvider).publish(event);
+      if (report.publishedSomewhere) _remote = event;
     } catch (_) {}
   }
 }

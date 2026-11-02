@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/platform/secure_window.dart';
 import '../../l10n/strings.dart';
 import '../feed/widgets/post_card.dart' show closeFriendsGreen;
 import '../profile/profile_widgets.dart';
@@ -97,90 +98,93 @@ class _CloseFriendsScreenState extends ConsumerState<CloseFriendsScreen> {
     final auth = ref.watch(authProvider);
     final state = ref.watch(closeFriendsProvider);
     final canUse = !auth.isGuest && auth.signer.canEncrypt;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(context.l10n.closeFriends),
-        actions: [
-          if (canUse)
-            IconButton(
-              icon: const Icon(Icons.person_add_alt_1_outlined),
-              tooltip: context.l10n.add,
-              onPressed: _add,
-            ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const CloseFriendsExplainer(),
-          const SizedBox(height: 16),
-          if (!canUse)
-            Text(
-              auth.isGuest
-                  ? context.l10n.signInToCreateList
-                  : context.l10n.signerNoCloseFriends,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
+    // Who is on the list is nobody's business: no screenshots, no preview.
+    return SecureScreen(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(context.l10n.closeFriends),
+          actions: [
+            if (canUse)
+              IconButton(
+                icon: const Icon(Icons.person_add_alt_1_outlined),
+                tooltip: context.l10n.add,
+                onPressed: _add,
               ),
-            )
-          else ...[
-            Row(
-              children: [
-                Text(
-                  context.l10n.peopleOfMax(
-                    state.members.length,
-                    CloseFriendsController.maxMembers,
-                  ),
-                  style: theme.textTheme.titleSmall,
-                ),
-                const Spacer(),
-                if (state.syncing)
-                  const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-              ],
-            ),
-            if (state.error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  state.error!,
-                  style: TextStyle(color: theme.colorScheme.error),
-                ),
-              ),
-            const SizedBox(height: 8),
-            if (state.members.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.star_outline,
-                      size: 48,
-                      color: theme.colorScheme.tertiary,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(context.l10n.noOneYet),
-                    const SizedBox(height: 12),
-                    FilledButton.tonalIcon(
-                      onPressed: _add,
-                      icon: const Icon(Icons.person_add_alt_1_outlined),
-                      label: Text(context.l10n.addPeople),
-                    ),
-                  ],
+          ],
+        ),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            const CloseFriendsExplainer(),
+            const SizedBox(height: 16),
+            if (!canUse)
+              Text(
+                auth.isGuest
+                    ? context.l10n.signInToCreateList
+                    : context.l10n.signerNoCloseFriends,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.error,
                 ),
               )
-            else
-              for (final pk in state.members)
-                _FriendTile(
-                  pubkey: pk,
-                  onRemove: () =>
-                      ref.read(closeFriendsProvider.notifier).remove(pk),
+            else ...[
+              Row(
+                children: [
+                  Text(
+                    context.l10n.peopleOfMax(
+                      state.members.length,
+                      CloseFriendsController.maxMembers,
+                    ),
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const Spacer(),
+                  if (state.syncing)
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                ],
+              ),
+              if (state.error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    state.error!,
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
                 ),
+              const SizedBox(height: 8),
+              if (state.members.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.star_outline,
+                        size: 48,
+                        color: theme.colorScheme.tertiary,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(context.l10n.noOneYet),
+                      const SizedBox(height: 12),
+                      FilledButton.tonalIcon(
+                        onPressed: _add,
+                        icon: const Icon(Icons.person_add_alt_1_outlined),
+                        label: Text(context.l10n.addPeople),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                for (final pk in state.members)
+                  _FriendTile(
+                    pubkey: pk,
+                    onRemove: () =>
+                        ref.read(closeFriendsProvider.notifier).remove(pk),
+                  ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

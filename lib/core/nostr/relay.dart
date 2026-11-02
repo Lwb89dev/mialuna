@@ -33,6 +33,17 @@ bool isSafeRemoteRelayUrl(String url) {
   return isPublicHost(uri.host);
 }
 
+/// A relay address worth connecting to: encrypted (`wss://`), or — for a
+/// relay on the user's own network — plain `ws://` to a host that is not on
+/// the public internet (`localhost`, `192.168.x.x`, `relay.local`). A
+/// `ws://` address on the open internet would send everything in the clear.
+bool isAcceptableRelayUrl(String url) {
+  final uri = Uri.tryParse(url);
+  if (uri == null || uri.host.isEmpty) return false;
+  if (uri.scheme == 'wss') return true;
+  return uri.scheme == 'ws' && !isPublicHost(uri.host);
+}
+
 /// Rejects loopback, link-local and private-range hosts.
 bool isPublicHost(String host) {
   final h = host.toLowerCase();
@@ -81,6 +92,10 @@ class Relay {
 
   /// True once a NIP-42 AUTH was accepted on the current connection.
   bool authenticated = false;
+
+  /// A relay message longer than this (in characters) is dropped unread: the
+  /// biggest honest ones are follow lists of a few hundred KB.
+  static const maxMessageChars = 6 * 1024 * 1024;
 
   final Map<String, List<NostrFilter>> _activeSubscriptions = {};
   final Map<String, Completer<RelayPublishResult>> _pendingOk = {};
@@ -217,7 +232,8 @@ class Relay {
 
   void _handleMessage(dynamic raw) {
     try {
-      final msg = jsonDecode(raw as String) as List;
+      if (raw is! String || raw.length > maxMessageChars) return;
+      final msg = jsonDecode(raw) as List;
       switch (msg[0]) {
         case 'EVENT':
           final event = NostrEvent.fromJson(msg[2] as Map<String, dynamic>);

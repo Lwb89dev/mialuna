@@ -2419,6 +2419,342 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Italiano'**
   String get languageItalian;
+
+  /// No description provided for @cannotEditPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo can\'t be edited here.'**
+  String get cannotEditPhoto;
+
+  /// No description provided for @notificationsNew.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 new notification} other{{count} new notifications}}'**
+  String notificationsNew(int count);
+
+  /// No description provided for @messagesUnread.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 unread message} other{{count} unread messages}}'**
+  String messagesUnread(int count);
+
+  /// No description provided for @done.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
+
+  /// No description provided for @storyAddText.
+  ///
+  /// In en, this message translates to:
+  /// **'Add text'**
+  String get storyAddText;
+
+  /// No description provided for @storyEditText.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit text'**
+  String get storyEditText;
+
+  /// No description provided for @storyTextHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write something… #hashtags are tappable'**
+  String get storyTextHint;
+
+  /// No description provided for @storyTextsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the picture to write. Drag to move, pinch to resize and rotate, tap a text to edit it.'**
+  String get storyTextsHelp;
+
+  /// No description provided for @storyTextsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No text} =1{1 text} other{{count} texts}}'**
+  String storyTextsCount(int count);
+
+  /// No description provided for @storyFontClassic.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic'**
+  String get storyFontClassic;
+
+  /// No description provided for @storyFontBold.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get storyFontBold;
+
+  /// No description provided for @storyFontSerif.
+  ///
+  /// In en, this message translates to:
+  /// **'Serif'**
+  String get storyFontSerif;
+
+  /// No description provided for @storyFontMono.
+  ///
+  /// In en, this message translates to:
+  /// **'Mono'**
+  String get storyFontMono;
+
+  /// No description provided for @storyFontItalic.
+  ///
+  /// In en, this message translates to:
+  /// **'Italic'**
+  String get storyFontItalic;
+
+  /// No description provided for @storyTextBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Text background'**
+  String get storyTextBackground;
+
+  /// No description provided for @storyTextColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Text colour'**
+  String get storyTextColor;
+
+  /// No description provided for @storyTextLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add up to {max} texts.'**
+  String storyTextLimit(int max);
+
+  /// No description provided for @wotTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Web of trust'**
+  String get wotTitle;
+
+  /// No description provided for @wotEnable.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter spam with your web of trust'**
+  String get wotEnable;
+
+  /// No description provided for @wotExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide comments, notifications, private posts and messages from people you don\'t follow and that aren\'t followed by at least {min} of the people you follow. Worked out on this phone from public follow lists; nothing is sent to any server. Discover is never filtered.'**
+  String wotExplain(int min);
+
+  /// No description provided for @wotRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh network now'**
+  String get wotRefresh;
+
+  /// No description provided for @wotStatusIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not computed yet. Turn the filter on, or refresh, to build your network.'**
+  String get wotStatusIdle;
+
+  /// No description provided for @wotStatusDiscovering.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking who your follows follow… {done} of {total}'**
+  String wotStatusDiscovering(int done, int total);
+
+  /// No description provided for @wotStatusComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Your network: {direct} people you follow plus {indirect} followed by enough of them. Updated {when}.'**
+  String wotStatusComplete(int direct, int indirect, Object when);
+
+  /// No description provided for @wotStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t compute your network: {reason}'**
+  String wotStatusFailed(Object reason);
+
+  /// No description provided for @wotNoFollows.
+  ///
+  /// In en, this message translates to:
+  /// **'you don\'t follow anyone yet'**
+  String get wotNoFollows;
+
+  /// No description provided for @messageRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Message requests'**
+  String get messageRequests;
+
+  /// No description provided for @messageRequestsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 conversation from outside your web of trust} other{{count} conversations from outside your web of trust}}'**
+  String messageRequestsSubtitle(int count);
+
+  /// No description provided for @messageRequestsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'From people outside your web of trust. They don\'t count as unread. Reply to move a conversation to your inbox.'**
+  String get messageRequestsHint;
+
+  /// No description provided for @storyViewsSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Let people see that I viewed their stories'**
+  String get storyViewsSetting;
+
+  /// No description provided for @storyViewsSettingExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'When you watch a story, a receipt is sent to its author, encrypted so that only they can read it. It lists your name next to theirs; relays see nothing. Turn it off to watch without leaving a trace.'**
+  String get storyViewsSettingExplain;
+
+  /// No description provided for @storySeenBy.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No views yet} =1{Seen by 1 person} other{Seen by {count} people}}'**
+  String storySeenBy(int count);
+
+  /// No description provided for @storyViewsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody has watched this story yet, or their receipts have not reached you.'**
+  String get storyViewsEmpty;
+
+  /// No description provided for @storyViewsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Only people who allow it send a receipt, so the real number can be higher.'**
+  String get storyViewsHint;
+
+  /// No description provided for @systemNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'System notifications'**
+  String get systemNotifications;
+
+  /// No description provided for @systemNotificationsExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Show a notification on your phone when something new arrives while Mialuna is in the background. Private messages never show their text, not even on the lock screen. Android pauses apps that stay in the background for long, so notifications arrive while Mialuna is still running.'**
+  String get systemNotificationsExplain;
+
+  /// No description provided for @systemNotificationsBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are turned off for Mialuna in the phone\'s settings.'**
+  String get systemNotificationsBlocked;
+
+  /// No description provided for @systemNotificationsOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get systemNotificationsOpenSettings;
+
+  /// No description provided for @systemNotificationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'sent you a private message'**
+  String get systemNotificationMessage;
+
+  /// No description provided for @systemNotificationNewMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'New private message'**
+  String get systemNotificationNewMessage;
+
+  /// No description provided for @systemNotificationNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New notification'**
+  String get systemNotificationNew;
+
+  /// No description provided for @notificationChannelSocial.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactions, comments, zaps and followers'**
+  String get notificationChannelSocial;
+
+  /// No description provided for @notificationChannelMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Private messages'**
+  String get notificationChannelMessages;
+
+  /// No description provided for @zapInvoiceMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The invoice does not match the amount you chose. Nothing was paid.'**
+  String get zapInvoiceMismatch;
+
+  /// No description provided for @storyYourStory.
+  ///
+  /// In en, this message translates to:
+  /// **'Your story'**
+  String get storyYourStory;
+
+  /// No description provided for @storyNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New story'**
+  String get storyNew;
+
+  /// No description provided for @storyAddSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to your story'**
+  String get storyAddSemantics;
+
+  /// No description provided for @storyOwnRailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your story, {count, plural, =1{1 story} other{{count} stories}}, {state}'**
+  String storyOwnRailLabel(int count, Object state);
+
+  /// No description provided for @storyTextSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Text size'**
+  String get storyTextSize;
+
+  /// No description provided for @storyPickPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a photo or a video for your story'**
+  String get storyPickPrompt;
+
+  /// No description provided for @storyEditPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit photo'**
+  String get storyEditPhoto;
+
+  /// No description provided for @storyCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Caption'**
+  String get storyCaption;
+
+  /// No description provided for @storyDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this story?'**
+  String get storyDiscardTitle;
+
+  /// No description provided for @storyDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get storyDiscard;
+
+  /// No description provided for @storyShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get storyShare;
+
+  /// No description provided for @storyShared.
+  ///
+  /// In en, this message translates to:
+  /// **'Story shared'**
+  String get storyShared;
 }
 
 class _AppLocalizationsDelegate

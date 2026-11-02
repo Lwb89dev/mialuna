@@ -16,15 +16,43 @@ class FollowListController extends Notifier<Set<String>> {
   NostrEvent? _latest;
   PoolSubscription? _sub;
   late Completer<void> _loaded;
+  late Completer<void> _usable;
 
   @override
   Set<String> build() {
     _latest = null;
     _loaded = Completer<void>();
+    _usable = Completer<void>();
     ref.onDispose(() => _sub?.close());
     final pub = ref.watch(authProvider).publicKey;
-    if (pub != null) _load(pub);
+    if (pub != null) {
+      _loadSaved(pub);
+      _load(pub);
+    }
     return {};
+  }
+
+  String _fileFor(String pub) => 'follows_$pub.json';
+
+  /// The list as of the last session, so the feed does not have to wait for
+  /// a relay to learn whom to show. Never used to edit the list (that needs
+  /// the real event, see [toggleFollow]).
+  Future<void> _loadSaved(String pub) async {
+    final json = await ref.read(localCacheProvider).readJson(_fileFor(pub));
+    if (_latest != null || json is! Map) return; // the relays were faster
+    final saved = {
+      for (final p in (json['p'] as List? ?? const []))
+        if (p is String && p.length == 64) p,
+    };
+    if (saved.isEmpty) return;
+    state = saved;
+    if (!_usable.isCompleted) _usable.complete();
+  }
+
+  void _saveList(String pub) {
+    ref.read(localCacheProvider).writeJson(_fileFor(pub), {
+      'p': state.toList(),
+    });
   }
 
   Future<void> _load(String pubkey) async {
@@ -50,14 +78,21 @@ class FollowListController extends Notifier<Set<String>> {
         for (final t in event.tags)
           if (t.length >= 2 && t[0] == 'p') t[1],
       };
+      _saveList(pubkey);
     });
     await sub.eose;
     if (!_loaded.isCompleted) _loaded.complete();
+    if (!_usable.isCompleted) _usable.complete();
   }
 
   /// Completes once the follow list has been read from the relays (or the
   /// relays answered that there is none).
   Future<void> get ready => _loaded.future;
+
+  /// Completes as soon as there is a list to show things by: the one saved on
+  /// this device, or the relays' answer, whichever comes first. Reading is
+  /// fine with this; editing the list waits for [ready].
+  Future<void> get usable => _usable.future;
 
   /// Follows or unfollows [pubkey]. Returns false when it could not be
   /// published (guest, list not loaded yet, signer or relay failure).

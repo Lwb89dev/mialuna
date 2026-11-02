@@ -46,6 +46,10 @@ class PrivateDelivery {
     Iterable<String> recipients, {
     int? expiresAt,
     void Function(int done, int total)? onProgress,
+
+    /// Also wrap it for yourself (your other devices, your own copy). Not
+    /// wanted for something only the recipient needs, like a story receipt.
+    bool copyToSelf = true,
   }) async {
     final auth = _ref.read(authProvider);
     final me = auth.publicKey;
@@ -58,7 +62,7 @@ class PrivateDelivery {
       for (final r in recipients)
         if (r != me) r,
     }.toList();
-    final targets = [...others, me];
+    final targets = [...others, if (copyToSelf) me];
     final wrapTags = [
       if (expiresAt != null) ['expiration', '$expiresAt'],
     ];

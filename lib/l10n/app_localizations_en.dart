@@ -1377,4 +1377,242 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get languageItalian => 'Italiano';
+
+  @override
+  String get cannotEditPhoto => 'This photo can\'t be edited here.';
+
+  @override
+  String notificationsNew(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count new notifications',
+      one: '1 new notification',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String messagesUnread(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count unread messages',
+      one: '1 unread message',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get done => 'Done';
+
+  @override
+  String get storyAddText => 'Add text';
+
+  @override
+  String get storyEditText => 'Edit text';
+
+  @override
+  String get storyTextHint => 'Write something… #hashtags are tappable';
+
+  @override
+  String get storyTextsHelp =>
+      'Tap the picture to write. Drag to move, pinch to resize and rotate, tap a text to edit it.';
+
+  @override
+  String storyTextsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count texts',
+      one: '1 text',
+      zero: 'No text',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get storyFontClassic => 'Classic';
+
+  @override
+  String get storyFontBold => 'Bold';
+
+  @override
+  String get storyFontSerif => 'Serif';
+
+  @override
+  String get storyFontMono => 'Mono';
+
+  @override
+  String get storyFontItalic => 'Italic';
+
+  @override
+  String get storyTextBackground => 'Text background';
+
+  @override
+  String get storyTextColor => 'Text colour';
+
+  @override
+  String storyTextLimit(int max) {
+    return 'You can add up to $max texts.';
+  }
+
+  @override
+  String get wotTitle => 'Web of trust';
+
+  @override
+  String get wotEnable => 'Filter spam with your web of trust';
+
+  @override
+  String wotExplain(int min) {
+    return 'Hide comments, notifications, private posts and messages from people you don\'t follow and that aren\'t followed by at least $min of the people you follow. Worked out on this phone from public follow lists; nothing is sent to any server. Discover is never filtered.';
+  }
+
+  @override
+  String get wotRefresh => 'Refresh network now';
+
+  @override
+  String get wotStatusIdle =>
+      'Not computed yet. Turn the filter on, or refresh, to build your network.';
+
+  @override
+  String wotStatusDiscovering(int done, int total) {
+    return 'Checking who your follows follow… $done of $total';
+  }
+
+  @override
+  String wotStatusComplete(int direct, int indirect, Object when) {
+    return 'Your network: $direct people you follow plus $indirect followed by enough of them. Updated $when.';
+  }
+
+  @override
+  String wotStatusFailed(Object reason) {
+    return 'Couldn\'t compute your network: $reason';
+  }
+
+  @override
+  String get wotNoFollows => 'you don\'t follow anyone yet';
+
+  @override
+  String get messageRequests => 'Message requests';
+
+  @override
+  String messageRequestsSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count conversations from outside your web of trust',
+      one: '1 conversation from outside your web of trust',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get messageRequestsHint =>
+      'From people outside your web of trust. They don\'t count as unread. Reply to move a conversation to your inbox.';
+
+  @override
+  String get storyViewsSetting => 'Let people see that I viewed their stories';
+
+  @override
+  String get storyViewsSettingExplain =>
+      'When you watch a story, a receipt is sent to its author, encrypted so that only they can read it. It lists your name next to theirs; relays see nothing. Turn it off to watch without leaving a trace.';
+
+  @override
+  String storySeenBy(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Seen by $count people',
+      one: 'Seen by 1 person',
+      zero: 'No views yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get storyViewsEmpty =>
+      'Nobody has watched this story yet, or their receipts have not reached you.';
+
+  @override
+  String get storyViewsHint =>
+      'Only people who allow it send a receipt, so the real number can be higher.';
+
+  @override
+  String get systemNotifications => 'System notifications';
+
+  @override
+  String get systemNotificationsExplain =>
+      'Show a notification on your phone when something new arrives while Mialuna is in the background. Private messages never show their text, not even on the lock screen. Android pauses apps that stay in the background for long, so notifications arrive while Mialuna is still running.';
+
+  @override
+  String get systemNotificationsBlocked =>
+      'Notifications are turned off for Mialuna in the phone\'s settings.';
+
+  @override
+  String get systemNotificationsOpenSettings => 'Open settings';
+
+  @override
+  String get systemNotificationMessage => 'sent you a private message';
+
+  @override
+  String get systemNotificationNewMessage => 'New private message';
+
+  @override
+  String get systemNotificationNew => 'New notification';
+
+  @override
+  String get notificationChannelSocial =>
+      'Reactions, comments, zaps and followers';
+
+  @override
+  String get notificationChannelMessages => 'Private messages';
+
+  @override
+  String get zapInvoiceMismatch =>
+      'The invoice does not match the amount you chose. Nothing was paid.';
+
+  @override
+  String get storyYourStory => 'Your story';
+
+  @override
+  String get storyNew => 'New story';
+
+  @override
+  String get storyAddSemantics => 'Add to your story';
+
+  @override
+  String storyOwnRailLabel(int count, Object state) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count stories',
+      one: '1 story',
+    );
+    return 'Your story, $_temp0, $state';
+  }
+
+  @override
+  String get storyTextSize => 'Text size';
+
+  @override
+  String get storyPickPrompt => 'Choose a photo or a video for your story';
+
+  @override
+  String get storyEditPhoto => 'Edit photo';
+
+  @override
+  String get storyCaption => 'Caption';
+
+  @override
+  String get storyDiscardTitle => 'Discard this story?';
+
+  @override
+  String get storyDiscard => 'Discard';
+
+  @override
+  String get storyShare => 'Share';
+
+  @override
+  String get storyShared => 'Story shared';
 }

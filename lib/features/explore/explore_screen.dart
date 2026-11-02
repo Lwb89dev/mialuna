@@ -10,6 +10,7 @@ import '../../core/nostr/filter.dart';
 import '../../core/nostr/models/media_event.dart';
 import '../../core/nostr/nip19.dart';
 import '../../core/nostr/relay_pool.dart';
+import '../../core/text/hashtags.dart';
 import '../../l10n/strings.dart';
 import '../feed/feed_controller.dart';
 import '../feed/widgets/inline_video.dart';
@@ -111,7 +112,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
       _runQuery([
         NostrFilter(kinds: NostrKinds.mediaKinds, authors: [pubkey], limit: 60),
       ]);
-    } else if (query.startsWith('#') || RegExp(r'^\w+$').hasMatch(query)) {
+    } else if (query.startsWith('#') || Hashtags.isBareWord(query)) {
       _search(query);
     } else {
       _activeLabel = '“$query”';

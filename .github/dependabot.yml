@@ -1,0 +1,17 @@
+# Dependency updates arrive as pull requests, so a vulnerable or abandoned
+# package is seen instead of silently staying in the lockfile.
+version: 2
+updates:
+  - package-ecosystem: pub
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: gradle
+    directory: /android
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter/painting.dart' show decodeImageFromList;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -13,11 +14,13 @@ import '../../core/media/private_media.dart';
 import '../../core/media/video_frames.dart';
 import '../../core/nostr/event.dart';
 import '../../core/nostr/models/media_event.dart';
+import '../../core/nostr/models/story_text.dart';
 import '../../core/nostr/nip59.dart';
 import '../../core/nostr/signer.dart';
 import '../../l10n/strings.dart';
 import '../private/close_friends.dart';
 import '../private/private_delivery.dart';
+import '../stories/stories_controller.dart';
 
 enum ComposerMode { photo, video, reel, story }
 
@@ -69,6 +72,9 @@ class ComposerState {
   /// What happened after a successful publish (e.g. who got it).
   final String? notice;
 
+  /// Texts laid over the picture of a story (see [StoryText]).
+  final List<StoryText> overlays;
+
   const ComposerState({
     this.media = const [],
     this.caption = '',
@@ -81,6 +87,7 @@ class ComposerState {
     this.sensitive = false,
     this.audience = Audience.public,
     this.notice,
+    this.overlays = const [],
   });
 
   /// The caption exactly as it will be published (with #mialuna applied).
@@ -107,6 +114,7 @@ class ComposerState {
     bool? sensitive,
     Audience? audience,
     String? notice,
+    List<StoryText>? overlays,
   }) => ComposerState(
     media: media ?? this.media,
     caption: caption ?? this.caption,
@@ -119,6 +127,7 @@ class ComposerState {
     sensitive: sensitive ?? this.sensitive,
     audience: audience ?? this.audience,
     notice: notice,
+    overlays: overlays ?? this.overlays,
   );
 }
 
@@ -154,7 +163,19 @@ class ComposerController extends Notifier<ComposerState> {
     if (mode == state.mode) return;
     // Switching mode clears picked media: photo carousels and videos are
     // different event kinds.
-    state = state.copyWith(mode: mode, media: const []);
+    state = state.copyWith(mode: mode, media: const [], overlays: const []);
+  }
+
+  /// Begins a new story from nothing: no picture, no texts, no leftovers of
+  /// an earlier try. (A publish in progress is left alone.)
+  void startStory() {
+    if (state.isPublishing) return;
+    state = ComposerState(
+      mode: ComposerMode.story,
+      audience: state.audience,
+      caption: state.caption,
+      sensitive: state.sensitive,
+    );
   }
 
   Future<void> pickVideo() async {
@@ -171,6 +192,7 @@ class ComposerController extends Notifier<ComposerState> {
           mimeType: _mimeOf(bytes, file.name),
         ),
       ],
+      overlays: const [],
     );
   }
 
@@ -191,28 +213,32 @@ class ComposerController extends Notifier<ComposerState> {
         mimeType: _mimeOf(bytes, file.name),
       ),
     );
-    state = state.copyWith(media: media);
+    state = state.copyWith(media: media, overlays: const []);
   }
 
   Future<void> pickImages() async {
     final picker = ImagePicker();
-    final files = await picker.pickMultiImage(limit: 10);
+    // A story is one picture: ask for exactly one, so the system picker runs
+    // in its single-choice mode instead of the multi-select one.
+    final List<XFile> files;
+    if (state.mode == ComposerMode.story) {
+      final one = await picker.pickImage(source: ImageSource.gallery);
+      files = one == null ? const [] : [one];
+    } else {
+      files = await picker.pickMultiImage(limit: 10);
+    }
     if (files.isEmpty) return;
-    // Stories carry a single media per event.
-    final selected = state.mode == ComposerMode.story
-        ? files.take(1).toList()
-        : files;
     final media = state.mode == ComposerMode.story
         ? <PickedMedia>[]
         : [...state.media];
-    for (final f in selected) {
+    for (final f in files) {
       final bytes = await f.readAsBytes();
       if (bytes.isEmpty) continue;
       media.add(
         PickedMedia(file: f, bytes: bytes, mimeType: _mimeOf(bytes, f.name)),
       );
     }
-    state = state.copyWith(media: media);
+    state = state.copyWith(media: media, overlays: const []);
   }
 
   /// Adds an already-read file to the post (used by the pickers and tests).
@@ -221,12 +247,40 @@ class ComposerController extends Notifier<ComposerState> {
         ? <PickedMedia>[]
         : [...state.media];
     list.add(media);
-    state = state.copyWith(media: list);
+    state = state.copyWith(media: list, overlays: const []);
   }
 
   void removeMedia(int index) {
     final media = [...state.media]..removeAt(index);
-    state = state.copyWith(media: media);
+    state = state.copyWith(
+      media: media,
+      // Texts belong to the picture they were laid on.
+      overlays: media.isEmpty ? const [] : state.overlays,
+    );
+  }
+
+  void setOverlays(List<StoryText> overlays) {
+    state = state.copyWith(overlays: overlays);
+  }
+
+  /// What the story texts are laid over: the picture (or, for a video, a
+  /// frame of it) and its width over height. Both null when it cannot be
+  /// shown; the editor then uses a plain backdrop.
+  Future<({Uint8List? bytes, double? aspect})> storyBackdrop() async {
+    final item = state.media.first;
+    if (item.isVideo) {
+      final frame = item.cover ??= await VideoFrames.extract(item.file.path);
+      if (frame == null) return (bytes: null, aspect: null);
+      return (bytes: frame.bytes, aspect: frame.width / frame.height);
+    }
+    try {
+      final image = await decodeImageFromList(item.bytes);
+      final aspect = image.height == 0 ? null : image.width / image.height;
+      image.dispose();
+      return (bytes: item.bytes, aspect: aspect);
+    } catch (_) {
+      return (bytes: null, aspect: null);
+    }
   }
 
   /// Replaces a photo's bytes with its edited version.
@@ -274,6 +328,7 @@ class ComposerController extends Notifier<ComposerState> {
       stage: stage,
       sensitive: state.sensitive,
       audience: state.audience,
+      overlays: state.overlays,
     );
   }
 
@@ -388,6 +443,7 @@ class ComposerController extends Notifier<ComposerState> {
         contentWarning: state.sensitive ? 'sensitive content' : null,
         isStory: isStory,
         expiresAt: isStory ? now + 86400 : null,
+        overlays: state.overlays,
       ),
     );
 
@@ -418,6 +474,7 @@ class ComposerController extends Notifier<ComposerState> {
         return false;
       }
       await ref.read(localCacheProvider).deleteDraft(_draftKey);
+      if (isStory) ref.read(storiesProvider.notifier).addPublished(event);
       state = ComposerState(published: true, audience: state.audience);
       return true;
     } on SignerException catch (e) {
@@ -580,6 +637,7 @@ class ComposerController extends Notifier<ComposerState> {
         expiresAt: expiresAt,
         // The friends list is injected into the post itself.
         closeFriends: friends,
+        overlays: state.overlays,
       ),
     );
 
