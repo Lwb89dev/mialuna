@@ -297,6 +297,7 @@ void main() {
       final id = mine.id;
       final ctl = a.read(storyViewsProvider.notifier);
       await Future<void>.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
 
       // Addressed to somebody else.
       expect(
@@ -378,6 +379,9 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
         final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
         final stories = [for (var i = 0; i < 100; i++) await story('s$i', a)];
+        // The rail tells the views controller which stories are Alice's a
+        // moment after they are added: let that happen before the receipt.
+        await pumpEventQueue();
 
         ctl.ingest(
           receipt(
