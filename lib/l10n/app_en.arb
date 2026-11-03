@@ -745,6 +745,8 @@
   "systemNotificationsExplain": "Show a notification on your phone when something new arrives while Mialuna is in the background. Private messages never show their text, not even on the lock screen. Android pauses apps that stay in the background for long, so notifications arrive while Mialuna is still running.",
   "systemNotificationsBlocked": "Notifications are turned off for Mialuna in the phone's settings.",
   "systemNotificationsOpenSettings": "Open settings",
+  "newFollowersSetting": "Show new followers",
+  "newFollowersSettingExplain": "New followers appear in Notifications and on your phone. Turn it off if people flood you with follows: likes, comments and zaps keep showing.",
   "systemNotificationMessage": "sent you a private message",
   "systemNotificationNewMessage": "New private message",
   "systemNotificationNew": "New notification",

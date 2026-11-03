@@ -425,6 +425,8 @@
   "systemNotificationsExplain": "Mostra una notifica sul telefono quando arriva qualcosa di nuovo mentre Mialuna è in background. I messaggi privati non mostrano mai il testo, nemmeno nella schermata di blocco. Android mette in pausa le app che restano a lungo in background, quindi le notifiche arrivano finché Mialuna è ancora in esecuzione.",
   "systemNotificationsBlocked": "Le notifiche sono disattivate per Mialuna nelle impostazioni del telefono.",
   "systemNotificationsOpenSettings": "Apri impostazioni",
+  "newFollowersSetting": "Mostra i nuovi follower",
+  "newFollowersSettingExplain": "I nuovi follower compaiono nelle notifiche e sul telefono. Disattivalo se qualcuno ti riempie di follow: Mi piace, commenti e zap continuano a comparire.",
   "systemNotificationMessage": "ti ha scritto un messaggio privato",
   "systemNotificationNewMessage": "Nuovo messaggio privato",
   "systemNotificationNew": "Nuova notifica",

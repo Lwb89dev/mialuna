@@ -13,6 +13,7 @@ import '../../core/notify/system_notifier.dart';
 import '../../l10n/strings.dart';
 import '../social/moderation_controller.dart';
 import '../trust/web_of_trust_controller.dart';
+import 'notification_settings.dart';
 import 'system_notifications.dart';
 
 enum NotificationKind { reaction, comment, zap, follow }
@@ -108,6 +109,7 @@ class NotificationsController extends Notifier<NotificationsState> {
     ref.listen(blockProvider, (_, _) => _publish());
     ref.listen(muteProvider, (_, _) => _publish());
     ref.listen(trustFilterProvider, (_, _) => _publish());
+    ref.listen(newFollowersNotificationsProvider, (_, _) => _publish());
 
     final pub = ref.watch(authProvider.select((a) => a.publicKey));
     _pub = pub;
@@ -241,9 +243,13 @@ class NotificationsController extends Notifier<NotificationsState> {
   }
 
   /// Whether [n] is shown to the user at all (not from somebody blocked or
-  /// muted, and — with the web of trust on — not from a stranger, except a
-  /// new follower, who is a stranger by definition).
+  /// muted, not a follower when followers are switched off, and — with the
+  /// web of trust on — not from a stranger, except a new follower, who is a
+  /// stranger by definition). What is not shown is not counted and never
+  /// reaches the phone either.
   bool _shows(NotificationItem n) =>
+      (n.kind != NotificationKind.follow ||
+          ref.read(newFollowersNotificationsProvider)) &&
       !ref.read(blockProvider).contains(n.actor) &&
       !ref.read(muteProvider).contains(n.actor) &&
       (n.kind == NotificationKind.follow ||

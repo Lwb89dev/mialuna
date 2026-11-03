@@ -15,6 +15,7 @@ import '../onboarding/onboarding_screen.dart' show onboardingDoneKey;
 import '../private/close_friends.dart';
 import '../private/close_friends_screen.dart';
 import '../profile/profile_widgets.dart';
+import '../notifications/notification_settings.dart';
 import '../social/moderation_controller.dart';
 import '../stories/story_views_setting.dart';
 import 'system_notifications_tile.dart';
@@ -409,6 +410,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 24),
           const SystemNotificationsTile(),
+          const SizedBox(height: 8),
+          const NewFollowersSetting(),
           const SizedBox(height: 16),
           const TrustSection(),
           const SizedBox(height: 16),
