@@ -564,9 +564,8 @@ void main() {
 
       // What sign-out does: forget, then delete the account's files.
       r.discard();
-      await LocalCache(
-        directory: dir,
-      ).deleteFile(LocalCache.storyReceiptsFile(bob.publicKey));
+      final cache = LocalCache(directory: dir);
+      await cache.deleteFile(LocalCache.storyReceiptsFile(bob.publicKey));
       signer.gate!.complete();
       await sending;
       await Future<void>.delayed(const Duration(milliseconds: 200));
