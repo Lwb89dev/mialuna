@@ -286,6 +286,23 @@ class RelayPool {
     }
   }
 
+  /// Before a refresh, and when the app returns to the foreground: connects
+  /// the relays that are down and replaces the connections that died without
+  /// saying so (see [Relay.checkAlive]). Await it *before* asking for
+  /// something: a request sent on a dead socket is lost, and one open while
+  /// its relay is replaced stops waiting for that relay.
+  Future<void> wake({
+    Duration quiet = const Duration(seconds: 15),
+    Duration timeout = const Duration(seconds: 3),
+  }) async {
+    if (_disposed) return;
+    await Future.wait([
+      for (final e in _entries.values.toList())
+        if (e.config != null || e.refs > 0)
+          e.relay.checkAlive(quiet: quiet, timeout: timeout),
+    ]);
+  }
+
   // ── subscriptions ───────────────────────────────────────────────────
 
   /// Subscribes on the configured read relays plus [extraRelays] (e.g. an

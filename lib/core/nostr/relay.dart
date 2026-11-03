@@ -100,6 +100,14 @@ class Relay {
   final Map<String, List<NostrFilter>> _activeSubscriptions = {};
   final Map<String, Completer<RelayPublishResult>> _pendingOk = {};
 
+  /// When the relay last said anything (or the socket opened).
+  DateTime _lastHeard = DateTime.fromMillisecondsSinceEpoch(0);
+
+  /// The liveness question in flight, if any (see [checkAlive]).
+  String? _probeId;
+  Completer<void>? _probe;
+  static int _probes = 0;
+
   void Function(RelayConnectionState state)? onStateChanged;
   void Function(String subscriptionId, NostrEvent event)? onEvent;
   void Function(String subscriptionId)? onEose;
@@ -140,6 +148,7 @@ class Relay {
       _authChallenge = null;
       authenticated = false;
       _reconnectAttempts = 0;
+      _lastHeard = DateTime.now();
       _subscription = channel.stream.listen(
         _handleMessage,
         onError: (_) => _handleDisconnect(),
@@ -231,9 +240,11 @@ class Relay {
   }
 
   void _handleMessage(dynamic raw) {
+    _lastHeard = DateTime.now();
     try {
       if (raw is! String || raw.length > maxMessageChars) return;
       final msg = jsonDecode(raw) as List;
+      if (msg.length > 1 && msg[1] == _probeId) return _answerProbe(msg[0]);
       switch (msg[0]) {
         case 'EVENT':
           final event = NostrEvent.fromJson(msg[2] as Map<String, dynamic>);
@@ -273,9 +284,22 @@ class Relay {
 
   void _handleDisconnect() {
     if (_disposed) return;
+    _dropSocket();
+    _scheduleReconnect();
+  }
+
+  void _dropSocket() {
     _subscription?.cancel();
     _subscription = null;
+    final channel = _channel;
     _channel = null;
+    try {
+      channel?.sink.close();
+    } catch (_) {}
+    _probeId = null;
+    final probe = _probe;
+    _probe = null;
+    if (probe != null && !probe.isCompleted) probe.complete();
     // Fail every publish still waiting for an OK.
     for (final c in _pendingOk.values) {
       if (!c.isCompleted) {
@@ -283,7 +307,63 @@ class Relay {
       }
     }
     _setState(RelayConnectionState.disconnected);
-    _scheduleReconnect();
+  }
+
+  /// Makes sure the connection still works, before something important is
+  /// asked of it (a refresh, the app coming back to the foreground).
+  ///
+  /// After the phone has slept, or the network changed, a socket often dies
+  /// without either side noticing: the app keeps sending requests into it
+  /// and the WebSocket ping only finds out tens of seconds later. A relay
+  /// that has been [quiet] for a while is therefore asked a question with a
+  /// known, instant answer (a `REQ` for an id that does not exist, which
+  /// any relay ends with `EOSE` or `CLOSED`). No answer within [timeout]:
+  /// the socket is replaced at once, and the open subscriptions are sent
+  /// again on the new one.
+  Future<void> checkAlive({
+    Duration quiet = const Duration(seconds: 15),
+    Duration timeout = const Duration(seconds: 3),
+  }) async {
+    if (_disposed) return;
+    if (!isConnected) {
+      // Down, maybe waiting out a long back-off: try now.
+      if (_activeSubscriptions.isNotEmpty || _connecting != null) {
+        await connect();
+      }
+      return;
+    }
+    if (DateTime.now().difference(_lastHeard) < quiet) return;
+    final probe = _probe ??= _sendProbe();
+    var answered = true;
+    await probe.future.timeout(timeout, onTimeout: () => answered = false);
+    if (answered || _disposed || !identical(_probe, probe)) return;
+    _dropSocket();
+    _reconnectAttempts = 0;
+    await connect();
+  }
+
+  Completer<void> _sendProbe() {
+    final id = 'alive${_probes++}';
+    _probeId = id;
+    _send([
+      'REQ',
+      id,
+      {
+        'ids': ['0' * 64],
+        'limit': 1,
+      },
+    ]);
+    return Completer<void>();
+  }
+
+  void _answerProbe(Object? type) {
+    final id = _probeId;
+    if (type == 'EOSE' && id != null) _send(['CLOSE', id]);
+    if (type != 'EOSE' && type != 'CLOSED') return; // a stray EVENT
+    _probeId = null;
+    final probe = _probe;
+    _probe = null;
+    if (probe != null && !probe.isCompleted) probe.complete();
   }
 
   void _scheduleReconnect() {
