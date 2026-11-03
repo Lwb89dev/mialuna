@@ -82,9 +82,15 @@ class LocalCache {
     } catch (_) {}
   }
 
+  /// Story view receipts this account still has to send (see
+  /// `story_receipts.dart`).
+  static String storyReceiptsFile(String pubkey) =>
+      'story_receipts_$pubkey.json';
+
   /// The files that hold one account's data on this device: decrypted
   /// messages, close-friends posts and list, follows, notifications, story
-  /// views, web of trust. All of them go when the account signs out.
+  /// views, story receipts waiting to be sent, web of trust. All of them go
+  /// when the account signs out.
   static List<String> accountFiles(String pubkey) => [
     'dm_$pubkey.json',
     'private_posts_$pubkey.json',
@@ -92,6 +98,7 @@ class LocalCache {
     'follows_$pubkey.json',
     'notifications_$pubkey.json',
     'story_views_$pubkey.json',
+    storyReceiptsFile(pubkey),
     'wot_$pubkey.json',
   ];
 

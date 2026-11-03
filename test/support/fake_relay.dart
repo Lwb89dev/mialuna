@@ -23,6 +23,20 @@ class FakeRelay {
   /// events, no EOSE): a slow or dead one, as seen from a client.
   bool silent = false;
 
+  /// Receives published events but never says OK: a relay that hangs.
+  bool ignorePublishes = false;
+
+  /// Accepts this many more published events, then refuses the rest.
+  int? acceptLimit;
+
+  /// Holds every answer to a published event back by this long. The event is
+  /// stored at once, so a late answer is a delivery the client has not heard
+  /// about yet.
+  Duration publishDelay = Duration.zero;
+
+  /// How many events clients tried to publish here.
+  int publishAttempts = 0;
+
   late HttpServer _server;
   final List<_Conn> _conns = [];
 
@@ -106,25 +120,36 @@ class FakeRelay {
         conn.subs.remove(msg[1]);
       case 'EVENT':
         final event = NostrEvent.fromJson(msg[1] as Map<String, dynamic>);
+        publishAttempts++;
+        void answer(bool ok, String message) {
+          final reply = ['OK', event.id, ok, message];
+          if (publishDelay == Duration.zero) {
+            conn.send(reply);
+          } else {
+            Future<void>.delayed(publishDelay, () => conn.send(reply));
+          }
+        }
+
+        if (ignorePublishes) return;
         if (rejectWith != null) {
-          conn.send(['OK', event.id, false, rejectWith]);
+          answer(false, rejectWith!);
+          return;
+        }
+        if (acceptLimit != null && acceptLimit! <= 0) {
+          answer(false, 'rate-limited: slow down');
           return;
         }
         if (authKinds.contains(event.kind) && !conn.authed) {
-          conn.send([
-            'OK',
-            event.id,
-            false,
-            'auth-required: authenticate first',
-          ]);
+          answer(false, 'auth-required: authenticate first');
           return;
         }
         if (!verifyEventSignature(event)) {
-          conn.send(['OK', event.id, false, 'invalid: bad signature']);
+          answer(false, 'invalid: bad signature');
           return;
         }
+        if (acceptLimit != null) acceptLimit = acceptLimit! - 1;
         stored.add(event);
-        conn.send(['OK', event.id, true, '']);
+        answer(true, '');
         for (final c in _conns) {
           for (final entry in c.subs.entries) {
             if (entry.value.any((f) => f.matches(event))) {

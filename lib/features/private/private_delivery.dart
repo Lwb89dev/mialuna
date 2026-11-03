@@ -35,6 +35,10 @@ class DeliveryReport {
 /// recipient's inbox relays. Relays see a wrap from a throw-away key to the
 /// recipient — not who wrote it, not what it says, not that it is a post.
 class PrivateDelivery {
+  /// The reason recorded for somebody who was not sent anything because
+  /// `shouldContinue` said no.
+  static const _cancelled = 'cancelled';
+
   final Ref _ref;
   PrivateDelivery(this._ref);
 
@@ -50,10 +54,21 @@ class PrivateDelivery {
     /// Also wrap it for yourself (your other devices, your own copy). Not
     /// wanted for something only the recipient needs, like a story receipt.
     bool copyToSelf = true,
+
+    /// Asked before every signer round trip and again before a wrap is
+    /// handed to a relay; when it answers no, nothing more is sent. A wrap a
+    /// relay already accepted cannot be taken back.
+    bool Function()? shouldContinue,
   }) async {
     final auth = _ref.read(authProvider);
     final me = auth.publicKey;
     if (me == null || !auth.signer.canEncrypt) {
+      throw DmException(AppStrings.current.signInToSendPrivateContent);
+    }
+    // The seal is signed by whoever is signed in now: a rumor written by
+    // somebody else (the account changed while it waited) would be unreadable
+    // at best and attributed to the wrong person at worst.
+    if (rumor.pubkey != me) {
       throw DmException(AppStrings.current.signInToSendPrivateContent);
     }
     _ref.read(privatePostsProvider.notifier).ingest(rumor);
@@ -72,10 +87,17 @@ class PrivateDelivery {
     final delivered = <String>[];
     final failed = <String, String>{};
     var selfCopy = false;
+    bool cancelled(String pk, bool isMe) {
+      if (shouldContinue?.call() ?? true) return false;
+      if (!isMe) failed[pk] = _cancelled;
+      return true;
+    }
+
     for (var i = 0; i < targets.length; i++) {
       final pk = targets[i];
       onProgress?.call(i, targets.length);
       final isMe = pk == me;
+      if (cancelled(pk, isMe)) continue;
       final relays = isMe
           ? _ref.read(dmProvider).inboxRelays
           : await dm.inboxRelaysOf(pk);
@@ -83,12 +105,16 @@ class PrivateDelivery {
         failed[pk] = AppStrings.current.reasonNoPrivateMessages;
         continue;
       }
+      if (cancelled(pk, isMe)) continue;
       final wrap = await GiftWrap.wrap(
         signer: auth.signer,
         rumor: rumor,
         recipient: pk,
         wrapTags: wrapTags,
       );
+      // The signer may have taken a while (a dialog in Amber): the sender
+      // can have changed their mind, or their account, in the meantime.
+      if (cancelled(pk, isMe)) continue;
       final report = await pool.publish(
         wrap,
         extraRelays: relays,

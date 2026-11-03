@@ -9,6 +9,7 @@ import '../features/private/private_posts.dart';
 import '../features/settings/settings_controller.dart';
 import '../features/social/moderation_controller.dart';
 import '../features/stories/stories_controller.dart';
+import '../features/stories/story_receipts.dart';
 import 'providers.dart';
 
 /// Preferences that belong to an account (they would otherwise be merged into
@@ -34,6 +35,9 @@ final signOutProvider = Provider<Future<void> Function()>(
 
 Future<void> _signOut(Ref ref) async {
   final pubkey = ref.read(authProvider).publicKey;
+  // Receipts still waiting are never sent, and nothing is written for them
+  // once the files below are gone.
+  ref.read(storyViewReporterProvider).discard();
   await ref.read(privatePostsProvider.notifier).clear();
   await ref.read(privateMediaProvider).cleanUp(everything: true);
   await ref.read(nwcProvider.notifier).disconnect();
