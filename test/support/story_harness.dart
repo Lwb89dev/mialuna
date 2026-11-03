@@ -38,6 +38,7 @@ class ScriptedSigner extends Signer {
   Completer<void>? gate;
 
   int encryptCalls = 0;
+  int decryptCalls = 0;
   int _active = 0;
   int maxConcurrent = 0;
 
@@ -68,8 +69,10 @@ class ScriptedSigner extends Signer {
   }
 
   @override
-  Future<String> nip44Decrypt(String peerPubkey, String ciphertext) =>
-      inner.nip44Decrypt(peerPubkey, ciphertext);
+  Future<String> nip44Decrypt(String peerPubkey, String ciphertext) {
+    decryptCalls++;
+    return inner.nip44Decrypt(peerPubkey, ciphertext);
+  }
 
   @override
   Future<NostrEvent> signEvent({
