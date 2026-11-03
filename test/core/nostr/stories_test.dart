@@ -6,14 +6,14 @@ import 'package:mialuna/core/nostr/models/media_event.dart';
 NostrEvent storyEvent({
   String id = 's1',
   String pubkey = 'a',
-  int createdAt = 1700000000,
+  int? createdAt,
   int? expiration,
   List<List<String>>? extraTags,
   int kind = 20,
 }) => NostrEvent(
   id: id,
   pubkey: pubkey,
-  createdAt: createdAt,
+  createdAt: createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000,
   kind: kind,
   tags: [
     ['imeta', 'url https://cdn.example.com/story.jpg', 'm image/jpeg'],
@@ -46,6 +46,12 @@ void main() {
       final post = MediaPost.tryParse(storyEvent());
       expect(post!.isStory, true);
       expect(post.isExpired(), false);
+    });
+
+    test('a story without expiration is still over after its 24 hours', () {
+      final post = MediaPost.tryParse(storyEvent(createdAt: 1700000000));
+      expect(post!.isExpired(1700000000 + 86399), false);
+      expect(post.isExpired(1700000000 + 86400), true);
     });
 
     test('video stories use kind 22', () {

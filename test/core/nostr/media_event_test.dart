@@ -135,6 +135,8 @@ void main() {
       final story = MediaPost.tryParse(
         fakeEvent(
           kind: 20,
+          // A story is a day old at most: this one was just published.
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
           tags: [
             ['imeta', 'url https://cdn.example.com/x.jpg'],
             ['L', 'mialuna.story'],
