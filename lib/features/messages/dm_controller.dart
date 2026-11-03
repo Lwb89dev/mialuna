@@ -294,6 +294,8 @@ class DmController extends Notifier<DmState> {
       _scheduleSave();
       if (rumor != null) _addRumor(rumor);
     } on SignerException catch (e) {
+      // Another account is signed in by now: this refusal is not theirs.
+      if (generation != _generation) return;
       // The signer refused (e.g. Amber request dismissed): stop for now and
       // let the user retry from the inbox.
       state = state.copyWith(error: e.message, loading: false);
