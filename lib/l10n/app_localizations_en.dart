@@ -1516,7 +1516,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storyViewsSettingExplain =>
-      'When you watch a story, a receipt is sent to its author, encrypted so that only they can read it. It lists your name next to theirs; relays see nothing. Turn it off to watch without leaving a trace.';
+      'When you watch a story, a receipt is sent to its author, encrypted so that only they can read it. It lists your name next to theirs; relays see nothing. If it cannot be delivered, it is kept and tried again later. Turn it off to watch without telling anyone: receipts not sent yet are discarded (one already delivered cannot be taken back).';
 
   @override
   String storySeenBy(int count) {

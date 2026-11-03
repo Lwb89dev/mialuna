@@ -64,6 +64,15 @@ and every upload against `test/support/fake_blossom.dart`.
   is where a story is made and `story_canvas_editor` is the picture with its
   texts, written in place — both drive the same `composerProvider` as the Create
   tab. Texts travel as `story-text` tags, not pixels, so hashtags stay links.
+- **Story receipts**: `story_receipts` is the sending side of "who watched your
+  stories": one `StoryViewReporter` per signed-in account (rebuilt on a switch,
+  it refuses to sign for anybody else) with a small outbox on disk
+  (`story_receipts_<pubkey>.json`), a back-off, serialised flushes and a consent
+  check before every send. Delivery means the author's inbox relay accepted the
+  wrap, nothing less. `story_playback` decides when a story counts as watched;
+  `story_views` receives receipts and counts only those for your own live
+  stories. Time-dependent code reads `unixClockProvider` so tests move the
+  clock instead of sleeping.
 - **Notifications**: the controllers (`notifications_controller`,
   `dm_controller`) call `SystemNotifications.post` for what arrives live;
   the Android side is `NotifyBridge.kt`. Nothing is posted while the app is in

@@ -28,9 +28,28 @@ Nothing is asked of, or sent to, any media server. The author sees your name
 in the list of viewers of their own story, nobody else does.
 
 It is on by default and **Settings → "Let people see that I viewed their
-stories"** turns it off, after which nothing is sent. A story you already
-reported is not reported again. Receipts that reach you are kept on this
-device for three days.
+stories"** turns it off.
+
+* **When it counts.** A story is watched, and reported, only once its picture
+  or video has really been on screen for a second, not held, not in the
+  background and, for a video, actually playing. Swiping past it, or a picture
+  that never loaded, is not a view.
+* **If it cannot be delivered.** A receipt is delivered when the author's inbox
+  relay accepted it; that says the relay took it, not that the author read it.
+  Until then it waits on your phone — just the id of the story and the author's
+  public key, nothing of the story itself — for at most 24 hours, and is tried
+  again with growing pauses. A local key does this by itself; with Amber or a
+  bunker nothing is attempted in the background, only when you leave the
+  stories (when they would ask you to approve). Signing out deletes it.
+* **Turning it off** discards whatever is waiting, at once, and nothing is sent
+  or kept afterwards, not even after a restart. A receipt a relay has already
+  accepted cannot be taken back.
+* A story you already reported is not reported again. Which stories you have
+  watched is kept on this device, separately for each account.
+* **Receipts that reach you** are kept on this device for three days. A receipt
+  is the viewer's own statement, not proof that they watched anything, so it is
+  counted only for your own stories that are still live; one naming any other
+  story is ignored. No server ever counts the views.
 
 ## Web of trust (optional)
 
