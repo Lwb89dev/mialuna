@@ -164,6 +164,10 @@ class DmState {
 /// messages delivered through the recipient's own inbox relays (kind 10050).
 class DmController extends Notifier<DmState> {
   static const _fileMax = 3000;
+
+  /// Wrap ids kept in memory: twice what is saved, so a flood of junk wraps
+  /// cannot grow it without bound.
+  static const _wrapsMax = 2 * _fileMax;
   final Map<String, DmMessage> _messages = {};
   final Set<String> _seenWraps = {};
   final Map<String, int> _lastRead = {};
@@ -282,6 +286,12 @@ class DmController extends Notifier<DmState> {
       // The account changed (or the app shut down) while decrypting.
       if (generation != _generation) return;
       _seenWraps.add(wrap.id);
+      if (_seenWraps.length > _wrapsMax) _seenWraps.remove(_seenWraps.first);
+      // Whatever the wrap held — a chat message, a close-friends post, a story
+      // receipt, nothing readable — it is not decrypted again after a restart.
+      // (Only chat messages used to schedule this, so a session that received
+      // nothing but the others asked the signer for the same wraps next time.)
+      _scheduleSave();
       if (rumor != null) _addRumor(rumor);
     } on SignerException catch (e) {
       // The signer refused (e.g. Amber request dismissed): stop for now and
@@ -433,8 +443,11 @@ class DmController extends Notifier<DmState> {
     _publishState();
   }
 
+  /// Writes within a couple of seconds, however often it is asked: a request
+  /// while one is pending joins it (the file is built when the timer fires),
+  /// so a steady stream of wraps cannot keep postponing the write.
   void _scheduleSave() {
-    _saveTimer?.cancel();
+    if (_saveTimer?.isActive ?? false) return;
     final generation = _generation;
     _saveTimer = Timer(const Duration(seconds: 2), () {
       if (generation != _generation) return;

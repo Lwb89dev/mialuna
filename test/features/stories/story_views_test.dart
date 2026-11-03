@@ -14,6 +14,7 @@ import 'package:mialuna/core/nostr/signer.dart';
 import 'package:mialuna/core/storage/local_cache.dart';
 import 'package:mialuna/features/messages/dm_controller.dart';
 import 'package:mialuna/features/social/moderation_controller.dart';
+import 'package:mialuna/features/stories/stories_controller.dart';
 import 'package:mialuna/features/stories/story_receipts.dart';
 import 'package:mialuna/features/stories/story_views.dart';
 import 'package:mialuna/features/stories/story_views_sheet.dart';
@@ -80,7 +81,9 @@ void main() {
     return c;
   }
 
-  Future<MediaPost> story(String text) async {
+  /// A story by Alice. Given her app, it is also in her rail, as it is the
+  /// moment she publishes it — which is what makes a receipt for it count.
+  Future<MediaPost> story(String text, [ProviderContainer? aliceApp]) async {
     final event = await signed(
       alice,
       kind: NostrKinds.picture,
@@ -99,6 +102,7 @@ void main() {
         ],
       ],
     );
+    aliceApp?.read(storiesProvider.notifier).addPublished(event);
     return MediaPost.tryParse(event)!;
   }
 
@@ -130,7 +134,7 @@ void main() {
     test('tells the author, and only the author', () async {
       final a = await online(alice);
       final b = await online(bob);
-      final s = await story('tramonto');
+      final s = await story('tramonto', a);
 
       final reporter = b.read(storyViewReporterProvider);
       await reporter.viewed(s);
@@ -160,9 +164,9 @@ void main() {
       final a = await online(alice);
       final b = await online(bob);
       final stories = [
-        await story('uno'),
-        await story('due'),
-        await story('tre'),
+        await story('uno', a),
+        await story('due', a),
+        await story('tre', a),
       ];
       final reporter = b.read(storyViewReporterProvider);
       for (final s in stories) {
@@ -227,7 +231,7 @@ void main() {
       final a = await online(alice);
       final b = await online(bob);
       final c = await online(carol);
-      final s = await story('chi guarda');
+      final s = await story('chi guarda', a);
 
       await b.read(storyViewReporterProvider).viewed(s);
       await b.read(storyViewReporterProvider).flush();
@@ -248,7 +252,7 @@ void main() {
       await a.read(blockProvider.notifier).block(bob.publicKey);
       final b = await online(bob);
       final c = await online(carol);
-      final s = await story('bloccati');
+      final s = await story('bloccati', a);
 
       await b.read(storyViewReporterProvider).viewed(s);
       await b.read(storyViewReporterProvider).flush();
@@ -265,7 +269,7 @@ void main() {
       final dir = Directory.systemTemp.createTempSync('mialuna_views_keep_');
       final a = await online(alice, dir: dir);
       final b = await online(bob);
-      final s = await story('resta');
+      final s = await story('resta', a);
       await b.read(storyViewReporterProvider).viewed(s);
       await b.read(storyViewReporterProvider).flush();
       await eventually(() => a.read(storyViewsProvider).countOf(s.id) == 1);
@@ -289,7 +293,8 @@ void main() {
     test('only receipts addressed to you count, and never your own', () async {
       final a = app(alice);
       a.listen(storyViewsProvider, (_, _) {});
-      final id = 'a' * 64;
+      final mine = await story('mia', a);
+      final id = mine.id;
       final ctl = a.read(storyViewsProvider.notifier);
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
@@ -372,14 +377,14 @@ void main() {
         final ctl = a.read(storyViewsProvider.notifier);
         await Future<void>.delayed(const Duration(milliseconds: 50));
         final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        final stories = [for (var i = 0; i < 100; i++) await story('s$i', a)];
 
         ctl.ingest(
           receipt(
             bob,
             at: now + 100000,
             tags: [
-              for (var i = 0; i < 100; i++)
-                ['e', i.toRadixString(16).padLeft(64, '0')],
+              for (final s in stories) ['e', s.id],
               ['p', alice.publicKey],
             ],
           ),

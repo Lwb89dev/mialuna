@@ -313,6 +313,20 @@ final storiesProvider = NotifierProvider<StoriesController, StoriesState>(
   StoriesController.new,
 );
 
+/// Your own stories that are still live (public and close-friends), by id,
+/// with the time each was published. A story view receipt is only believed
+/// for one of these: anybody can name any id in a message to you.
+final ownStoriesProvider = Provider<Map<String, int>>((ref) {
+  final me = ref.watch(authProvider.select((a) => a.publicKey));
+  if (me == null) return const {};
+  final groups = ref.watch(storiesProvider.select((s) => s.groups));
+  return {
+    for (final g in groups)
+      if (g.author == me)
+        for (final s in g.stories) s.id: s.createdAt,
+  };
+});
+
 /// Stories already watched, kept on this device, for the account that
 /// watched them (guests have a list of their own). Whether the author hears
 /// about it is a separate, opt-out matter (see `story_receipts.dart`).
