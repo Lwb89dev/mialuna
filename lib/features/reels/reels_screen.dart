@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +18,23 @@ import '../social/follow_controller.dart';
 import '../social/interactions_controller.dart';
 import 'reels_controller.dart';
 
+/// [fresh] reels in the order already on screen; those not seen before are
+/// added at the end, those that left (muted, blocked, broken) are dropped.
+/// Sorting new arrivals in front moved the reel under the viewer's finger.
+List<MediaPost> stableReelOrder(List<MediaPost> shown, List<MediaPost> fresh) {
+  final byId = {for (final r in fresh) r.id: r};
+  final kept = [
+    for (final r in shown)
+      if (byId.remove(r.id) != null) r,
+  ];
+  return [...kept, ...byId.values];
+}
+
+/// Makes the player of a reel. Replaceable, so tests can count them.
+final reelPlayerFactoryProvider = Provider<VideoPlayerController Function(Uri)>(
+  (ref) => VideoPlayerController.networkUrl,
+);
+
 /// Full-screen vertical Reels viewer: swipe navigation, autoplay of the
 /// active video, pause on leave, creator overlay with actions.
 class ReelsScreen extends ConsumerStatefulWidget {
@@ -26,13 +45,50 @@ class ReelsScreen extends ConsumerStatefulWidget {
 }
 
 class _ReelsScreenState extends ConsumerState<ReelsScreen> {
+  /// How long the viewer must stay on a reel before the next one is prepared.
+  static const _settleTime = Duration(milliseconds: 700);
+
   final _pageController = PageController();
   int _currentPage = 0;
 
+  /// The viewer has stayed on this reel for a moment: only now is the next one
+  /// loaded in the background. Swiping through a stack of reels must not
+  /// start a player for each of them (every player holds a hardware decoder
+  /// and buffers: 40 quick swipes used to end in an OutOfMemoryError).
+  bool _settled = false;
+  Timer? _settle;
+
+  /// The order the reels were shown in. New reels that arrive while someone is
+  /// watching go to the end instead of being sorted in front, which moved the
+  /// reel under their finger.
+  List<MediaPost> _shown = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _startSettling();
+  }
+
   @override
   void dispose() {
+    _settle?.cancel();
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _startSettling() {
+    _settle?.cancel();
+    _settle = Timer(_settleTime, () {
+      if (mounted) setState(() => _settled = true);
+    });
+  }
+
+  void _onPageChanged(int i) {
+    setState(() {
+      _currentPage = i;
+      _settled = false;
+    });
+    _startSettling();
   }
 
   @override
@@ -41,8 +97,11 @@ class _ReelsScreenState extends ConsumerState<ReelsScreen> {
     // Reels live in an IndexedStack: they keep running when another tab is
     // open, so playback follows the visible tab.
     final tabActive = ref.watch(currentTabProvider) == 3;
+    final reels = _shown = stableReelOrder(_shown, state.reels);
     ref.listen(tabReselectProvider, (_, event) {
       if (event != null && event.branch == 3) {
+        // A deliberate refresh starts over, newest first.
+        _shown = const [];
         if (_pageController.hasClients) _pageController.jumpToPage(0);
         ref.read(reelsProvider.notifier).refresh();
       }
@@ -57,7 +116,7 @@ class _ReelsScreenState extends ConsumerState<ReelsScreen> {
       ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : state.reels.isEmpty
+          : reels.isEmpty
           ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -82,12 +141,16 @@ class _ReelsScreenState extends ConsumerState<ReelsScreen> {
           : PageView.builder(
               controller: _pageController,
               scrollDirection: Axis.vertical,
-              itemCount: state.reels.length,
-              onPageChanged: (i) => setState(() => _currentPage = i),
+              // The neighbours are built (a poster each) so that the next reel
+              // can be made ready; none of them holds a player by itself.
+              allowImplicitScrolling: true,
+              itemCount: reels.length,
+              onPageChanged: _onPageChanged,
               itemBuilder: (context, i) => _ReelPage(
-                key: ValueKey(state.reels[i].id),
-                reel: state.reels[i],
+                key: ValueKey(reels[i].id),
+                reel: reels[i],
                 active: tabActive && i == _currentPage,
+                preload: tabActive && _settled && i == _currentPage + 1,
               ),
             ),
     );
@@ -96,8 +159,19 @@ class _ReelsScreenState extends ConsumerState<ReelsScreen> {
 
 class _ReelPage extends ConsumerStatefulWidget {
   final MediaPost reel;
+
+  /// The reel being watched: it plays.
   final bool active;
-  const _ReelPage({super.key, required this.reel, required this.active});
+
+  /// The one after it, once the viewer has settled: it is made ready but
+  /// does not play. Every other reel holds no player at all.
+  final bool preload;
+  const _ReelPage({
+    super.key,
+    required this.reel,
+    required this.active,
+    this.preload = false,
+  });
 
   @override
   ConsumerState<_ReelPage> createState() => _ReelPageState();
@@ -106,54 +180,86 @@ class _ReelPage extends ConsumerStatefulWidget {
 class _ReelPageState extends ConsumerState<_ReelPage>
     with WidgetsBindingObserver {
   VideoPlayerController? _controller;
+
+  /// Created but not initialised yet. Kept so that leaving the page releases
+  /// it at once instead of when (if ever) the download answers.
+  VideoPlayerController? _pending;
   bool _failed = false;
   bool _expanded = false;
   bool _disposed = false;
+
+  bool get _wantsPlayer {
+    if (widget.active) return true;
+    // Data-saver: off-screen reels are not downloaded at all; they start
+    // loading only when the user swipes to them.
+    return widget.preload && !ref.read(settingsProvider).dataSaver;
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Data-saver: off-screen reels are not downloaded at all; they start
-    // loading only when the user swipes to them.
-    final dataSaver = ref.read(settingsProvider).dataSaver;
-    if (widget.active || !dataSaver) _init();
+    if (_wantsPlayer) _init();
   }
 
   Future<void> _init() async {
+    if (_pending != null || _controller != null) return;
     setState(() => _failed = false);
-    final c = VideoPlayerController.networkUrl(
-      Uri.parse(widget.reel.media.first.url),
-    );
+    final VideoPlayerController c;
+    try {
+      c = ref.read(reelPlayerFactoryProvider)(
+        Uri.parse(widget.reel.media.first.url),
+      );
+    } catch (_) {
+      setState(() => _failed = true); // a URL that is not one
+      return;
+    }
+    _pending = c;
     try {
       await c.initialize().timeout(const Duration(seconds: 20));
       await c.setLooping(true);
       await c.setVolume(ref.read(videoMutedProvider) ? 0 : 1);
-      if (_disposed) {
+      // Released while it was loading (the viewer moved on): nothing to keep.
+      if (_disposed || !identical(_pending, c)) {
         await c.dispose();
         return;
       }
+      _pending = null;
       if (widget.active) c.play();
       setState(() => _controller = c);
     } catch (_) {
       await c.dispose();
+      if (identical(_pending, c)) _pending = null;
       if (mounted) setState(() => _failed = true);
     }
+  }
+
+  /// Lets go of the player (and its decoder and buffers).
+  void _release() {
+    final c = _pending ?? _controller;
+    _pending = null;
+    _controller = null;
+    c?.dispose();
+    if (mounted) setState(() {});
   }
 
   @override
   void didUpdateWidget(_ReelPage old) {
     super.didUpdateWidget(old);
+    if (!_wantsPlayer) {
+      if (_controller != null || _pending != null) _release();
+      return;
+    }
     final c = _controller;
     if (c == null || !c.value.isInitialized) {
-      if (widget.active && !old.active && c == null && !_failed) _init();
+      if (c == null && _pending == null && !_failed) _init();
       return;
     }
     if (widget.active && !old.active) {
       c.play();
     } else if (!widget.active && old.active) {
       c.pause();
-      if (ref.read(currentTabProvider) == 3) c.seekTo(Duration.zero);
+      c.seekTo(Duration.zero);
     }
   }
 
@@ -166,6 +272,7 @@ class _ReelPageState extends ConsumerState<_ReelPage>
   void dispose() {
     _disposed = true;
     WidgetsBinding.instance.removeObserver(this);
+    _pending?.dispose();
     _controller?.dispose();
     super.dispose();
   }
