@@ -3,11 +3,30 @@
 All notable changes to Mialuna are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased] — Story receipts and stories: reliability pass
+## [0.17.0] — 2026-11-03 — Reliable story receipts, a Home that refreshes
 
-Full audit and findings: [docs/BUGFIX_AUDIT.md](docs/BUGFIX_AUDIT.md).
+Full audit of the story work: [docs/BUGFIX_AUDIT.md](docs/BUGFIX_AUDIT.md).
+
+### Added
+- **Settings → "Show new followers"** (on by default). Off, new followers no
+  longer appear in Notifications, in the bell's count or on the phone; likes,
+  comments and zaps still do. For whoever gets follow spam.
 
 ### Fixed
+- **Pull-to-refresh brought nothing new after the phone had slept.** The
+  connections to the relays had died without either side noticing, and the
+  request went into them; the WebSocket ping only found out tens of seconds
+  later. Before a refresh, and when the app returns to the foreground, a relay
+  that has been quiet is now asked a question with an instant answer and its
+  connection is replaced at once if there is none.
+- Home now refreshes when you replace one followed account with another (it
+  only noticed a change in their number).
+- **Smoother scrolling in Home.** A post with a single picture no longer sits
+  in a carousel whose horizontal drag competed with every vertical scroll that
+  started on it; a card that scrolls away and back keeps the shape learned
+  from its picture instead of starting square and jumping; cards that did not
+  change are no longer rebuilt each time a page of posts arrives, and the feed
+  no longer re-emits when nothing visible changed.
 - **A story view was marked as delivered whatever happened.** A refused
   signer request, a relay that said no or an author with no inbox lost the
   receipt for good. A receipt is now delivered only once the author's inbox

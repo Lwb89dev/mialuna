@@ -1,7 +1,7 @@
 name: mialuna
 description: "Mialuna — Your moments, under the same moon. A visual social network powered by Nostr."
 publish_to: 'none'
-version: 0.16.0+5
+version: 0.17.0+6
 
 environment:
   sdk: ^3.13.7
