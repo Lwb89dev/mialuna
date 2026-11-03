@@ -3,6 +3,54 @@
 All notable changes to Mialuna are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — Story receipts and stories: reliability pass
+
+Full audit and findings: [docs/BUGFIX_AUDIT.md](docs/BUGFIX_AUDIT.md).
+
+### Fixed
+- **A story view was marked as delivered whatever happened.** A refused
+  signer request, a relay that said no or an author with no inbox lost the
+  receipt for good. A receipt is now delivered only once the author's inbox
+  relay accepted it; otherwise it waits in a small outbox on the phone (story
+  id and author only, for at most 24 hours) and is retried with a growing
+  pause. Amber and bunker are never asked in the background.
+- **Turning "let people see that I viewed their stories" off did not stop
+  receipts already waiting.** It now discards them at once, from memory and
+  from disk, and a restart does not bring them back. (A receipt a relay already
+  accepted cannot be taken back.)
+- More than 30 stories to one author were silently cut at 30; they are now
+  sent in further messages. A second flush during a first no longer gets
+  dropped.
+- Receipts and queues are bound to the account that watched: switching or
+  signing out cannot have them signed, sent or written for someone else.
+- **A story counts as watched only once it was really shown**: a picture that
+  never loaded, a swipe past it, a long press, the app in the background or a
+  video that is buffering no longer count; a story that cannot be shown is
+  skipped.
+- Watched stories are remembered **per account** (they were shared by every
+  account on the phone); the old list goes to the first account that signs in.
+- **Stories disappear after 24 hours** even when their NIP-40 tag is missing,
+  malformed or far in the future, and while the app stays open.
+- The story rail refreshes when you replace one followed account with another
+  (it only noticed a change in their number), when your relays change, and
+  when a refresh is asked for during a load.
+- **Only receipts for your own live stories are counted.** Anybody could name
+  any story id; unknown ones wait in a bounded buffer and are forgotten.
+- The inbox saved its checkpoint only after chat messages, so a session that
+  received only story receipts or close-friends content opened the same wraps
+  again at the next start (a signer prompt each with Amber).
+- A new story no longer starts with the caption and sensitive-content flag of
+  the last one, and a story's caption no longer replaces the draft of the post
+  composer.
+- An account switch could carry a signer refusal, or a "follow list loaded"
+  signal, over to the next account.
+
+### Changed
+- The setting's explanation says what happens when a receipt cannot be
+  delivered and when the setting is turned off (English and Italian).
+- Stories use `MediaPost.isExpired`, which applies the 24-hour rule; fixtures
+  of the story tests now use the current time.
+
 ## [0.16.0] — 2026-11-02 — Stories like Instagram, notifications, a security pass
 
 ### Added

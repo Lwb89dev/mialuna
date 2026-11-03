@@ -1518,7 +1518,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get storyViewsSettingExplain =>
-      'Quando guardi una storia, all\'autore arriva una ricevuta cifrata che solo lui può leggere. Riporta il tuo nome accanto al suo; i relay non vedono nulla. Disattivalo per guardare senza lasciare traccia.';
+      'Quando guardi una storia, all\'autore arriva una ricevuta cifrata che solo lui può leggere. Riporta il tuo nome accanto al suo; i relay non vedono nulla. Se non può essere consegnata, viene conservata e riprovata più tardi. Disattivalo per guardare senza avvisare nessuno: le ricevute non ancora inviate vengono scartate (una già consegnata non si può ritirare).';
 
   @override
   String storySeenBy(int count) {

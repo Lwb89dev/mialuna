@@ -89,14 +89,39 @@ Mialuna implements and with which conventions.
 Who watched a story is not asked of Blossom (a media server cannot know it);
 it lives in a message from the viewer to the author. The viewer sends a rumor
 of kind `1417` (Mialuna convention), `content` empty, with one `["e",
-<story id>]` tag per story watched (at most 30) and `["p", <author>]`,
-gift-wrapped (NIP-59) **to the author only** and published to the author's
-inbox relays (kind 10050, or NIP-65 read relays). One message per author when
-the viewer leaves that author's stories. The viewer's pubkey is the seal's.
-Authors ignore receipts not addressed to them, from themselves, from blocked
-or muted accounts, with a malformed id, or dated in the future. Other clients
-ignore the unknown rumor kind. Off with Settings → "Let people see that I
-viewed their stories"; on by default.
+<story id>]` tag per story watched (at most 30; more are sent as further
+messages) and `["p", <author>]`, gift-wrapped (NIP-59) **to the author only**
+and published to the author's inbox relays (kind 10050, or NIP-65 read relays).
+One message per author (per 30 stories) when the viewer leaves that author's
+stories. The viewer's pubkey is the seal's. A story counts as watched once its
+media was on screen for a second (not paused, not in the background, a video
+playing). Off with Settings → "Let people see that I viewed their stories"; on
+by default.
+
+*Sending.* A receipt is delivered when at least one inbox relay of the author
+accepted the wrap (`OK true`); otherwise it stays in a per-account outbox and is
+retried with a doubling back-off (30 s up to an hour; 5 minutes up to 6 hours
+after a refused signer request) for 24 hours. Amber and bunker are not asked
+in the background. A retry is a new rumor; the author counts a viewer once per
+story, so a second copy changes nothing. A wrap already accepted by a relay
+cannot be recalled when the setting is turned off.
+
+*Receiving.* Authors ignore receipts not addressed to them, from themselves,
+from blocked or muted accounts, with a malformed (not 64 lowercase hex digits)
+story id, older than three days, or listing more than 30 stories. A receipt is
+self-reported: it is counted only for a story the author knows to be their own
+and still live (public or close-friends); one that names a story not yet known
+(the rail is still loading) is held for up to an hour in a bounded buffer —
+600 in all, 60 per sender — and counted when the story appears, otherwise it is
+forgotten. Time is clamped to the story's publication and to now, a viewer is
+listed once per story with their latest time, and a story lists at most 2000
+viewers. Other clients ignore the unknown rumor kind.
+
+*Story lifetime.* A story is shown for 24 hours from `created_at`, whatever its
+NIP-40 `expiration` says: a valid earlier expiration ends it earlier, a missing,
+malformed or later one does not extend it, and one dated more than ten minutes
+in the future is not shown. For other posts NIP-40 is applied as written. The
+tag is a promise to relays, not proof that the media is deleted.
 
 ## Zap receipts (NIP-57) and notifications
 

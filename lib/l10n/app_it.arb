@@ -417,7 +417,7 @@
   "messageRequestsSubtitle": "{count, plural, =1{1 conversazione da fuori della tua rete di fiducia} other{{count} conversazioni da fuori della tua rete di fiducia}}",
   "messageRequestsHint": "Da persone fuori dalla tua rete di fiducia. Non contano come non lette. Rispondi per spostare una conversazione nella posta in arrivo.",
   "storyViewsSetting": "Fai sapere che ho visto le loro storie",
-  "storyViewsSettingExplain": "Quando guardi una storia, all'autore arriva una ricevuta cifrata che solo lui può leggere. Riporta il tuo nome accanto al suo; i relay non vedono nulla. Disattivalo per guardare senza lasciare traccia.",
+  "storyViewsSettingExplain": "Quando guardi una storia, all'autore arriva una ricevuta cifrata che solo lui può leggere. Riporta il tuo nome accanto al suo; i relay non vedono nulla. Se non può essere consegnata, viene conservata e riprovata più tardi. Disattivalo per guardare senza avvisare nessuno: le ricevute non ancora inviate vengono scartate (una già consegnata non si può ritirare).",
   "storySeenBy": "{count, plural, =0{Nessuna visualizzazione} =1{Visto da 1 persona} other{Visto da {count} persone}}",
   "storyViewsEmpty": "Nessuno ha ancora guardato questa storia, oppure le ricevute non ti sono arrivate.",
   "storyViewsHint": "Mandano la ricevuta solo le persone che lo consentono, quindi il numero reale può essere più alto.",
