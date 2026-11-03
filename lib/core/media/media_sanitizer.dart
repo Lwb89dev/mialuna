@@ -448,6 +448,7 @@ abstract final class MediaSanitizer {
     final data = ByteData.sublistView(b);
     var i = 8;
     int? width, height;
+    var orientation = 1;
     var sawEnd = false;
     while (i + 12 <= b.length) {
       final len = data.getUint32(i);
@@ -460,6 +461,7 @@ abstract final class MediaSanitizer {
         width = data.getUint32(i + 8);
         height = data.getUint32(i + 12);
       }
+      if (type == 'eXIf') orientation = _exifOrientation(b, i + 8, i + 8 + len);
       final critical = type.codeUnitAt(0) >= 0x41 && type.codeUnitAt(0) <= 0x5A;
       if (_pngKeep.contains(type) || (critical && type != 'IEND')) {
         out.add(Uint8List.sublistView(b, i, i + total));
@@ -473,11 +475,37 @@ abstract final class MediaSanitizer {
     if (!sawEnd || width == null || height == null) {
       throw const MediaSanitizeException(MediaSanitizeError.pngInvalid);
     }
+    if (orientation != 1) {
+      // The eXIf chunk is about to go, and with it the only record of how the
+      // picture is meant to be held: put the rotation into the pixels first.
+      final source = img.decodePng(b);
+      if (source == null) {
+        throw const MediaSanitizeException(MediaSanitizeError.pngInvalid);
+      }
+      return _upright(source, orientation, 'image/png');
+    }
     return SanitizedMedia(
       bytes: out.toBytes(),
       mimeType: 'image/png',
       width: width,
       height: height,
+    );
+  }
+
+  /// [source] turned the way its EXIF [orientation] says, as a clean PNG.
+  static SanitizedMedia _upright(
+    img.Image source,
+    int orientation,
+    String mimeType,
+  ) {
+    source.exif.imageIfd.orientation = orientation;
+    final baked = img.bakeOrientation(source)..exif = img.ExifData();
+    return SanitizedMedia(
+      bytes: Uint8List.fromList(img.encodePng(baked)),
+      mimeType: mimeType,
+      width: baked.width,
+      height: baked.height,
+      reencoded: true,
     );
   }
 
@@ -615,12 +643,22 @@ abstract final class MediaSanitizer {
     final body = BytesBuilder(copy: false);
     var i = 12;
     int? width, height;
+    var orientation = 1;
+    var animated = false;
     while (i + 8 <= b.length) {
       final type = _ascii(b, i, 4);
       final len = data.getUint32(i + 4, Endian.little);
       final padded = len + (len & 1);
       if (i + 8 + len > b.length) {
         throw const MediaSanitizeException(MediaSanitizeError.webpTruncated);
+      }
+      if (type == 'ANIM') animated = true;
+      if (type == 'EXIF') {
+        // Some writers put the "Exif\0\0" prefix of JPEG in front of the block.
+        final start = _ascii(b, i + 8, 6) == 'Exif\u0000\u0000'
+            ? i + 14
+            : i + 8;
+        orientation = _exifOrientation(b, start, i + 8 + len);
       }
       final chunkEnd = (i + 8 + padded).clamp(0, b.length);
       if (_webpKeep.contains(type)) {
@@ -651,6 +689,17 @@ abstract final class MediaSanitizer {
     final chunks = body.toBytes();
     if (chunks.isEmpty) {
       throw const MediaSanitizeException(MediaSanitizeError.webpInvalid);
+    }
+    if (orientation != 1 && !animated) {
+      // As for JPEG and PNG, the rotation goes into the pixels before the
+      // EXIF chunk is dropped. There is no WebP encoder here, so the turned
+      // picture is a PNG. (An animation is only cleaned: turning it would
+      // turn it into a still, and none is known to carry an orientation.)
+      final source = img.decodeWebP(b);
+      if (source == null) {
+        throw const MediaSanitizeException(MediaSanitizeError.webpInvalid);
+      }
+      return _upright(source, orientation, 'image/png');
     }
     final out = BytesBuilder(copy: false)
       ..add(utf8.encode('RIFF'))
