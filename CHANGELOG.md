@@ -3,6 +3,18 @@
 All notable changes to Mialuna are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.17.2] — 2026-11-03 — The caption box follows the composer
+
+### Fixed
+- **The caption box could show text the composer no longer had.** The box only
+  ever copied the composer's caption into itself when the box was empty. After
+  a caption changed elsewhere (a story shared from the Home rail, a reset
+  after publishing, a draft that was read late), the box kept the old words
+  while the composer was empty, so the next keystroke brought the old text
+  back into the post. The box now always shows what the composer holds,
+  including an empty caption, and never moves the cursor while you type.
+  Covered by three new widget tests (the first one failed before the fix).
+
 ## [0.17.1] — 2026-11-03 — Reels no longer crash, notifications explained
 
 Found by testing the 0.17.0 build on a phone and from user reports.
