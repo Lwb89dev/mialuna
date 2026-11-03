@@ -110,10 +110,17 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
     final friends = ref.watch(closeFriendsProvider);
     final theme = Theme.of(context);
 
-    if (_captionController.text != state.caption &&
-        !state.isPublishing &&
-        _captionController.text.isEmpty) {
-      _captionController.text = state.caption;
+    // The composer is the truth: a caption changed elsewhere (a story shared
+    // from the Home rail, a reset after publishing, the draft read late) shows
+    // here, and so does an empty one. While somebody types, the state already
+    // equals the field, so this never moves the cursor. (It only ever filled an
+    // empty field: after a story shared elsewhere the box kept the old text
+    // while the composer was empty, and the first keystroke put it back.)
+    if (_captionController.text != state.caption && !state.isPublishing) {
+      _captionController.value = TextEditingValue(
+        text: state.caption,
+        selection: TextSelection.collapsed(offset: state.caption.length),
+      );
     }
 
     return Scaffold(
