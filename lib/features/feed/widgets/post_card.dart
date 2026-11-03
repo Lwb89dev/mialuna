@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' show DateFormat;
 
+import '../../../app/providers.dart';
 import '../../../core/auth/auth_controller.dart';
 import '../../../core/nostr/models/media_event.dart';
 import '../../../core/text/clip.dart';
@@ -94,8 +97,8 @@ class PostCard extends ConsumerWidget {
                                 ),
                               ],
                             ),
-                          Text(
-                            formatPostTime(post.createdAt),
+                          PostTime(
+                            createdAt: post.createdAt,
                             style: theme.textTheme.bodySmall,
                           ),
                         ],
@@ -271,15 +274,66 @@ class PostCard extends ConsumerWidget {
   }
 }
 
-String formatPostTime(int createdAtSeconds) {
+String formatPostTime(int createdAtSeconds, {int? nowSeconds}) {
   final dt = DateTime.fromMillisecondsSinceEpoch(createdAtSeconds * 1000);
-  final diff = DateTime.now().difference(dt);
+  final now = nowSeconds == null
+      ? DateTime.now()
+      : DateTime.fromMillisecondsSinceEpoch(nowSeconds * 1000);
+  final diff = now.difference(dt);
   final l10n = AppStrings.current;
   if (diff.inMinutes < 1) return l10n.now;
   if (diff.inHours < 1) return l10n.minutesAgo(diff.inMinutes);
   if (diff.inDays < 1) return l10n.hoursAgo(diff.inHours);
   if (diff.inDays < 7) return l10n.daysAgo(diff.inDays);
   return DateFormat.yMd(l10n.localeName).format(dt);
+}
+
+/// "5 min ago", kept true while it is on screen. A card is built once and then
+/// reused (the feed does not rebuild cards that did not change), so a label
+/// that was only computed at build time stayed at "2 min ago" for as long as
+/// the post was on screen.
+class PostTime extends ConsumerStatefulWidget {
+  final int createdAt;
+  final TextStyle? style;
+  const PostTime({super.key, required this.createdAt, this.style});
+
+  @override
+  ConsumerState<PostTime> createState() => _PostTimeState();
+}
+
+class _PostTimeState extends ConsumerState<PostTime> {
+  Timer? _timer;
+  late String _text;
+
+  String _compute() => formatPostTime(
+    widget.createdAt,
+    nowSeconds: ref.read(unixClockProvider)(),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _text = _compute();
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
+      final next = _compute();
+      if (next != _text && mounted) setState(() => _text = next);
+    });
+  }
+
+  @override
+  void didUpdateWidget(PostTime old) {
+    super.didUpdateWidget(old);
+    if (old.createdAt != widget.createdAt) _text = _compute();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Text(_text, style: widget.style);
 }
 
 /// Screen showing a single post (opened from a message or a link).
