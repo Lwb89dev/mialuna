@@ -300,6 +300,23 @@ class PostScreen extends StatelessWidget {
   }
 }
 
+/// Shapes learned from the media themselves, by URL, for posts that do not
+/// declare their size. A card built again (it scrolled out of the list's
+/// cache and back) takes its real height at once, instead of starting square
+/// and jumping when the picture loads a second time — which, above the
+/// screen, shifts everything being looked at.
+final _learnedAspects = <String, double>{};
+const _maxLearnedAspects = 800;
+
+/// Remembers that the media at [url] is [aspect] (width over height).
+void rememberMediaAspect(String url, double aspect) {
+  _learnedAspects.remove(url);
+  _learnedAspects[url] = aspect;
+  if (_learnedAspects.length > _maxLearnedAspects) {
+    _learnedAspects.remove(_learnedAspects.keys.first);
+  }
+}
+
 /// The media area of a post: photos and videos, carousel, double-tap like,
 /// pinch to zoom in place, sensitive-content cover.
 class PostMedia extends ConsumerStatefulWidget {
@@ -317,16 +334,19 @@ class _PostMediaState extends ConsumerState<PostMedia> {
   double? _discoveredAspect;
 
   double get _aspect {
-    final declared = widget.post.media.first.aspectRatio;
-    return (declared ?? _discoveredAspect ?? 1.0).clamp(
-      minFeedAspect,
-      maxFeedAspect,
-    );
+    final first = widget.post.media.first;
+    return (first.aspectRatio ??
+            _discoveredAspect ??
+            _learnedAspects[first.url] ??
+            1.0)
+        .clamp(minFeedAspect, maxFeedAspect);
   }
 
   void _onSize(Size size) {
-    if (size.height <= 0 || widget.post.media.first.aspectRatio != null) return;
+    final first = widget.post.media.first;
+    if (size.height <= 0 || first.aspectRatio != null) return;
     final aspect = size.width / size.height;
+    rememberMediaAspect(first.url, aspect);
     if (_discoveredAspect == null && mounted) {
       // Reported while building: apply after the frame.
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -352,6 +372,30 @@ class _PostMediaState extends ConsumerState<PostMedia> {
     }
   }
 
+  Widget _item(int i) {
+    final post = widget.post;
+    final item = post.media[i];
+    if (item.isVideo) {
+      return InlineVideo(
+        key: ValueKey('${post.id}:$i'),
+        item: item,
+        postId: post.id,
+        onSize: i == 0 ? _onSize : null,
+      );
+    }
+    return PinchToZoom(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onDoubleTap: _doubleTapLike,
+        child: NostrImage(
+          item: item,
+          postId: post.id,
+          onSize: i == 0 ? _onSize : null,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final post = widget.post;
@@ -370,32 +414,16 @@ class _PostMediaState extends ConsumerState<PostMedia> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          PageView.builder(
-            itemCount: media.length,
-            onPageChanged: (i) => setState(() => _page = i),
-            itemBuilder: (context, i) {
-              final item = media[i];
-              if (item.isVideo) {
-                return InlineVideo(
-                  key: ValueKey('${post.id}:$i'),
-                  item: item,
-                  postId: post.id,
-                  onSize: i == 0 ? _onSize : null,
-                );
-              }
-              return PinchToZoom(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onDoubleTap: _doubleTapLike,
-                  child: NostrImage(
-                    item: item,
-                    postId: post.id,
-                    onSize: i == 0 ? _onSize : null,
-                  ),
-                ),
-              );
-            },
-          ),
+          // One picture needs no carousel: a PageView would put a horizontal
+          // drag in the way of every vertical scroll that starts on it.
+          if (media.length == 1)
+            _item(0)
+          else
+            PageView.builder(
+              itemCount: media.length,
+              onPageChanged: (i) => setState(() => _page = i),
+              itemBuilder: (context, i) => _item(i),
+            ),
           if (media.length > 1)
             Positioned(
               top: 10,
