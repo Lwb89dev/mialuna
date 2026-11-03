@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
 import 'app/notification_routes.dart';
+import 'app/providers.dart';
 import 'app/relay_sync.dart';
 import 'app/router.dart';
 import 'core/auth/auth_controller.dart';
@@ -74,6 +75,9 @@ class _MialunaAppState extends ConsumerState<MialunaApp>
     // Back in the foreground: pick up relay/server list changes made from
     // another Nostr app (throttled inside the sync controller).
     if (state == AppLifecycleState.resumed) {
+      // Connections that died while the phone slept are replaced now, not
+      // when the next request disappears into them.
+      unawaited(ref.read(relayPoolProvider).wake());
       ref.read(relaySyncProvider.notifier).sync();
     }
   }

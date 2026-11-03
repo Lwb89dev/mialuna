@@ -41,8 +41,17 @@ class FakeRelay {
   /// (a slow relay).
   Duration reqDelay = Duration.zero;
 
+  /// How many WebSocket connections clients opened here.
+  int connectionsAccepted = 0;
+
   late HttpServer _server;
   final List<_Conn> _conns = [];
+  final Set<_Conn> _frozen = {};
+
+  /// The connections open now go dead without closing — what a phone sees
+  /// after sleeping: the socket looks open, nothing ever comes back. New
+  /// connections work normally.
+  void freezeConnections() => _frozen.addAll(_conns);
 
   FakeRelay({this.authKinds = const {}});
 
@@ -52,6 +61,7 @@ class FakeRelay {
     _server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     _server.listen((request) async {
       final socket = await WebSocketTransformer.upgrade(request);
+      connectionsAccepted++;
       final conn = _Conn(socket)..challenge = 'challenge-${_conns.length}';
       _conns.add(conn);
       if (authKinds.isNotEmpty) conn.send(['AUTH', conn.challenge]);
@@ -79,6 +89,7 @@ class FakeRelay {
   void push(NostrEvent event) {
     stored.add(event);
     for (final c in _conns) {
+      if (_frozen.contains(c)) continue;
       for (final entry in c.subs.entries) {
         if (entry.value.any((f) => f.matches(event))) {
           c.send(['EVENT', entry.key, event.toJson()]);
@@ -88,6 +99,7 @@ class FakeRelay {
   }
 
   void _onMessage(_Conn conn, String raw) {
+    if (_frozen.contains(conn)) return;
     final msg = jsonDecode(raw) as List;
     switch (msg[0]) {
       case 'REQ':
@@ -163,6 +175,7 @@ class FakeRelay {
         stored.add(event);
         answer(true, '');
         for (final c in _conns) {
+          if (_frozen.contains(c)) continue;
           for (final entry in c.subs.entries) {
             if (entry.value.any((f) => f.matches(event))) {
               c.send(['EVENT', entry.key, event.toJson()]);
