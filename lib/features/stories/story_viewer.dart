@@ -17,6 +17,7 @@ import '../feed/widgets/nostr_image.dart';
 import '../feed/widgets/post_card.dart' show closeFriendsGreen;
 import '../messages/send_to_sheet.dart';
 import '../profile/profile_widgets.dart';
+import '../social/delete_post_flow.dart';
 import 'stories_controller.dart';
 import 'story_playback.dart';
 import 'story_receipts.dart';
@@ -261,6 +262,18 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
     if (mounted) _setPaused(false);
   }
 
+  /// Your own story: take it down. The viewer closes once it is gone.
+  Future<void> _deleteStory() async {
+    _setPaused(true);
+    final deleted = await confirmAndDeletePost(context, ref, _story);
+    if (!mounted) return;
+    if (deleted) {
+      Navigator.of(context).pop();
+    } else {
+      _setPaused(false);
+    }
+  }
+
   Future<void> _sendToFriends() async {
     _setPaused(true);
     await SendToSheet.show(context, _story);
@@ -437,7 +450,7 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
                     ),
                   ),
                 ),
-                if (_isOwn)
+                if (_isOwn) ...[
                   Consumer(
                     builder: (context, ref, _) {
                       final count = ref.watch(
@@ -457,25 +470,37 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
                       );
                     },
                   ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.white),
+                    tooltip: context.l10n.deletePost,
+                    onPressed: _deleteStory,
+                  ),
+                ],
                 if (story.isPrivate)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Chip(
-                      avatar: const Icon(
-                        Icons.star,
-                        size: 16,
-                        color: Colors.white,
-                      ),
-                      label: Text(
-                        context.l10n.closeFriends,
-                        style: const TextStyle(
+                  // Gives way on a narrow screen, where your own story also
+                  // has the viewers and the delete button in this bar.
+                  Flexible(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Chip(
+                        avatar: const Icon(
+                          Icons.star,
+                          size: 16,
                           color: Colors.white,
-                          fontSize: 12,
                         ),
+                        label: Text(
+                          context.l10n.closeFriends,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                        ),
+                        backgroundColor: closeFriendsGreen,
+                        visualDensity: VisualDensity.compact,
+                        side: BorderSide.none,
                       ),
-                      backgroundColor: closeFriendsGreen,
-                      visualDensity: VisualDensity.compact,
-                      side: BorderSide.none,
                     ),
                   )
                 else

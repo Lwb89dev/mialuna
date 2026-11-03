@@ -14,6 +14,7 @@ import '../feed/widgets/inline_video.dart';
 import '../messages/send_to_sheet.dart';
 import '../profile/profile_widgets.dart';
 import '../settings/settings_controller.dart';
+import '../social/delete_post_flow.dart';
 import '../social/follow_controller.dart';
 import '../social/interactions_controller.dart';
 import 'reels_controller.dart';
@@ -283,6 +284,9 @@ class _ReelPageState extends ConsumerState<_ReelPage>
     final reel = widget.reel;
     final interactions = ref.watch(interactionsProvider(reel));
     final following = ref.watch(followListProvider).contains(reel.author);
+    final isMine = ref.watch(
+      authProvider.select((a) => a.publicKey == reel.author),
+    );
     final isMe = ref.watch(authProvider).publicKey == reel.author;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     return Stack(
@@ -435,6 +439,11 @@ class _ReelPageState extends ConsumerState<_ReelPage>
                 icon: Icons.send_outlined,
                 onPressed: () => SendToSheet.show(context, reel),
               ),
+              if (isMine)
+                _RailButton(
+                  icon: Icons.delete_outline,
+                  onPressed: () => confirmAndDeletePost(context, ref, reel),
+                ),
             ],
           ),
         ),

@@ -17,6 +17,7 @@ import 'package:mialuna/core/nostr/signer.dart';
 import 'package:mialuna/core/storage/local_cache.dart';
 import 'package:mialuna/core/theme/mialuna_theme.dart';
 import 'package:mialuna/features/private/private_delivery.dart';
+import 'package:mialuna/features/social/post_deletion.dart';
 import 'package:mialuna/features/stories/stories_controller.dart';
 import 'package:mialuna/features/stories/story_receipts.dart';
 import 'package:mialuna/features/stories/story_viewer.dart';
@@ -66,6 +67,17 @@ class _Reporter extends StoryViewReporter {
 
   @override
   Future<void> flush({String? author}) async => flushes++;
+}
+
+/// Stands in for deleting a post: records what it was asked.
+class _Deletion implements PostDeletion {
+  final List<MediaPost> calls = [];
+
+  @override
+  Future<DeletionReport> delete(MediaPost post) async {
+    calls.add(post);
+    return const DeletionReport();
+  }
 }
 
 /// A delivery that must never be used.
@@ -145,6 +157,8 @@ void main() {
     List<MediaPost> stories,
     Map<String, Uint8List?> pictures, {
     Signer? as,
+    String? author,
+    PostDeletion? deletion,
     bool realReporter = false,
   }) async {
     await tester.pumpWidget(
@@ -155,6 +169,8 @@ void main() {
           localCacheProvider.overrideWithValue(LocalCache(directory: tmp)),
           authProvider.overrideWith(() => _FixedAuth(as ?? _viewer)),
           privateMediaProvider.overrideWithValue(_Media(pictures)),
+          if (deletion != null)
+            postDeletionProvider.overrideWithValue(deletion),
           privateDeliveryProvider.overrideWith((ref) {
             return delivery = _NoDelivery(ref);
           }),
@@ -178,7 +194,10 @@ void main() {
                         MaterialPageRoute<void>(
                           builder: (_) => StoryViewerScreen(
                             groups: [
-                              StoryGroup(author: _author, stories: stories),
+                              StoryGroup(
+                                author: author ?? _author,
+                                stories: stories,
+                              ),
                             ],
                           ),
                         ),
@@ -222,6 +241,101 @@ void main() {
   }
 
   Set<String> seen() => container.read(seenStoriesProvider);
+
+  testWidgets(
+    'your own story can be deleted from the viewer, which then closes',
+    (tester) async {
+      final deletion = _Deletion();
+      final me = NsecSigner.fromNsec(NsecSigner.generatePrivateKey());
+      final story = _story(me.publicKey, 'https://x.example/ok');
+      await open(
+        tester,
+        [story],
+        {'https://x.example/ok': _picture()},
+        as: me,
+        author: me.publicKey,
+        deletion: deletion,
+      );
+
+      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Delete this story?'), findsOneWidget);
+      await tester.tap(find.byType(FilledButton));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(deletion.calls, [story]);
+      expect(find.byType(StoryViewerScreen), findsNothing);
+      await finish(tester);
+    },
+  );
+
+  testWidgets('Cancel keeps the story playing and deletes nothing', (
+    tester,
+  ) async {
+    final deletion = _Deletion();
+    final me = NsecSigner.fromNsec(NsecSigner.generatePrivateKey());
+    final story = _story(me.publicKey, 'https://x.example/ok');
+    await open(
+      tester,
+      [story],
+      {'https://x.example/ok': _picture()},
+      as: me,
+      author: me.publicKey,
+      deletion: deletion,
+    );
+
+    await tester.tap(find.byIcon(Icons.delete_outline));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.text('Cancel'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(deletion.calls, isEmpty);
+    expect(find.byType(StoryViewerScreen), findsOneWidget);
+    await finish(tester);
+  });
+
+  // The widest the bar gets: your own close-friends story, with the viewers,
+  // the delete button, the audience chip and the close button.
+  for (final phone in const [(320.0, 1.0), (360.0, 1.5), (320.0, 2.0)]) {
+    testWidgets(
+      'the top bar of your own close-friends story fits ${phone.$1.toInt()} px at text x${phone.$2}',
+      (tester) async {
+        tester.view.physicalSize = Size(phone.$1 * 2, 1136);
+        tester.view.devicePixelRatio = 2;
+        tester.platformDispatcher.textScaleFactorTestValue = phone.$2;
+        addTearDown(tester.view.reset);
+        addTearDown(tester.platformDispatcher.clearAllTestValues);
+        final me = NsecSigner.fromNsec(NsecSigner.generatePrivateKey());
+        final story = _story(me.publicKey, 'https://x.example/ok');
+        await open(
+          tester,
+          [story],
+          {'https://x.example/ok': _picture()},
+          as: me,
+          author: me.publicKey,
+          deletion: _Deletion(),
+        );
+
+        expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+        expect(find.byIcon(Icons.close), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await finish(tester);
+      },
+    );
+  }
+
+  testWidgets('somebody else\'s story has no delete button', (tester) async {
+    final story = _story(_author, 'https://x.example/ok');
+    await open(tester, [story], {'https://x.example/ok': _picture()});
+
+    expect(find.byIcon(Icons.delete_outline), findsNothing);
+    await finish(tester);
+  });
 
   testWidgets('a picture that is on screen counts after a second', (
     tester,

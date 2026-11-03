@@ -22,6 +22,7 @@ import '../feed/widgets/post_card.dart';
 import '../messages/chat_screen.dart';
 import '../messages/dm_controller.dart';
 import '../settings/settings_screen.dart';
+import '../social/deleted_posts.dart';
 import '../social/follow_controller.dart';
 import '../social/moderation_controller.dart';
 import 'edit_profile_screen.dart';
@@ -535,6 +536,7 @@ class _MediaGrid extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final broken = ref.watch(brokenMediaProvider);
+    final deleted = ref.watch(deletedPostsProvider);
     return posts.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, _) => Center(
@@ -547,6 +549,7 @@ class _MediaGrid extends ConsumerWidget {
         final filtered = [
           for (final p in list)
             if (!broken.contains(p.id) &&
+                !deleted.contains(p.id) &&
                 (reelsOnly == null ||
                     (p.event.kind == NostrKinds.shortVideo) == reelsOnly!))
               p,

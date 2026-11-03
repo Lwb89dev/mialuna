@@ -24,12 +24,12 @@ Mialuna implements and with which conventions.
 | NIP-59 | Gift wrap | ✅ | Rumor → seal (13) → wrap (1059) with throw-away key, timestamps randomised up to 2 days; seal/rumor author check |
 | NIP-42 | Relay AUTH | ✅ | Only answered when a relay demands it (private messages) |
 | NIP-51 (30000) | Categorised people list | ✅ | Close-friends list: `d=close-friends`, members as NIP-44-encrypted `p` tags in `content` |
-| NIP-09 | Deletion | 🔶 | Used to take a like back; posts/comments deletion not exposed yet |
+| NIP-09 | Deletion | 🔶 | Outgoing only: kind 5 with `e` + `k` (and `a` for the addressable video kinds) to take back a like, or to delete your own post, reel or story, sent to your write relays. Requests from other authors are not read; a post you deleted is hidden on your devices by a local list of ids. Comments cannot be deleted yet |
 | NIP-65 | Relay lists (kind 10002) | ✅ | Read/write roles; adopted automatically when newer, edits are published back; outbox model for reading other authors |
 | NIP-50 | Search | ✅ | Posts in Discover (depends on relay support) and **profile search by name** on dedicated relays (`search.nos.today`, `nostr.wine`) |
 | NIP-05 | DNS identifiers | ✅ | Verification badge on profiles; `name@domain` lookup in people search |
 | NIP-57 | Zaps | ✅ | Zap request kind 9734, receipts kind 9735, LNURL limits, wallet handoff |
-| Blossom | Media servers | ✅ | PUT /upload with `X-SHA-256`, kind 24242 auth signed once, 409 = already stored, ordered fallback across the user's servers, BUD-03 list (kind 10063) synced |
+| Blossom | Media servers | ✅ | PUT /upload with `X-SHA-256`, kind 24242 auth signed once, 409 = already stored, ordered fallback across the user's servers, BUD-03 list (kind 10063) synced; BUD-02 `DELETE /<sha256>` (`t=delete`, one `x` per file, one signature for all of them, one per file for the servers that answer 401) sent to the servers the post's URLs point at and to the user's own, `https` and public hosts only. Tried live: `blossom.primal.net` and `nostr.download` accept the multi-`x` authorization and answer 404 afterwards; `blossom.band` answers 200 but its files stay reachable on `image.nostr.build`; `cdn.satellite.earth` refuses uploads from an unknown key, so it could not be tried |
 
 ✅ implemented · 🔶 partial · ⏳ planned
 
@@ -183,4 +183,12 @@ Built on NIP-17/NIP-59; not a standard other clients understand.
   read relays). Friends without an inbox are reported, never sent to public relays.
 - **Likes and replies**: kind 7 / kind 1111 (NIP-22 tags) rumors wrapped to the
   post's author (and the person answered) only.
+- **Deletion**: relays cannot be asked (every wrap is signed by a throw-away
+  key, so NIP-09 does not apply to it). The author sends a kind 5 rumor (`e` =
+  the post's rumor id, `k`), wrapped like any other, to the audience and to
+  themselves. A receiver drops the post only when the rumor's author (checked
+  through the seal) is the post's author, and remembers a notice that arrives
+  before the post. The encrypted files are deleted from the Blossom server with
+  the one-off upload key, which the author's phone keeps (`upload_keys_<pubkey>.json`,
+  hash → key); it is not part of the post.
 - A *public* event carrying the `audience` tag is ignored by every public path.

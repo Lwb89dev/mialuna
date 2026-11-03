@@ -2785,6 +2785,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Story shared'**
   String get storyShared;
+
+  /// No description provided for @deletePost.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deletePost;
+
+  /// No description provided for @deletePostTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this post?'**
+  String get deletePostTitle;
+
+  /// No description provided for @deleteStoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this story?'**
+  String get deleteStoryTitle;
+
+  /// No description provided for @deletePostBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Mialuna will ask your relays to delete it and the media servers to delete its photos or video. A relay that ignores the request, or someone who already saved a copy, may still have it.'**
+  String get deletePostBody;
+
+  /// No description provided for @deletePrivateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A close-friends post can\'t be recalled from the relays. Mialuna will tell your friends\' apps to remove it and ask the media server to delete its encrypted files. A friend who already saved a copy may still have it.'**
+  String get deletePrivateBody;
+
+  /// No description provided for @deletingPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting…'**
+  String get deletingPost;
+
+  /// No description provided for @postDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted.'**
+  String get postDeleted;
+
+  /// No description provided for @postWasDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'This post was deleted.'**
+  String get postWasDeleted;
+
+  /// No description provided for @deleteNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the account that published this can delete it.'**
+  String get deleteNotAllowed;
+
+  /// No description provided for @deleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete: {reason}'**
+  String deleteFailed(Object reason);
+
+  /// No description provided for @deleteNoRelay.
+  ///
+  /// In en, this message translates to:
+  /// **'No relay accepted the deletion request, so it is still online. Check your connection and try again.'**
+  String get deleteNoRelay;
+
+  /// No description provided for @deleteMediaLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'The media could not be removed from {servers}.'**
+  String deleteMediaLeft(Object servers);
+
+  /// No description provided for @deleteMediaNotAuthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Your signer did not authorize removing the media, so the files are still on the media server.'**
+  String get deleteMediaNotAuthorized;
+
+  /// No description provided for @deleteFriendsMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of your close friends could not be told, so it may stay on their phones.'**
+  String deleteFriendsMissed(Object count);
 }
 
 class _AppLocalizationsDelegate

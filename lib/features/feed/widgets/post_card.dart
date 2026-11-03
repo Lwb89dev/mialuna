@@ -16,6 +16,8 @@ import '../../explore/hashtag_link.dart';
 import '../../messages/send_to_sheet.dart';
 import '../../messages/share_utils.dart';
 import '../../profile/profile_widgets.dart';
+import '../../social/delete_post_flow.dart';
+import '../../social/deleted_posts.dart';
 import '../../social/interactions_controller.dart';
 import '../../social/moderation_controller.dart';
 import '../../social/zap_sheet.dart';
@@ -46,6 +48,9 @@ class PostCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final interactions = ref.watch(interactionsProvider(post));
     final isGuest = ref.watch(authProvider.select((a) => a.isGuest));
+    final isMine = ref.watch(
+      authProvider.select((a) => a.publicKey == post.author),
+    );
     // Only this post's bookmark, not the whole set: saving one post must not
     // rebuild every card on screen.
     final saved = ref.watch(
@@ -125,19 +130,29 @@ class PostCard extends ConsumerWidget {
                         child: Text(context.l10n.copyLink),
                       ),
                     ],
-                    PopupMenuItem(
-                      value: 'mute',
-                      child: Text(context.l10n.muteAuthor),
-                    ),
-                    PopupMenuItem(
-                      value: 'block',
-                      child: Text(context.l10n.blockAuthor),
-                    ),
-                    if (!isPrivate)
+                    if (isMine)
                       PopupMenuItem(
-                        value: 'report',
-                        child: Text(context.l10n.report),
+                        value: 'delete',
+                        child: Text(
+                          context.l10n.deletePost,
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                      )
+                    else ...[
+                      PopupMenuItem(
+                        value: 'mute',
+                        child: Text(context.l10n.muteAuthor),
                       ),
+                      PopupMenuItem(
+                        value: 'block',
+                        child: Text(context.l10n.blockAuthor),
+                      ),
+                      if (!isPrivate)
+                        PopupMenuItem(
+                          value: 'report',
+                          child: Text(context.l10n.report),
+                        ),
+                    ],
                   ],
                 ),
               ],
@@ -254,6 +269,8 @@ class PostCard extends ConsumerWidget {
           ),
         );
         messenger.showSnackBar(SnackBar(content: Text(l10n.nostrLinkCopied)));
+      case 'delete':
+        await confirmAndDeletePost(context, ref, post);
       case 'mute':
         await ref.read(muteControllerProvider.notifier).mute(post.author);
         messenger.showSnackBar(SnackBar(content: Text(l10n.authorMuted)));
@@ -337,7 +354,7 @@ class _PostTimeState extends ConsumerState<PostTime> {
 }
 
 /// Screen showing a single post (opened from a message or a link).
-class PostScreen extends StatelessWidget {
+class PostScreen extends ConsumerWidget {
   final MediaPost post;
   const PostScreen({super.key, required this.post});
 
@@ -346,10 +363,17 @@ class PostScreen extends StatelessWidget {
           .push(MaterialPageRoute(builder: (_) => PostScreen(post: post)));
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Deleted from here (or elsewhere) while open: the screen stays, the post
+    // does not, and the back button is where it always was.
+    final deleted = ref.watch(
+      deletedPostsProvider.select((ids) => ids.contains(post.id)),
+    );
     return Scaffold(
       appBar: AppBar(),
-      body: SingleChildScrollView(child: PostCard(post: post)),
+      body: deleted
+          ? Center(child: Text(context.l10n.postWasDeleted))
+          : SingleChildScrollView(child: PostCard(post: post)),
     );
   }
 }
