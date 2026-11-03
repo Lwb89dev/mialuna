@@ -59,6 +59,9 @@ class NostrImage extends ConsumerStatefulWidget {
   final BoxFit fit;
   final bool preferThumbnail;
   final ValueChanged<Size>? onSize;
+
+  /// Called once nothing is left to try: every mirror failed.
+  final VoidCallback? onFailed;
   final String? semanticLabel;
 
   const NostrImage({
@@ -68,6 +71,7 @@ class NostrImage extends ConsumerStatefulWidget {
     this.fit = BoxFit.cover,
     this.preferThumbnail = false,
     this.onSize,
+    this.onFailed,
     this.semanticLabel,
   });
 
@@ -118,6 +122,7 @@ class _NostrImageState extends ConsumerState<NostrImage> {
         return;
       }
       setState(() => _failed = true);
+      widget.onFailed?.call();
       final id = widget.postId;
       if (id != null && _allPermanent) {
         final broken = ref.read(brokenMediaProvider);
@@ -166,6 +171,7 @@ class _NostrImageState extends ConsumerState<NostrImage> {
             (widget.preferThumbnail || item.isVideo),
         fit: widget.fit,
         onSize: widget.onSize,
+        onFailed: widget.onFailed,
         semanticLabel: widget.semanticLabel,
       );
     }
@@ -254,6 +260,9 @@ class EncryptedImage extends ConsumerStatefulWidget {
   final bool preview;
   final BoxFit fit;
   final ValueChanged<Size>? onSize;
+
+  /// Called when the picture cannot be fetched, decrypted or decoded.
+  final VoidCallback? onFailed;
   final String? semanticLabel;
 
   const EncryptedImage({
@@ -262,6 +271,7 @@ class EncryptedImage extends ConsumerStatefulWidget {
     this.preview = false,
     this.fit = BoxFit.cover,
     this.onSize,
+    this.onFailed,
     this.semanticLabel,
   });
 
@@ -282,15 +292,23 @@ class _EncryptedImageState extends ConsumerState<EncryptedImage> {
     _bytes = ref
         .read(privateMediaProvider)
         .imageBytes(widget.item, preview: widget.preview);
-    _bytes.then((b) async {
-      final onSize = widget.onSize;
-      if (onSize == null) return;
-      try {
-        final image = await decodeImageFromList(b);
-        onSize(Size(image.width.toDouble(), image.height.toDouble()));
-        image.dispose();
-      } catch (_) {}
-    }, onError: (_) {});
+    _bytes.then(
+      (b) async {
+        final onSize = widget.onSize;
+        if (onSize == null && widget.onFailed == null) return;
+        try {
+          final image = await decodeImageFromList(b);
+          final size = Size(image.width.toDouble(), image.height.toDouble());
+          image.dispose();
+          if (mounted) onSize?.call(size);
+        } catch (_) {
+          if (mounted) widget.onFailed?.call();
+        }
+      },
+      onError: (_) {
+        if (mounted) widget.onFailed?.call();
+      },
+    );
   }
 
   @override
