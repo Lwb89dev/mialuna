@@ -56,6 +56,10 @@ class FollowListController extends Notifier<Set<String>> {
   }
 
   Future<void> _load(String pubkey) async {
+    // The completers of *this* account: a later account has new ones, and the
+    // end of this load must not release anything waiting for the next list.
+    final loaded = _loaded;
+    final usable = _usable;
     final sub = ref
         .read(relayPoolProvider)
         .subscribe(
@@ -81,8 +85,8 @@ class FollowListController extends Notifier<Set<String>> {
       _saveList(pubkey);
     });
     await sub.eose;
-    if (!_loaded.isCompleted) _loaded.complete();
-    if (!_usable.isCompleted) _usable.complete();
+    if (!loaded.isCompleted) loaded.complete();
+    if (!usable.isCompleted) usable.complete();
   }
 
   /// Completes once the follow list has been read from the relays (or the

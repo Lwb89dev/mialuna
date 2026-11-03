@@ -33,6 +33,10 @@ class ScriptedSigner extends Signer {
 
   bool refuseEncrypt = false;
   bool refuseSeal = false;
+  bool refuseDecrypt = false;
+
+  /// Like [gate], for decrypting: the signer is slow to open what arrived.
+  Completer<void>? decryptGate;
 
   /// While set, [nip44Encrypt] waits for it: a signer request on screen.
   Completer<void>? gate;
@@ -69,8 +73,11 @@ class ScriptedSigner extends Signer {
   }
 
   @override
-  Future<String> nip44Decrypt(String peerPubkey, String ciphertext) {
+  Future<String> nip44Decrypt(String peerPubkey, String ciphertext) async {
     decryptCalls++;
+    final g = decryptGate;
+    if (g != null) await g.future;
+    if (refuseDecrypt) throw const SignerException('refused to decrypt');
     return inner.nip44Decrypt(peerPubkey, ciphertext);
   }
 
