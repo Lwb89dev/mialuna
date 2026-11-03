@@ -474,6 +474,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _addBlossom() {
     final text = _blossomController.text.trim();
     if (text.isEmpty) return;
+    // Said out loud: the field used to empty itself and nothing happened.
+    if (SettingsController.cleanBlossomUrl(text) == null) {
+      _toast(context.l10n.invalidServerAddress);
+      return;
+    }
     _blossomController.clear();
     _changeBlossom(
       () => ref.read(settingsProvider.notifier).addBlossomServer(text),

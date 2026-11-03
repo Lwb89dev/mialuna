@@ -53,6 +53,10 @@ class _FakeNotifier implements SystemNotifier {
   Future<String?> initialRoute() async => null;
   @override
   void onRoute(void Function(String route) listener) {}
+  @override
+  Future<bool> batteryRestricted() async => false;
+  @override
+  Future<void> openBatterySettings() async {}
 }
 
 NsecSigner newSigner() => NsecSigner.fromNsec(NsecSigner.generatePrivateKey());

@@ -2246,6 +2246,12 @@ abstract class AppLocalizations {
   /// **'Invalid address: use wss://…'**
   String get invalidRelayAddress;
 
+  /// No description provided for @invalidServerAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid address: use https://…'**
+  String get invalidServerAddress;
+
   /// No description provided for @relayRead.
   ///
   /// In en, this message translates to:
@@ -2647,6 +2653,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open settings'**
   String get systemNotificationsOpenSettings;
+
+  /// No description provided for @systemNotificationsBattery.
+  ///
+  /// In en, this message translates to:
+  /// **'Android puts apps to sleep a few minutes after the screen turns off, and notifications stop with them. To keep receiving them, set Mialuna\'s battery use to “Unrestricted”.'**
+  String get systemNotificationsBattery;
+
+  /// No description provided for @systemNotificationsBatteryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open battery settings'**
+  String get systemNotificationsBatteryAction;
 
   /// No description provided for @newFollowersSetting.
   ///

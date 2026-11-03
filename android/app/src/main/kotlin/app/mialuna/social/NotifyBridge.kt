@@ -6,7 +6,10 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
@@ -35,6 +38,11 @@ object NotifyBridge {
         ch.setMethodCallHandler { call, result ->
             when (call.method) {
                 "canNotify" -> result.success(canNotify())
+                // Android puts an app to sleep a few minutes after the screen
+                // goes off, and its connections with it: notifications only
+                // keep arriving if the user took Mialuna out of that.
+                "batteryRestricted" -> result.success(batteryRestricted())
+                "openBatterySettings" -> result.success(openBatterySettings())
                 "show" -> result.success(show(call.arguments as Map<*, *>))
                 "cancelAll" -> {
                     manager().cancelAll()
@@ -65,6 +73,32 @@ object NotifyBridge {
         appContext.getSystemService(NotificationManager::class.java)
 
     private fun canNotify(): Boolean = manager().areNotificationsEnabled()
+
+    private fun batteryRestricted(): Boolean {
+        val power = appContext.getSystemService(PowerManager::class.java)
+        return !power.isIgnoringBatteryOptimizations(appContext.packageName)
+    }
+
+    /** The list of apps and their battery optimisation (no permission needed),
+     *  or — where a phone does not offer it — the app's own settings page. */
+    private fun openBatterySettings(): Boolean {
+        val attempts = listOf(
+            Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS),
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:${appContext.packageName}")
+            },
+        )
+        for (intent in attempts) {
+            try {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                appContext.startActivity(intent)
+                return true
+            } catch (e: Exception) {
+                // Try the next one.
+            }
+        }
+        return false
+    }
 
     private fun show(args: Map<*, *>): Boolean {
         val nm = manager()
