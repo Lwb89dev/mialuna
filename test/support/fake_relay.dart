@@ -37,6 +37,10 @@ class FakeRelay {
   /// How many events clients tried to publish here.
   int publishAttempts = 0;
 
+  /// Holds back the stored events and the EOSE of every request by this long
+  /// (a slow relay).
+  Duration reqDelay = Duration.zero;
+
   late HttpServer _server;
   final List<_Conn> _conns = [];
 
@@ -101,20 +105,28 @@ class FakeRelay {
           return;
         }
         conn.subs[id] = filters;
-        // Like a real relay: newest first, and `limit` caps each filter.
-        final sent = <String>{};
-        for (final f in filters) {
-          var matching = stored.where(f.matches).toList()
-            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          final limit = f.filter.limit;
-          if (limit != null && matching.length > limit) {
-            matching = matching.sublist(0, limit);
+        void serve() {
+          // Like a real relay: newest first, and `limit` caps each filter.
+          final sent = <String>{};
+          for (final f in filters) {
+            var matching = stored.where(f.matches).toList()
+              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+            final limit = f.filter.limit;
+            if (limit != null && matching.length > limit) {
+              matching = matching.sublist(0, limit);
+            }
+            for (final e in matching) {
+              if (sent.add(e.id)) conn.send(['EVENT', id, e.toJson()]);
+            }
           }
-          for (final e in matching) {
-            if (sent.add(e.id)) conn.send(['EVENT', id, e.toJson()]);
-          }
+          conn.send(['EOSE', id]);
         }
-        conn.send(['EOSE', id]);
+
+        if (reqDelay == Duration.zero) {
+          serve();
+        } else {
+          Future<void>.delayed(reqDelay, serve);
+        }
       case 'CLOSE':
         closedSubscriptions.add(msg[1] as String);
         conn.subs.remove(msg[1]);

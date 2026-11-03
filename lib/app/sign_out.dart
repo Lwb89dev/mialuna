@@ -58,7 +58,10 @@ Future<void> _signOut(Ref ref) async {
   for (final key in _accountPreferences) {
     await prefs.remove(key);
   }
-  if (pubkey != null) await prefs.remove('mialuna_story_views_sent_$pubkey');
+  if (pubkey != null) {
+    await prefs.remove('mialuna_story_views_sent_$pubkey');
+    await prefs.remove('mialuna_seen_stories_$pubkey');
+  }
   await ref.read(settingsProvider.notifier).detachAccount();
 
   // What was held in memory goes too.

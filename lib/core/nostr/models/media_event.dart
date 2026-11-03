@@ -316,7 +316,26 @@ class MediaPost {
   bool get isReel =>
       kind == NostrKinds.shortVideo || kind == NostrKinds.addressableShortVideo;
 
-  bool isExpired([int? nowSeconds]) => event.isExpired(nowSeconds);
+  /// How long a story is shown, whatever its NIP-40 tag says (or leaves out):
+  /// the tag is the author's promise to relays, not proof that the media is
+  /// gone, and an absent, malformed or far-off one must not keep a story on
+  /// screen for longer than a day.
+  static const storyWindowSeconds = 24 * 3600;
+
+  /// How far ahead of this phone's clock a story may be dated before it is
+  /// taken for a forgery: phones disagree by seconds, not by hours.
+  static const storyClockSkewSeconds = 10 * 60;
+
+  /// A valid NIP-40 expiration always counts. A story is also over once its
+  /// [storyWindowSeconds] are, and is not shown at all when dated further in
+  /// the future than clock skew explains.
+  bool isExpired([int? nowSeconds]) {
+    final now = nowSeconds ?? DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    if (event.isExpired(now)) return true;
+    if (!isStory) return false;
+    return createdAt > now + storyClockSkewSeconds ||
+        now >= createdAt + storyWindowSeconds;
+  }
 
   /// Parses any supported media event. Returns null when the event carries
   /// no usable media — Mialuna never renders such events as posts.

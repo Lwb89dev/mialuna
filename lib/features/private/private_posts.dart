@@ -210,13 +210,8 @@ class PrivatePostsController extends Notifier<PrivatePostsState> {
   }
 
   static bool _expired(Rumor r, int now) {
-    for (final t in r.tags) {
-      if (t.length > 1 && t[0] == 'expiration') {
-        final exp = int.tryParse(t[1]);
-        if (exp != null && exp <= now) return true;
-      }
-    }
-    return false;
+    final post = _toPost(r);
+    return post == null || post.isExpired(now);
   }
 
   /// Forgets everything (logout, "clear cache").
