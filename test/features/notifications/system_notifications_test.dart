@@ -16,6 +16,7 @@ import 'package:mialuna/core/notify/system_notifier.dart';
 import 'package:mialuna/core/storage/local_cache.dart';
 import 'package:mialuna/features/messages/chat_screen.dart';
 import 'package:mialuna/features/messages/dm_controller.dart';
+import 'package:mialuna/features/notifications/notification_settings.dart';
 import 'package:mialuna/features/notifications/notifications_controller.dart';
 import 'package:mialuna/features/notifications/notifications_screen.dart';
 import 'package:mialuna/features/notifications/system_notifications.dart';
@@ -290,6 +291,76 @@ void main() {
         reason: 'one summary, replaced as it grows',
       );
       expect(summaries.last.body, AppStrings.current.notificationsNew(9));
+    });
+  });
+
+  group('new followers', () {
+    Future<NostrEvent> follow(Signer from) => signed(
+      from,
+      kind: NostrKinds.followList,
+      createdAt: now + 5,
+      tags: [
+        ['p', me.publicKey],
+      ],
+    );
+
+    List<NotificationKind> kinds(ProviderContainer c) => [
+      for (final n in c.read(notificationsProvider).items) n.kind,
+    ];
+
+    test('are shown, counted and announced by default', () async {
+      final c = await running();
+      expect(c.read(newFollowersNotificationsProvider), true);
+      relay.push(await follow(bob));
+      await eventually(() => phone.shown.isNotEmpty);
+      expect(kinds(c), [NotificationKind.follow]);
+      expect(c.read(notificationsProvider).unreadCount, 1);
+      expect(phone.shown.single.body, AppStrings.current.startedFollowingYou);
+    });
+
+    test('switched off: not listed, not counted, not on the phone', () async {
+      final c = await running();
+      await c.read(newFollowersNotificationsProvider.notifier).set(false);
+      relay.push(await follow(bob));
+      relay.push(await follow(carol));
+      // A like still comes through: once it is here, the follows were seen.
+      relay.push(await reaction(bob, at: now + 9));
+      await eventually(() => phone.shown.isNotEmpty);
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      expect(kinds(c), [NotificationKind.reaction]);
+      expect(c.read(notificationsProvider).unreadCount, 1);
+      expect(phone.shown, hasLength(1));
+      expect(phone.shown.single.body, AppStrings.current.reactedToYourMoment);
+    });
+
+    test(
+      'switched off after they arrived, they go; back on, they return',
+      () async {
+        final c = await running();
+        relay.push(await follow(bob));
+        await eventually(() => kinds(c).contains(NotificationKind.follow));
+
+        await c.read(newFollowersNotificationsProvider.notifier).set(false);
+        await eventually(() => kinds(c).isEmpty);
+        expect(c.read(notificationsProvider).unreadCount, 0);
+
+        await c.read(newFollowersNotificationsProvider.notifier).set(true);
+        await eventually(() => kinds(c).contains(NotificationKind.follow));
+      },
+    );
+
+    test('the choice is remembered', () async {
+      final c = app();
+      await c.read(newFollowersNotificationsProvider.notifier).set(false);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('mialuna_notify_new_followers'), false);
+
+      final again = app();
+      again.read(newFollowersNotificationsProvider);
+      await eventually(
+        () => again.read(newFollowersNotificationsProvider) == false,
+      );
     });
   });
 

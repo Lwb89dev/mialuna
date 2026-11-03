@@ -2648,6 +2648,18 @@ abstract class AppLocalizations {
   /// **'Open settings'**
   String get systemNotificationsOpenSettings;
 
+  /// No description provided for @newFollowersSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Show new followers'**
+  String get newFollowersSetting;
+
+  /// No description provided for @newFollowersSettingExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'New followers appear in Notifications and on your phone. Turn it off if people flood you with follows: likes, comments and zaps keep showing.'**
+  String get newFollowersSettingExplain;
+
   /// No description provided for @systemNotificationMessage.
   ///
   /// In en, this message translates to:

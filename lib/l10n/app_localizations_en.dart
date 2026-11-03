@@ -1553,6 +1553,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get systemNotificationsOpenSettings => 'Open settings';
 
   @override
+  String get newFollowersSetting => 'Show new followers';
+
+  @override
+  String get newFollowersSettingExplain =>
+      'New followers appear in Notifications and on your phone. Turn it off if people flood you with follows: likes, comments and zaps keep showing.';
+
+  @override
   String get systemNotificationMessage => 'sent you a private message';
 
   @override
