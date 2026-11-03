@@ -3,6 +3,37 @@
 All notable changes to Mialuna are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.17.1] — 2026-11-03 — Reels no longer crash, notifications explained
+
+Found by testing the 0.17.0 build on a phone and from user reports.
+
+### Fixed
+- **Reels crashed the app** (reported as "it keeps crashing on reels" on a Galaxy S21 Ultra, reproduced on a Galaxy S24).
+  Swiping quickly through reels started a video player — a hardware decoder and
+  its buffers — for every reel, and a reel swiped past only let go of its
+  player once its download answered, so players piled up until the app died
+  with an `OutOfMemoryError` (reproduced: 20 swipes took the app from 670 MB to
+  1.2 GB). Now only the reel being watched has a player, the next one is made
+  ready once you stay on a reel for a moment, and everything else lets go at
+  once. 100 swipes on the same phone: no crash, flat memory.
+- Reels no longer reorder under your finger when new reels arrive while you are
+  watching; they are added at the end.
+- **Notifications on the phone stopped a few minutes after the screen went
+  off.** Android puts the app to sleep and its relay connections with it, so
+  the bell filled up on the next visit but nothing appeared in the notification
+  shade. Mialuna has no push service and runs no service in the background, so
+  Settings → System notifications now says so and opens the phone's battery
+  settings, where Mialuna must be set to "Unrestricted". With that, a reaction
+  arrived in the shade even with Android forced into deep Doze for 8 minutes.
+- "5 min ago" under a post froze while it stayed on screen (a side effect of
+  0.17.0 no longer rebuilding unchanged cards); it keeps up with the clock again.
+- **Photos could come out sideways** when a PNG or WebP carried an EXIF
+  rotation: the tag was stripped without the rotation being applied. They are
+  now turned the right way up first (JPEG already was). Every orientation 1–8 is
+  checked pixel by pixel.
+- Adding a media (Blossom) server that is not `https://` emptied the field
+  without a word; it now says "Invalid address: use https://…".
+
 ## [0.17.0] — 2026-11-03 — Reliable story receipts, a Home that refreshes
 
 Full audit of the story work: [docs/BUGFIX_AUDIT.md](docs/BUGFIX_AUDIT.md).
