@@ -321,8 +321,16 @@ void main() {
     /// The blocks of [shown] are the ones the orientation asks for.
     void expectUpright(img.Image shown, int orientation, {int tolerance = 24}) {
       final turned = orientation >= 5;
-      expect(shown.width, turned ? 16 : 32, reason: 'width, orientation $orientation');
-      expect(shown.height, turned ? 32 : 16, reason: 'height, orientation $orientation');
+      expect(
+        shown.width,
+        turned ? 16 : 32,
+        reason: 'width, orientation $orientation',
+      );
+      expect(
+        shown.height,
+        turned ? 32 : 16,
+        reason: 'height, orientation $orientation',
+      );
       final across = shown.width ~/ 8, down = shown.height ~/ 8;
       for (var dy = 0; dy < down; dy++) {
         for (var dx = 0; dx < across; dx++) {
@@ -333,7 +341,8 @@ void main() {
             expect(
               (channel - want[i]).abs(),
               lessThanOrEqualTo(tolerance),
-              reason: 'block ($dx,$dy) should be the one at ($sx,$sy), '
+              reason:
+                  'block ($dx,$dy) should be the one at ($sx,$sy), '
                   'orientation $orientation',
             );
           }
@@ -383,7 +392,9 @@ void main() {
 
     test('a WebP that says "turn me" is turned, and becomes a PNG', () {
       // Written by a real encoder (lossless, EXIF orientation 6).
-      final webp = base64Decode('UklGRoYAAABXRUJQVlA4WAoAAAAIAAAAHwAADwAAVlA4TEUAAAAvH8ADAD9AkG3Tmd/8GgSSNjYfT34BQZH/o81/8IM4gRkrBta0bQVKIYUUUkghhVEYf4D+94nof5xqYWBX783q4sdXvQcARVhJRhoAAABNTQAqAAAACAABARIAAwAAAAEABgAAAAAAAA==');
+      final webp = base64Decode(
+        'UklGRoYAAABXRUJQVlA4WAoAAAAIAAAAHwAADwAAVlA4TEUAAAAvH8ADAD9AkG3Tmd/8GgSSNjYfT34BQZH/o81/8IM4gRkrBta0bQVKIYUUUkghhVEYf4D+94nof5xqYWBX783q4sdXvQcARVhJRhoAAABNTQAqAAAACAABARIAAwAAAAEABgAAAAAAAA==',
+      );
       expect(has(webp, 'EXIF'), true);
       final clean = MediaSanitizer.sanitize(webp);
       expect(clean.mimeType, 'image/png');
@@ -392,19 +403,22 @@ void main() {
       expect(MediaSanitizer.inspect(clean.bytes), isEmpty);
     });
 
-    test('an upright PNG is left alone, byte for byte but for the metadata', () {
-      final plain = img.encodePng(stored());
-      final end = plain.length - 12;
-      final clean = MediaSanitizer.sanitize(
-        bytesOf([
-          ...plain.sublist(0, end),
-          ...pngChunk('eXIf', tiff(1)),
-          ...plain.sublist(end),
-        ]),
-      );
-      expect(clean.reencoded, false);
-      expect(clean.bytes, plain);
-    });
+    test(
+      'an upright PNG is left alone, byte for byte but for the metadata',
+      () {
+        final plain = img.encodePng(stored());
+        final end = plain.length - 12;
+        final clean = MediaSanitizer.sanitize(
+          bytesOf([
+            ...plain.sublist(0, end),
+            ...pngChunk('eXIf', tiff(1)),
+            ...plain.sublist(end),
+          ]),
+        );
+        expect(clean.reencoded, false);
+        expect(clean.bytes, plain);
+      },
+    );
 
     test('a nonsense orientation is taken for none', () {
       final plain = img.encodePng(stored());
