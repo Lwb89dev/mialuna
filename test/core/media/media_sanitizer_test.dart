@@ -269,6 +269,158 @@ void main() {
     });
   });
 
+  /// A picture that tells its own orientation: 4 x 2 blocks of 8 px, each a
+  /// colour of its own, so where every block ends up shows how it was turned.
+  group('orientation', () {
+    const colours = [
+      [255, 0, 0],
+      [0, 255, 0],
+      [0, 0, 255],
+      [255, 255, 0],
+      [0, 255, 255],
+      [255, 0, 255],
+      [255, 128, 0],
+      [128, 0, 255],
+    ];
+    const blocksWide = 4, blocksHigh = 2;
+
+    img.Image stored() {
+      final image = img.Image(width: 32, height: 16);
+      for (var by = 0; by < blocksHigh; by++) {
+        for (var bx = 0; bx < blocksWide; bx++) {
+          final c = colours[bx + by * blocksWide];
+          img.fillRect(
+            image,
+            x1: bx * 8,
+            y1: by * 8,
+            x2: bx * 8 + 8,
+            y2: by * 8 + 8,
+            color: img.ColorRgb8(c[0], c[1], c[2]),
+          );
+        }
+      }
+      return image;
+    }
+
+    /// Which block of the picture on disk shows at block ([dx], [dy]) of the
+    /// picture as it is meant to be seen: the eight EXIF orientations.
+    (int, int) source(int orientation, int dx, int dy) {
+      const w = blocksWide, h = blocksHigh;
+      return switch (orientation) {
+        1 => (dx, dy),
+        2 => (w - 1 - dx, dy),
+        3 => (w - 1 - dx, h - 1 - dy),
+        4 => (dx, h - 1 - dy),
+        5 => (dy, dx),
+        6 => (dy, h - 1 - dx),
+        7 => (w - 1 - dy, h - 1 - dx),
+        _ => (w - 1 - dy, dx),
+      };
+    }
+
+    /// The blocks of [shown] are the ones the orientation asks for.
+    void expectUpright(img.Image shown, int orientation, {int tolerance = 24}) {
+      final turned = orientation >= 5;
+      expect(shown.width, turned ? 16 : 32, reason: 'width, orientation $orientation');
+      expect(shown.height, turned ? 32 : 16, reason: 'height, orientation $orientation');
+      final across = shown.width ~/ 8, down = shown.height ~/ 8;
+      for (var dy = 0; dy < down; dy++) {
+        for (var dx = 0; dx < across; dx++) {
+          final (sx, sy) = source(orientation, dx, dy);
+          final want = colours[sx + sy * blocksWide];
+          final got = shown.getPixel(dx * 8 + 4, dy * 8 + 4);
+          for (final (i, channel) in [got.r, got.g, got.b].indexed) {
+            expect(
+              (channel - want[i]).abs(),
+              lessThanOrEqualTo(tolerance),
+              reason: 'block ($dx,$dy) should be the one at ($sx,$sy), '
+                  'orientation $orientation',
+            );
+          }
+        }
+      }
+    }
+
+    /// A TIFF block (what an `eXIf` or `EXIF` chunk holds) saying [orientation].
+    List<int> tiff(int orientation) => [
+      ...ascii.encode('MM'), 0, 42, 0, 0, 0, 8, // header, IFD at 8
+      0, 1, // one entry
+      0x01, 0x12, 0, 3, 0, 0, 0, 1, 0, orientation, 0, 0, // Orientation: SHORT
+      0, 0, 0, 0, // no next IFD
+    ];
+
+    for (var o = 1; o <= 8; o++) {
+      test('a JPEG with orientation $o comes out the right way up', () {
+        final source = stored();
+        source.exif.imageIfd.orientation = o;
+        final clean = MediaSanitizer.sanitize(
+          bytesOf(img.encodeJpg(source, quality: 95)),
+        );
+        expect(MediaSanitizer.inspect(clean.bytes), isEmpty);
+        final shown = img.decodeJpg(clean.bytes)!;
+        expect(shown.exif.imageIfd.hasOrientation, false);
+        expectUpright(shown, o);
+        expect(clean.width, shown.width);
+        expect(clean.height, shown.height);
+      });
+
+      test('a PNG with orientation $o comes out the right way up', () {
+        final plain = img.encodePng(stored());
+        final end = plain.length - 12;
+        final dirty = bytesOf([
+          ...plain.sublist(0, end),
+          ...pngChunk('eXIf', tiff(o)),
+          ...plain.sublist(end),
+        ]);
+        final clean = MediaSanitizer.sanitize(dirty);
+        expect(clean.mimeType, 'image/png');
+        expect(MediaSanitizer.inspect(clean.bytes), isEmpty);
+        expect(has(clean.bytes, 'eXIf'), false);
+        expectUpright(img.decodePng(clean.bytes)!, o, tolerance: 0);
+        expect(clean.reencoded, o != 1);
+      });
+    }
+
+    test('a WebP that says "turn me" is turned, and becomes a PNG', () {
+      // Written by a real encoder (lossless, EXIF orientation 6).
+      final webp = base64Decode('UklGRoYAAABXRUJQVlA4WAoAAAAIAAAAHwAADwAAVlA4TEUAAAAvH8ADAD9AkG3Tmd/8GgSSNjYfT34BQZH/o81/8IM4gRkrBta0bQVKIYUUUkghhVEYf4D+94nof5xqYWBX783q4sdXvQcARVhJRhoAAABNTQAqAAAACAABARIAAwAAAAEABgAAAAAAAA==');
+      expect(has(webp, 'EXIF'), true);
+      final clean = MediaSanitizer.sanitize(webp);
+      expect(clean.mimeType, 'image/png');
+      expect(has(clean.bytes, 'EXIF'), false);
+      expectUpright(img.decodePng(clean.bytes)!, 6, tolerance: 0);
+      expect(MediaSanitizer.inspect(clean.bytes), isEmpty);
+    });
+
+    test('an upright PNG is left alone, byte for byte but for the metadata', () {
+      final plain = img.encodePng(stored());
+      final end = plain.length - 12;
+      final clean = MediaSanitizer.sanitize(
+        bytesOf([
+          ...plain.sublist(0, end),
+          ...pngChunk('eXIf', tiff(1)),
+          ...plain.sublist(end),
+        ]),
+      );
+      expect(clean.reencoded, false);
+      expect(clean.bytes, plain);
+    });
+
+    test('a nonsense orientation is taken for none', () {
+      final plain = img.encodePng(stored());
+      final end = plain.length - 12;
+      final clean = MediaSanitizer.sanitize(
+        bytesOf([
+          ...plain.sublist(0, end),
+          ...pngChunk('eXIf', tiff(9)),
+          ...plain.sublist(end),
+        ]),
+      );
+      expect(clean.reencoded, false);
+      expectUpright(img.decodePng(clean.bytes)!, 1, tolerance: 0);
+    });
+  });
+
   group('GIF', () {
     test('drops comment extensions, keeps the animation data', () {
       final gif = img.encodeGif(img.Image(width: 4, height: 4));
