@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/mialuna_theme.dart';
 import '../features/settings/settings_controller.dart';
 import '../features/social/moderation_controller.dart';
+import '../features/stories/story_receipts.dart';
 import '../l10n/strings.dart';
 import 'relay_sync.dart';
 import 'router.dart';
@@ -12,6 +13,9 @@ Widget buildMialunaApp(WidgetRef ref) {
   final router = ref.watch(routerProvider);
   ref.watch(relaySyncProvider);
   ref.watch(listsSyncProvider);
+  // Story receipts left over from the last session are picked up (or, if the
+  // user has since said no, thrown away) as soon as the account is known.
+  ref.watch(storyViewReporterProvider);
   final language = ref.watch(settingsProvider.select((s) => s.language));
   return MaterialApp.router(
     title: 'Mialuna',

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/strings.dart';
-import 'story_views.dart';
+import 'story_receipts.dart';
 
 /// Settings: whether watching a story tells its author.
 class StoryViewsSetting extends ConsumerWidget {

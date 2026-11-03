@@ -5,9 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/event.dart';
-import '../../core/nostr/models/media_event.dart';
 import '../../core/nostr/nip59.dart';
-import '../private/private_delivery.dart';
 
 // Who watched your stories, without asking any server.
 //
@@ -19,7 +17,8 @@ import '../private/private_delivery.dart';
 // Relays see a wrap from a throw-away key to the author: not who watched,
 // not what.
 //
-// Watching is not announced unless [storyViewReceiptsProvider] allows it.
+// Watching is not announced unless `storyViewReceiptsProvider` allows it; the
+// sending side lives in `story_receipts.dart`.
 
 /// A person who watched a story, and when.
 class StoryViewer {
@@ -154,131 +153,3 @@ final storyViewsProvider =
     NotifierProvider<StoryViewsController, StoryViewsState>(
       StoryViewsController.new,
     );
-
-/// Whether watching a story tells its author. On by default (like every
-/// other app with stories) and one switch away from off.
-class StoryViewReceipts extends Notifier<bool> {
-  static const _key = 'mialuna_send_story_views';
-  static const defaultValue = true;
-
-  /// The user chose before the saved value was read: theirs wins.
-  bool _chosen = false;
-
-  @override
-  bool build() {
-    _chosen = false;
-    _load();
-    return defaultValue;
-  }
-
-  Future<void> _load() async {
-    final prefs = await ref.read(sharedPreferencesLoader)();
-    if (!_chosen) state = prefs.getBool(_key) ?? defaultValue;
-  }
-
-  Future<void> set(bool enabled) async {
-    _chosen = true;
-    state = enabled;
-    final prefs = await ref.read(sharedPreferencesLoader)();
-    await prefs.setBool(_key, enabled);
-  }
-}
-
-final storyViewReceiptsProvider = NotifierProvider<StoryViewReceipts, bool>(
-  StoryViewReceipts.new,
-);
-
-/// Collects the stories this device watched and tells each author, once, when
-/// the viewer moves on from their stories: one message per author however
-/// many stories they had (each message costs a signer round trip).
-class StoryViewReporter {
-  static const _sentKeyPrefix = 'mialuna_story_views_sent_';
-  static const _maxRemembered = 800;
-
-  final Ref _ref;
-  final Map<String, Set<String>> _pending = {}; // author → story ids
-  Set<String>? _sent;
-  String? _sentFor; // whose list [_sent] is
-  bool _flushing = false;
-
-  /// What was reported belongs to the account that watched.
-  String get _sentKey => '$_sentKeyPrefix${_ref.read(authProvider).publicKey}';
-
-  StoryViewReporter(this._ref);
-
-  /// Notes that [story] was watched.
-  Future<void> viewed(MediaPost story) async {
-    final auth = _ref.read(authProvider);
-    final me = auth.publicKey;
-    if (me == null || story.author == me || !auth.signer.canEncrypt) return;
-    if (!_ref.read(storyViewReceiptsProvider)) return;
-    final sent = await _sentIds();
-    if (sent.contains(story.id)) return;
-    _pending.putIfAbsent(story.author, () => {}).add(story.id);
-  }
-
-  Future<Set<String>> _sentIds() async {
-    final account = _ref.read(authProvider).publicKey;
-    final known = _sent;
-    if (known != null && _sentFor == account) return known;
-    final prefs = await _ref.read(sharedPreferencesLoader)();
-    _sentFor = account;
-    return _sent = {...?prefs.getStringList(_sentKey)};
-  }
-
-  /// Sends what is waiting: for [author] only, or for everybody.
-  Future<void> flush({String? author}) async {
-    if (_flushing) return;
-    _flushing = true;
-    try {
-      final authors = author == null ? _pending.keys.toList() : [author];
-      for (final a in authors) {
-        final ids = _pending.remove(a);
-        if (ids == null || ids.isEmpty) continue;
-        await _send(a, ids);
-      }
-    } finally {
-      _flushing = false;
-    }
-  }
-
-  Future<void> _send(String author, Set<String> ids) async {
-    final me = _ref.read(authProvider).publicKey;
-    if (me == null) return;
-    final batch = ids.take(StoryViewsController.maxStoriesPerReceipt).toList();
-    final rumor = Rumor.create(
-      pubkey: me,
-      kind: NostrKinds.storyView,
-      tags: [
-        for (final id in batch) ['e', id],
-        ['p', author],
-      ],
-      content: '',
-    );
-    try {
-      // To the author only: no copy for yourself, nothing to keep.
-      await _ref.read(privateDeliveryProvider).send(rumor, [
-        author,
-      ], copyToSelf: false);
-    } catch (_) {
-      // A refused signer request or no reachable inbox: not worth asking again.
-    }
-    await _remember(batch);
-  }
-
-  Future<void> _remember(List<String> ids) async {
-    final sent = await _sentIds();
-    sent.addAll(ids);
-    final list = sent.toList();
-    final kept = list.length > _maxRemembered
-        ? list.sublist(list.length - _maxRemembered)
-        : list;
-    _sent = kept.toSet();
-    final prefs = await _ref.read(sharedPreferencesLoader)();
-    await prefs.setStringList(_sentKey, kept);
-  }
-}
-
-final storyViewReporterProvider = Provider<StoryViewReporter>(
-  StoryViewReporter.new,
-);

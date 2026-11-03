@@ -499,7 +499,9 @@ class DmController extends Notifier<DmState> {
       await outbox.ensure([pubkey]);
       relays = outbox.readRelays(pubkey);
     }
-    _inboxCache[pubkey] = relays;
+    // "Nothing found" is not remembered: they may publish a list tomorrow, and
+    // a retry must be able to see it.
+    if (relays.isNotEmpty) _inboxCache[pubkey] = relays;
     return relays;
   }
 

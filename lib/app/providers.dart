@@ -23,6 +23,13 @@ final sharedPreferencesLoader = Provider<Future<SharedPreferences> Function()>(
   (ref) => SharedPreferences.getInstance,
 );
 
+/// Seconds since the epoch. Anything that must expire or back off reads the
+/// time here, so tests can move it instead of sleeping.
+final unixClockProvider = Provider<int Function()>(
+  (ref) =>
+      () => DateTime.now().millisecondsSinceEpoch ~/ 1000,
+);
+
 /// Relays that index profiles and relay lists. Overridable (tests run
 /// without any public relay).
 final indexerRelaysProvider = Provider<List<String>>((ref) => indexerRelays);
