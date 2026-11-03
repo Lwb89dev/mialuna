@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
+import '../../core/nostr/models/media_event.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../l10n/strings.dart';
 import '../explore/hashtag_link.dart';
@@ -29,6 +30,29 @@ class FeedScreen extends ConsumerStatefulWidget {
 class _FeedScreenState extends ConsumerState<FeedScreen> {
   final _scroll = ScrollController();
 
+  /// One card widget per post, kept while the post is in the feed. Every
+  /// change of the feed rebuilds the list; handing Flutter the very same card
+  /// tells it that nothing in it changed, so scrolling during a load does
+  /// not rebuild every card on screen each time a page arrives.
+  final Map<String, PostCard> _cards = {};
+  List<MediaPost>? _cardsFor;
+
+  PostCard _card(MediaPost post) => _cards[post.id] ??= PostCard(
+    key: ValueKey(post.id),
+    post: post,
+    onHashtagTap: _openHashtag,
+  );
+
+  void _openHashtag(String tag) => openHashtagSearch(context, tag);
+
+  /// Forgets the cards of posts that left the feed.
+  void _keepCardsOf(List<MediaPost> posts) {
+    if (identical(posts, _cardsFor)) return;
+    _cardsFor = posts;
+    final live = {for (final p in posts) p.id};
+    _cards.removeWhere((id, _) => !live.contains(id));
+  }
+
   @override
   void initState() {
     super.initState();
@@ -51,9 +75,14 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     }
   }
 
-  /// Refreshes posts and stories together.
+  /// Refreshes posts and stories together. The connections are checked
+  /// first: after the phone slept they are often dead without knowing it, and
+  /// a refresh sent into them would bring nothing back.
   Future<void> _refresh() async {
-    ref.read(relayPoolProvider).connect();
+    final pool = ref.read(relayPoolProvider);
+    pool.connect();
+    await pool.wake();
+    if (!mounted) return;
     await Future.wait([
       ref.read(feedProvider(_mode).notifier).refresh(),
       ref.read(storiesProvider.notifier).refresh(),
@@ -208,6 +237,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
         ],
       );
     }
+    _keepCardsOf(feed.posts);
     return ListView.builder(
       controller: _scroll,
       physics: const AlwaysScrollableScrollPhysics(),
@@ -247,12 +277,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
           }
           return const SizedBox(height: 48);
         }
-        final post = feed.posts[i - 2];
-        return PostCard(
-          key: ValueKey(post.id),
-          post: post,
-          onHashtagTap: (tag) => openHashtagSearch(context, tag),
-        );
+        return _card(feed.posts[i - 2]);
       },
     );
   }

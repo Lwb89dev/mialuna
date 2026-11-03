@@ -146,7 +146,11 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
       );
       // Following someone (or unfollowing) changes what belongs here.
       ref.listen(followListProvider, (prev, next) {
-        if (prev == null || prev.length == next.length) return;
+        // Who, not how many: swapping one account for another keeps the count.
+        if (prev == null ||
+            (prev.length == next.length && prev.containsAll(next))) {
+          return;
+        }
         // The list saved on the device is used first; the relays' answer may
         // land while the first load is still running.
         if (!_started) {
@@ -276,8 +280,23 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
       }
       posts.removeRange(_maxPosts, posts.length);
     }
+    // Every new state rebuilds the whole list on screen; while the relays
+    // stream in events that end up hidden or already shown, nothing changed.
+    final same =
+        _sameIds(posts, state.posts) &&
+        (loading == null || loading == state.isLoading) &&
+        (hasMore == null || hasMore == state.hasMore);
+    if (same) return;
     state = state.copyWith(posts: posts, isLoading: loading, hasMore: hasMore);
     _scheduleSave();
+  }
+
+  static bool _sameIds(List<MediaPost> a, List<MediaPost> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id) return false;
+    }
+    return true;
   }
 
   void _refilter() {
