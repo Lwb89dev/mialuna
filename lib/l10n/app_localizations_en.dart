@@ -1267,6 +1267,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invalidRelayAddress => 'Invalid address: use wss://…';
 
   @override
+  String get invalidServerAddress => 'Invalid address: use https://…';
+
+  @override
   String get relayRead => 'Read';
 
   @override
@@ -1551,6 +1554,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get systemNotificationsOpenSettings => 'Open settings';
+
+  @override
+  String get systemNotificationsBattery =>
+      'Android puts apps to sleep a few minutes after the screen turns off, and notifications stop with them. To keep receiving them, set Mialuna\'s battery use to “Unrestricted”.';
+
+  @override
+  String get systemNotificationsBatteryAction => 'Open battery settings';
 
   @override
   String get newFollowersSetting => 'Show new followers';

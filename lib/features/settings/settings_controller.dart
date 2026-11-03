@@ -255,16 +255,23 @@ class SettingsController extends Notifier<AppSettings> {
     await _persist();
   }
 
+  /// [text] as the address of a Blossom server (`https://` is added when it is
+  /// missing, trailing slashes go), or null when it cannot be one: media is
+  /// only ever uploaded over https.
+  static String? cleanBlossomUrl(String text) {
+    var u = text.trim();
+    if (u.isEmpty) return null;
+    if (!u.contains('://')) u = 'https://$u';
+    final uri = Uri.tryParse(u);
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) return null;
+    return u.replaceAll(RegExp(r'/+$'), '');
+  }
+
   Future<void> setBlossomServers(List<String> servers, {int? createdAt}) async {
     final clean = <String>[];
     for (final s in servers) {
-      var u = s.trim();
-      if (u.isEmpty) continue;
-      if (!u.contains('://')) u = 'https://$u';
-      final uri = Uri.tryParse(u);
-      if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) continue;
-      u = u.replaceAll(RegExp(r'/+$'), '');
-      if (!clean.contains(u)) clean.add(u);
+      final u = cleanBlossomUrl(s);
+      if (u != null && !clean.contains(u)) clean.add(u);
     }
     if (clean.isEmpty) return;
     state = state.copyWith(

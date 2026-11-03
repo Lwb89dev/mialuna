@@ -50,6 +50,14 @@ abstract class SystemNotifier {
 
   /// A notification was tapped while the app was running.
   void onRoute(void Function(String route) listener);
+
+  /// Android may put the app to sleep soon after the screen goes off, and its
+  /// connections with it: no notification arrives then. True while it is
+  /// allowed to (false where there is no such thing).
+  Future<bool> batteryRestricted();
+
+  /// Opens the phone's battery settings, where that can be changed.
+  Future<void> openBatterySettings();
 }
 
 /// Android, through the native bridge in `NotifyBridge.kt`. Anywhere else (and
@@ -100,6 +108,28 @@ class AndroidSystemNotifier implements SystemNotifier {
       return null;
     } on MissingPluginException {
       return null;
+    }
+  }
+
+  @override
+  Future<bool> batteryRestricted() async {
+    try {
+      return await _channel.invokeMethod<bool>('batteryRestricted') ?? false;
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      return false;
+    }
+  }
+
+  @override
+  Future<void> openBatterySettings() async {
+    try {
+      await _channel.invokeMethod<bool>('openBatterySettings');
+    } on PlatformException {
+      // Nowhere to send the user.
+    } on MissingPluginException {
+      // Not Android.
     }
   }
 
