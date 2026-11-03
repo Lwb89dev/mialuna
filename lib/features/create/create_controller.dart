@@ -154,6 +154,10 @@ class ComposerController extends Notifier<ComposerState> {
   Future<void> _restoreDraft() async {
     final drafts = await ref.read(localCacheProvider).loadDrafts();
     final draft = drafts[_draftKey];
+    // The draft belongs to the post composer. By the time it has been read the
+    // person may be writing a story, or have typed something: neither is
+    // overwritten (and a story never starts with somebody else's words).
+    if (state.mode == ComposerMode.story || state.caption.isNotEmpty) return;
     if (draft is Map && draft['caption'] is String) {
       state = state.copyWith(caption: draft['caption'] as String);
     }
@@ -166,16 +170,13 @@ class ComposerController extends Notifier<ComposerState> {
     state = state.copyWith(mode: mode, media: const [], overlays: const []);
   }
 
-  /// Begins a new story from nothing: no picture, no texts, no leftovers of
-  /// an earlier try. (A publish in progress is left alone.)
+  /// Begins a new story from nothing: no picture, no texts, no caption, no
+  /// content warning, no leftovers of an earlier try. Only the audience stays:
+  /// it is a standing choice, remembered for every post (and shown on the
+  /// screen). (A publish in progress is left alone.)
   void startStory() {
     if (state.isPublishing) return;
-    state = ComposerState(
-      mode: ComposerMode.story,
-      audience: state.audience,
-      caption: state.caption,
-      sensitive: state.sensitive,
-    );
+    state = ComposerState(mode: ComposerMode.story, audience: state.audience);
   }
 
   Future<void> pickVideo() async {
@@ -314,7 +315,10 @@ class ComposerController extends Notifier<ComposerState> {
 
   void setCaption(String caption) {
     state = state.copyWith(caption: caption);
-    // Drafts survive offline/relay failures.
+    // Drafts survive offline/relay failures. A story's caption is not one: it
+    // is never restored, and saving it would replace the draft of the post
+    // composer (and show a close-friends caption in a public post).
+    if (state.mode == ComposerMode.story) return;
     ref.read(localCacheProvider).saveDraft(_draftKey, {'caption': caption});
   }
 
@@ -473,7 +477,8 @@ class ComposerController extends Notifier<ComposerState> {
         );
         return false;
       }
-      await ref.read(localCacheProvider).deleteDraft(_draftKey);
+      // A story never used the post draft; leave the post's draft alone.
+      if (!isStory) await ref.read(localCacheProvider).deleteDraft(_draftKey);
       if (isStory) ref.read(storiesProvider.notifier).addPublished(event);
       state = ComposerState(published: true, audience: state.audience);
       return true;
@@ -664,7 +669,8 @@ class ComposerController extends Notifier<ComposerState> {
         );
         return false;
       }
-      await ref.read(localCacheProvider).deleteDraft(_draftKey);
+      // A story never used the post draft; leave the post's draft alone.
+      if (!isStory) await ref.read(localCacheProvider).deleteDraft(_draftKey);
       final missed = report.failed.length;
       state = ComposerState(
         published: true,
