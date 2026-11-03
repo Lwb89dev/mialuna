@@ -49,6 +49,9 @@ centralized platform.
 - **Media uploads** — Blossom (kind 24242 authorization, SHA-256 content
   addressing, ordered server fallback), automatic removal of every metadata
   trace before upload (fail-closed)
+- **Deleting your posts** — a NIP-09 deletion request to your relays and a
+  Blossom `DELETE` of the photos and videos from the media servers, for posts,
+  reels and stories, close-friends ones included
 - **Relays** — multi-relay pool with reconnect/backoff, NIP-65 relay lists
   synced automatically (read/write roles, outbox model), NIP-42 AUTH,
   per-relay publication reports, offline cache

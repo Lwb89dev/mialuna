@@ -491,6 +491,27 @@ class ComposerController extends Notifier<ComposerState> {
     }
   }
 
+  /// Uploads an encrypted blob under the post's one-time key, and keeps that
+  /// key: only it can ask the server to delete the file with the post.
+  Future<BlossomUploadResult> _uploadPrivate(
+    BlossomClient blossom,
+    Signer uploader,
+    String uploaderKey,
+    Uint8List bytes, {
+    void Function(double progress)? onProgress,
+  }) async {
+    final result = await blossom.upload(
+      signer: uploader,
+      bytes: bytes,
+      mimeType: 'application/octet-stream',
+      opaque: true,
+      label: 'blob',
+      onProgress: onProgress,
+    );
+    await ref.read(uploadKeysProvider).remember([result.sha256], uploaderKey);
+    return result;
+  }
+
   /// Close-friends flow: the picture/video is cleaned, **encrypted on this
   /// phone** (a new AES-256 key per file), uploaded as an opaque blob signed
   /// with a throw-away key, and the post — carrying the keys and the friends
@@ -516,7 +537,8 @@ class ComposerController extends Notifier<ComposerState> {
     final blossom = ref.read(blossomClientProvider);
     // The upload is authorised by a key that exists only for this post, so
     // the encrypted blob is not linked to the author's account.
-    final uploader = NsecSigner.fromNsec(NsecSigner.generatePrivateKey());
+    final uploaderKey = NsecSigner.generatePrivateKey();
+    final uploader = NsecSigner.fromNsec(uploaderKey);
     final total = state.media.length;
     final items = <MediaItem>[];
     double? videoDuration;
@@ -538,12 +560,11 @@ class ComposerController extends Notifier<ComposerState> {
         _progress(share(0.1), AppStrings.current.encryptingOnPhone);
         item.encrypted ??= await MediaCipher.encryptAsync(clean.bytes);
         final enc = item.encrypted!;
-        item.uploadedPrivate ??= await blossom.upload(
-          signer: uploader,
-          bytes: enc.bytes,
-          mimeType: 'application/octet-stream',
-          opaque: true,
-          label: 'blob',
+        item.uploadedPrivate ??= await _uploadPrivate(
+          blossom,
+          uploader,
+          uploaderKey,
+          enc.bytes,
           onProgress: (p) => _progress(
             share(0.15 + 0.6 * p),
             AppStrings.current.uploadingProgress(i + 1, total),
@@ -565,12 +586,11 @@ class ComposerController extends Notifier<ComposerState> {
               MediaSanitizer.sanitize(frame.bytes).bytes,
             );
             final cover = item.encryptedCover!;
-            item.uploadedPrivateCover ??= await blossom.upload(
-              signer: uploader,
-              bytes: cover.bytes,
-              mimeType: 'application/octet-stream',
-              opaque: true,
-              label: 'blob',
+            item.uploadedPrivateCover ??= await _uploadPrivate(
+              blossom,
+              uploader,
+              uploaderKey,
+              cover.bytes,
             );
             coverUrl = item.uploadedPrivateCover!.url;
             coverEncryption = MediaEncryption(

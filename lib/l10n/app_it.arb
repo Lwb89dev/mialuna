@@ -455,5 +455,34 @@
   "storyDiscardTitle": "Scartare questa storia?",
   "storyDiscard": "Scarta",
   "storyShare": "Condividi",
-  "storyShared": "Storia condivisa"
+  "storyShared": "Storia condivisa",
+  "deletePost": "Elimina",
+  "deletePostTitle": "Eliminare questo post?",
+  "deleteStoryTitle": "Eliminare questa storia?",
+  "deletePostBody": "Mialuna chiederà ai tuoi relay di cancellarlo e ai server multimediali di cancellare le sue foto o il suo video. Un relay che ignora la richiesta, o chi ne ha già salvato una copia, potrebbe ancora averlo.",
+  "deletePrivateBody": "Un post per amici stretti non può essere richiamato dai relay. Mialuna dirà alle app dei tuoi amici di rimuoverlo e chiederà al server multimediale di cancellare i suoi file cifrati. Un amico che ne ha già salvato una copia potrebbe ancora averlo.",
+  "deletingPost": "Eliminazione…",
+  "postDeleted": "Eliminato.",
+  "postWasDeleted": "Questo post è stato eliminato.",
+  "deleteNotAllowed": "Solo l'account che l'ha pubblicato può eliminarlo.",
+  "deleteFailed": "Impossibile eliminare: {reason}",
+  "@deleteFailed": {
+    "placeholders": {
+      "reason": {}
+    }
+  },
+  "deleteNoRelay": "Nessun relay ha accettato la richiesta di cancellazione, quindi è ancora online. Controlla la connessione e riprova.",
+  "deleteMediaLeft": "Non è stato possibile rimuovere i file da {servers}.",
+  "@deleteMediaLeft": {
+    "placeholders": {
+      "servers": {}
+    }
+  },
+  "deleteMediaNotAuthorized": "Il tuo firmatario non ha autorizzato la rimozione dei file, che restano sul server multimediale.",
+  "deleteFriendsMissed": "{count} dei tuoi amici stretti non sono stati avvisati, quindi potrebbe restare sui loro telefoni.",
+  "@deleteFriendsMissed": {
+    "placeholders": {
+      "count": {}
+    }
+  }
 }

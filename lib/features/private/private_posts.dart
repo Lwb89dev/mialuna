@@ -8,6 +8,7 @@ import '../../core/nostr/event.dart';
 import '../../core/nostr/models/comment.dart';
 import '../../core/nostr/models/media_event.dart';
 import '../../core/nostr/nip59.dart';
+import '../social/deleted_posts.dart';
 import '../trust/web_of_trust_controller.dart';
 
 /// What a close-friends post gathered: likes and private replies, all of
@@ -40,9 +41,15 @@ class PrivatePostsState {
 class PrivatePostsController extends Notifier<PrivatePostsState> {
   static const _maxStored = 600;
   static const _maxInteractions = 3000;
+  static const _maxDeletions = 600;
 
   final Map<String, Rumor> _posts = {};
   final Map<String, Rumor> _interactions = {};
+
+  /// Posts that were taken back, by id, with the account that said so. The
+  /// notice can arrive before the post does, and the post must then be let
+  /// go as it comes in (provided its author is the one who deleted it).
+  final Map<String, String> _deletions = {};
   Timer? _saveTimer;
   Timer? _expiryTimer;
   String? _pub;
@@ -62,6 +69,7 @@ class PrivatePostsController extends Notifier<PrivatePostsState> {
     ref.listen(trustFilterProvider, (_, _) => _publish());
     _posts.clear();
     _interactions.clear();
+    _deletions.clear();
     _pub = pub;
     // Stories disappear by themselves after 24 hours.
     _expiryTimer = Timer.periodic(const Duration(minutes: 1), (_) {
@@ -80,6 +88,7 @@ class PrivatePostsController extends Notifier<PrivatePostsState> {
       case NostrKinds.picture || NostrKinds.video || NostrKinds.shortVideo:
         final post = _toPost(rumor);
         if (post == null || post.isExpired()) return false;
+        if (_deletions[rumor.id] == rumor.pubkey) return true; // taken back
         if (_posts.containsKey(rumor.id)) return true;
         _posts[rumor.id] = rumor;
         if (_posts.length > _maxStored) {
@@ -87,6 +96,8 @@ class PrivatePostsController extends Notifier<PrivatePostsState> {
             ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
           _posts.remove(oldest.first.id);
         }
+      case NostrKinds.deletion:
+        if (!_ingestDeletion(rumor)) return false;
       case NostrKinds.reaction || NostrKinds.comment:
         if (rumor.firstTag('e') == null) return false;
         if (_interactions.containsKey(rumor.id)) return true;
@@ -99,6 +110,40 @@ class PrivatePostsController extends Notifier<PrivatePostsState> {
     }
     _publish();
     _scheduleSave();
+    return true;
+  }
+
+  /// An author takes posts back (NIP-09 inside the gift wrap, so only the
+  /// people the post went to ever see it). Only the author of a post can
+  /// delete it: a notice naming somebody else's post does nothing.
+  bool _ingestDeletion(Rumor rumor) {
+    final targets = [
+      for (final tag in rumor.tags)
+        if (tag.length > 1 && tag[0] == 'e') tag[1],
+    ];
+    if (targets.isEmpty) return false;
+    final dropped = <String>[];
+    for (final id in targets) {
+      _deletions.remove(id); // newest last
+      _deletions[id] = rumor.pubkey;
+      if (_dropPost(id, rumor.pubkey)) dropped.add(id);
+    }
+    while (_deletions.length > _maxDeletions) {
+      _deletions.remove(_deletions.keys.first);
+    }
+    // The lists that already hold the post (Home) let go of it too.
+    if (dropped.isNotEmpty) {
+      ref.read(deletedPostsProvider.notifier).add(dropped);
+    }
+    return true;
+  }
+
+  /// Forgets post [id] and what it gathered, when [author] wrote it.
+  bool _dropPost(String id, String author) {
+    final post = _posts[id];
+    if (post == null || post.pubkey != author) return false;
+    _posts.remove(id);
+    _interactions.removeWhere((_, r) => r.firstTag('e') == id);
     return true;
   }
 
@@ -190,6 +235,16 @@ class PrivatePostsController extends Notifier<PrivatePostsState> {
       final r = Rumor.tryParse(Map<String, dynamic>.from(raw as Map));
       if (r != null) _interactions[r.id] = r;
     }
+    final deletions = json['deletions'];
+    if (deletions is Map) {
+      for (final entry in deletions.entries) {
+        final id = entry.key;
+        final author = entry.value;
+        if (id is! String || author is! String) continue;
+        _deletions.putIfAbsent(id, () => author);
+        _dropPost(id, author);
+      }
+    }
     _publish();
   }
 
@@ -205,6 +260,7 @@ class PrivatePostsController extends Notifier<PrivatePostsState> {
             if (!_expired(r, now)) r.toJson(),
         ],
         'interactions': [for (final r in _interactions.values) r.toJson()],
+        'deletions': _deletions,
       });
     });
   }
@@ -218,6 +274,7 @@ class PrivatePostsController extends Notifier<PrivatePostsState> {
   Future<void> clear() async {
     _posts.clear();
     _interactions.clear();
+    _deletions.clear();
     state = const PrivatePostsState();
     await ref.read(localCacheProvider).deleteFile(_file);
   }

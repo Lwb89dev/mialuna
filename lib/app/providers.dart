@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/auth/auth_controller.dart';
 import '../core/media/blossom.dart';
 import '../core/media/private_media.dart';
+import '../core/media/upload_keys.dart';
 import '../core/nostr/event.dart';
 import '../core/nostr/event_store.dart';
 import '../core/nostr/outbox.dart';
@@ -74,6 +75,15 @@ final blossomClientProvider = Provider(
   (ref) => BlossomClient(
     ref.watch(settingsProvider).blossomServers,
     httpClient: ref.watch(httpClientProvider),
+  ),
+);
+
+/// The one-time keys behind this account's close-friends uploads, kept so the
+/// files can be deleted with their post.
+final uploadKeysProvider = Provider<UploadKeys>(
+  (ref) => UploadKeys(
+    ref.watch(localCacheProvider),
+    ref.watch(authProvider.select((a) => a.publicKey)),
   ),
 );
 

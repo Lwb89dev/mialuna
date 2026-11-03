@@ -6,6 +6,7 @@ import '../../app/providers.dart';
 import '../../core/nostr/event.dart';
 import '../../core/nostr/filter.dart';
 import '../../core/nostr/models/media_event.dart';
+import '../social/deleted_posts.dart';
 import '../social/moderation_controller.dart';
 
 class ReelsState {
@@ -31,6 +32,7 @@ class ReelsController extends Notifier<ReelsState> {
     ref.listen(muteProvider, (_, _) => _commit());
     ref.listen(blockProvider, (_, _) => _commit());
     ref.listen(brokenMediaProvider, (_, _) => _commit());
+    ref.listen(deletedPostsProvider, (_, _) => _commit());
     Future.microtask(_load);
     return const ReelsState();
   }
@@ -73,11 +75,13 @@ class ReelsController extends Notifier<ReelsState> {
     final muted = ref.read(muteProvider);
     final blocked = ref.read(blockProvider);
     final broken = ref.read(brokenMediaProvider);
+    final deleted = ref.read(deletedPostsProvider);
     final reels = [
       for (final p in _byId.values)
         if (!muted.contains(p.author) &&
             !blocked.contains(p.author) &&
-            !broken.contains(p.id))
+            !broken.contains(p.id) &&
+            !deleted.contains(p.id))
           p,
     ]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     state = ReelsState(reels: reels, isLoading: false);

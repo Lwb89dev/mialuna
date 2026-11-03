@@ -13,6 +13,7 @@ import '../../core/nostr/relay_pool.dart';
 import '../../core/notify/system_notifier.dart';
 import '../private/private_posts.dart';
 import '../settings/settings_controller.dart';
+import '../social/deleted_posts.dart';
 import '../social/follow_controller.dart';
 import '../social/moderation_controller.dart';
 
@@ -89,6 +90,7 @@ class StoriesController extends Notifier<StoriesState> {
     });
     _privateStories = _storiesIn(ref.read(privatePostsProvider).posts);
     ref.listen(blockProvider, (_, _) => _regroup());
+    ref.listen(deletedPostsProvider, (_, _) => _regroup());
     ref.listen(muteProvider, (_, _) => _regroup());
     // Timers sleep with the app: when it wakes up, what expired goes at once.
     ref.listen(appForegroundProvider, (_, front) {
@@ -271,6 +273,7 @@ class StoriesController extends Notifier<StoriesState> {
     final now = _now();
     final blocked = ref.read(blockProvider);
     final muted = ref.read(muteProvider);
+    final deleted = ref.read(deletedPostsProvider);
     final byAuthor = <String, List<MediaPost>>{};
     _byId.removeWhere((_, p) => p.isExpired(now));
     final allowed = _allowed;
@@ -285,6 +288,7 @@ class StoriesController extends Notifier<StoriesState> {
       if (blocked.contains(post.author) || muted.contains(post.author)) {
         continue;
       }
+      if (deleted.contains(post.id)) continue;
       if (allowed != null && !allowed.contains(post.author)) continue;
       byAuthor.putIfAbsent(post.author, () => []).add(post);
     }

@@ -1632,4 +1632,57 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storyShared => 'Story shared';
+
+  @override
+  String get deletePost => 'Delete';
+
+  @override
+  String get deletePostTitle => 'Delete this post?';
+
+  @override
+  String get deleteStoryTitle => 'Delete this story?';
+
+  @override
+  String get deletePostBody =>
+      'Mialuna will ask your relays to delete it and the media servers to delete its photos or video. A relay that ignores the request, or someone who already saved a copy, may still have it.';
+
+  @override
+  String get deletePrivateBody =>
+      'A close-friends post can\'t be recalled from the relays. Mialuna will tell your friends\' apps to remove it and ask the media server to delete its encrypted files. A friend who already saved a copy may still have it.';
+
+  @override
+  String get deletingPost => 'Deleting…';
+
+  @override
+  String get postDeleted => 'Deleted.';
+
+  @override
+  String get postWasDeleted => 'This post was deleted.';
+
+  @override
+  String get deleteNotAllowed =>
+      'Only the account that published this can delete it.';
+
+  @override
+  String deleteFailed(Object reason) {
+    return 'Couldn\'t delete: $reason';
+  }
+
+  @override
+  String get deleteNoRelay =>
+      'No relay accepted the deletion request, so it is still online. Check your connection and try again.';
+
+  @override
+  String deleteMediaLeft(Object servers) {
+    return 'The media could not be removed from $servers.';
+  }
+
+  @override
+  String get deleteMediaNotAuthorized =>
+      'Your signer did not authorize removing the media, so the files are still on the media server.';
+
+  @override
+  String deleteFriendsMissed(Object count) {
+    return '$count of your close friends could not be told, so it may stay on their phones.';
+  }
 }

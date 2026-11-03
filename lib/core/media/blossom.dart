@@ -43,6 +43,92 @@ class _ServerRefused implements Exception {
   const _ServerRefused(this.reason);
 }
 
+/// How one server answered a request to delete one file.
+enum BlossomDeleteOutcome {
+  /// The server removed it.
+  deleted,
+
+  /// The server does not hold it (any more): there is nothing left to remove.
+  absent,
+
+  /// The server said no (not the owner, no permission) or failed.
+  refused,
+
+  /// The server did not answer.
+  unreachable,
+}
+
+class BlossomDeleteResult {
+  final String server;
+  final String hash;
+  final BlossomDeleteOutcome outcome;
+
+  /// Why it was refused or unreachable; empty otherwise.
+  final String reason;
+  const BlossomDeleteResult({
+    required this.server,
+    required this.hash,
+    required this.outcome,
+    this.reason = '',
+  });
+
+  /// The file is not on that server any more, whoever took it away.
+  bool get gone =>
+      outcome == BlossomDeleteOutcome.deleted ||
+      outcome == BlossomDeleteOutcome.absent;
+}
+
+/// A SHA-256 as Blossom names files: 64 lowercase hex digits.
+final _blobHash = RegExp(r'^[0-9a-f]{64}$');
+
+/// The Blossom address of the file at [url] (`https://host/<sha256>[.ext]`),
+/// or null when the URL is not content-addressed.
+String? blobHashOfUrl(String url) {
+  final segments = Uri.tryParse(url.trim())?.pathSegments ?? const [];
+  if (segments.isEmpty) return null;
+  final name = segments.last.toLowerCase().split('.').first;
+  return _blobHash.hasMatch(name) ? name : null;
+}
+
+/// Whether [hash] is a valid Blossom file address.
+bool isBlobHash(String hash) => _blobHash.hasMatch(hash);
+
+/// The authorizations of one deletion (kind 24242, `t` = `delete`): signed when
+/// first needed, so a refused signature is noticed once and a signer such as
+/// Amber is not asked for more than the servers require.
+class _DeleteTokens {
+  final Signer _signer;
+  final List<String> _hashes;
+  final Map<String, Future<String>> _single = {};
+  Future<String>? _shared;
+
+  _DeleteTokens(this._signer, this._hashes);
+
+  /// There is one file only, so the shared authorization is the single one.
+  bool get isSingle => _hashes.length == 1;
+
+  /// One authorization naming every file.
+  Future<String> shared() => _shared ??= _sign(_hashes);
+
+  /// One authorization naming [hash] only.
+  Future<String> single(String hash) =>
+      isSingle ? shared() : _single[hash] ??= _sign([hash]);
+
+  Future<String> _sign(List<String> hashes) async {
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final event = await _signer.signEvent(
+      kind: NostrKinds.blossomAuth,
+      tags: [
+        ['t', 'delete'],
+        for (final hash in hashes) ['x', hash],
+        ['expiration', '${now + 600}'],
+      ],
+      content: 'Delete media',
+    );
+    return 'Nostr ${base64Encode(utf8.encode(jsonEncode(event.toJson())))}';
+  }
+}
+
 /// Blossom media server client (BUD-01/BUD-02). Uploads are authorized with
 /// a kind 24242 Nostr event passed in the `Authorization: Nostr <base64>`
 /// header. The file is only ever sent to the servers in [servers] — the
@@ -207,6 +293,131 @@ class BlossomClient {
       );
     }
     throw _ServerRefused(_describe(status, response.headers, body));
+  }
+
+  /// Asks the servers to delete [hashes] (BUD-02 `DELETE /<sha256>`): the
+  /// ones in [extraServers] (where the post's media addresses point) and the
+  /// user's own [servers], which may hold a copy. One authorization covers
+  /// every file, so Amber is asked once; a server that answers 401 to it is
+  /// asked again with one authorization per file, for servers that accept a
+  /// single `x` tag only. Only `https://` servers on public hosts are asked.
+  ///
+  /// A server's answer never throws: each one is in the result. Throws
+  /// [SignerException] when the signer refuses to authorize.
+  Future<List<BlossomDeleteResult>> delete({
+    required Signer signer,
+    required Iterable<String> hashes,
+    Iterable<String> extraServers = const [],
+  }) async {
+    final files = {
+      for (final h in hashes)
+        if (isBlobHash(h)) h,
+    }.toList();
+    final targets = _deleteTargets([...extraServers, ...servers]);
+    if (files.isEmpty || targets.isEmpty) return const [];
+    final tokens = _DeleteTokens(signer, files);
+    await tokens.shared(); // a refusal to sign ends it before any request
+    final perServer = await Future.wait([
+      for (final server in targets) _deleteOnServer(server, files, tokens),
+    ]);
+    return [for (final results in perServer) ...results];
+  }
+
+  Future<List<BlossomDeleteResult>> _deleteOnServer(
+    String server,
+    List<String> files,
+    _DeleteTokens tokens,
+  ) async {
+    final results = <BlossomDeleteResult>[];
+    for (final hash in files) {
+      final last = results.isEmpty ? null : results.last;
+      // A server that did not answer once is not asked for every other file.
+      results.add(
+        last?.outcome == BlossomDeleteOutcome.unreachable
+            ? BlossomDeleteResult(
+                server: server,
+                hash: hash,
+                outcome: BlossomDeleteOutcome.unreachable,
+                reason: last!.reason,
+              )
+            : await _deleteFile(server, hash, tokens),
+      );
+    }
+    return results;
+  }
+
+  Future<BlossomDeleteResult> _deleteFile(
+    String server,
+    String hash,
+    _DeleteTokens tokens,
+  ) async {
+    BlossomDeleteResult outcome(BlossomDeleteOutcome o, [String reason = '']) =>
+        BlossomDeleteResult(
+          server: server,
+          hash: hash,
+          outcome: o,
+          reason: reason,
+        );
+    try {
+      var answer = await _sendDelete(server, hash, await tokens.shared());
+      if (answer.status == 401 && !tokens.isSingle) {
+        answer = await _sendDelete(server, hash, await tokens.single(hash));
+      }
+      final status = answer.status;
+      if (status == 200 || status == 202 || status == 204) {
+        return outcome(BlossomDeleteOutcome.deleted);
+      }
+      if (status == 404 || status == 410) {
+        return outcome(BlossomDeleteOutcome.absent);
+      }
+      return outcome(
+        BlossomDeleteOutcome.refused,
+        _describe(status, answer.headers, answer.body),
+      );
+    } on TimeoutException {
+      return outcome(
+        BlossomDeleteOutcome.unreachable,
+        AppStrings.current.serverNoResponse(_host(server)),
+      );
+    } on http.ClientException catch (e) {
+      return outcome(
+        BlossomDeleteOutcome.unreachable,
+        AppStrings.current.serverUnreachable(_host(server), e.message),
+      );
+    } on SignerException catch (e) {
+      return outcome(BlossomDeleteOutcome.refused, e.message);
+    } catch (e) {
+      return outcome(BlossomDeleteOutcome.refused, '$e');
+    }
+  }
+
+  Future<({int status, Map<String, String> headers, String body})> _sendDelete(
+    String server,
+    String hash,
+    String authHeader,
+  ) async {
+    final request = http.Request('DELETE', Uri.parse('$server/$hash'))
+      ..headers['Authorization'] = authHeader;
+    final sent = _http.send(request);
+    final response = await sent.timeout(const Duration(seconds: 15));
+    final body = await response.stream.bytesToString().timeout(
+      const Duration(seconds: 10),
+    );
+    return (status: response.statusCode, headers: response.headers, body: body);
+  }
+
+  static List<String> _deleteTargets(Iterable<String> raw) {
+    final seen = <String>{};
+    final targets = <String>[];
+    for (final server in raw) {
+      final base = server.trim().replaceAll(RegExp(r'/+$'), '');
+      final uri = Uri.tryParse(base);
+      if (uri == null || uri.scheme != 'https' || !isUsableMediaUrl(base)) {
+        continue;
+      }
+      if (seen.add(base.toLowerCase())) targets.add(base);
+    }
+    return targets;
   }
 
   static Stream<List<int>> _chunks(

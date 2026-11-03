@@ -76,9 +76,27 @@ order you set (they are also read from, and published to, your Nostr
 profile as a BUD-03 server list). Before every upload Mialuna removes all
 metadata from photos and videos — EXIF, GPS location, device model, XMP,
 IPTC, comments, creation times — directly in the file's bytes. If a file
-cannot be cleaned it is **not uploaded**. Deleting a Nostr event (kind 5)
-**does not delete** the media file from the Blossom server: they are
-separate operations.
+cannot be cleaned it is **not uploaded**.
+
+## Deleting a post
+
+*Delete* in the menu of your own post, reel or story does two separate things:
+it sends your relays a deletion request (NIP-09, kind 5) and asks the media
+servers that hold its photos and videos to delete them (Blossom `DELETE`,
+signed with your key). Both are **requests**: a relay may ignore the first,
+and anyone who already saved a copy keeps it. Whatever happens, the post is
+never shown on your phone again.
+
+A file that another post of yours (or your profile picture) still uses is left
+on the server, since a file is addressed by its content and deleting it would
+break that post as well. If a media server refuses or cannot be reached,
+Mialuna tells you which one still holds the file. A server that says "deleted"
+is taken at its word: some are only a front for another storage or a cache,
+and a copy there can outlive the answer (seen with `blossom.band`, whose files
+are also served from `image.nostr.build`).
+
+Mialuna does not read other people's deletion requests: a post its author
+deleted disappears for you when your relays stop serving it.
 
 ## Close friends
 
@@ -88,6 +106,13 @@ A post, story or video for your close friends is delivered only to them
 Blossom server and anyone who finds the file's address only ever see
 unreadable data; the upload is signed with a one-off key, so the file is not
 linked to your account. Likes and replies on such a post go to its author only.
+
+That one-off key is kept on your phone (next to the post, not inside it, so
+your friends never hold it) and used once more: to ask the server to delete
+the file when you delete the post. Relays cannot be asked to delete such a
+post, since each copy is signed by a throw-away key; instead Mialuna tells
+your friends' apps, in a gift wrap of its own, to remove it. Posts made before
+this version have no kept key: their files stay on the server (encrypted).
 
 What this does **not** do: it cannot stop a friend from taking a screenshot or
 sharing what they saw; removing a friend only affects future posts; the

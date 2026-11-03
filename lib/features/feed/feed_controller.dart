@@ -12,6 +12,7 @@ import '../../core/nostr/relay_pool.dart';
 import '../../core/storage/local_cache.dart';
 import '../../l10n/strings.dart';
 import '../private/private_posts.dart';
+import '../social/deleted_posts.dart';
 import '../social/follow_controller.dart';
 import '../social/moderation_controller.dart';
 
@@ -138,6 +139,7 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
     ref.listen(blockProvider, (_, _) => _refilter());
     ref.listen(mutedHashtagsProvider, (_, _) => _refilter());
     ref.listen(brokenMediaProvider, (_, _) => _refilter());
+    ref.listen(deletedPostsProvider, (_, _) => _refilter());
     if (arg == FeedMode.following) {
       // Close-friends posts addressed to you belong in Home too.
       ref.listen(
@@ -180,6 +182,7 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
       ref.read(muteProvider).contains(post.author) ||
       ref.read(blockProvider).contains(post.author) ||
       ref.read(brokenMediaProvider).contains(post.id) ||
+      ref.read(deletedPostsProvider).contains(post.id) ||
       post.hashtags.any(ref.read(mutedHashtagsProvider).contains) ||
       (_mode == FeedMode.following &&
           !post.isPrivate && // sent to you on purpose, followed or not

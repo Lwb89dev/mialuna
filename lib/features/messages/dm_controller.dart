@@ -304,13 +304,15 @@ class DmController extends Notifier<DmState> {
   }
 
   void _addRumor(Rumor rumor) {
-    // Close-friends posts, stories and the likes/replies on them share the
-    // inbox with chat messages; they have their own store.
+    // Close-friends posts, stories, the likes/replies on them and the notice
+    // that an author took one back share the inbox with chat messages; they
+    // have their own store.
     if (rumor.kind == NostrKinds.picture ||
         rumor.kind == NostrKinds.video ||
         rumor.kind == NostrKinds.shortVideo ||
         rumor.kind == NostrKinds.reaction ||
-        rumor.kind == NostrKinds.comment) {
+        rumor.kind == NostrKinds.comment ||
+        rumor.kind == NostrKinds.deletion) {
       if (ref.read(blockProvider).contains(rumor.pubkey) ||
           ref.read(muteProvider).contains(rumor.pubkey)) {
         return;

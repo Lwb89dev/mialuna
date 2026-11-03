@@ -18,6 +18,7 @@ import '../feed/widgets/nostr_image.dart';
 import '../feed/widgets/post_card.dart';
 import '../profile/profile_widgets.dart';
 import '../search/people_search.dart';
+import '../social/deleted_posts.dart';
 import '../social/moderation_controller.dart';
 
 /// Discover: everything the relays have (not just the people you follow),
@@ -182,12 +183,13 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
       }
     });
     final broken = ref.watch(brokenMediaProvider);
+    final deleted = ref.watch(deletedPostsProvider);
     final discover = ref.watch(feedProvider(FeedMode.discover));
     final searching = _activeLabel != null;
     final source = searching ? _results.values.toList() : discover.posts;
     final posts = [
       for (final p in source)
-        if (!broken.contains(p.id)) p,
+        if (!broken.contains(p.id) && !deleted.contains(p.id)) p,
     ]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     final loading = searching
         ? _loading

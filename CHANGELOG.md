@@ -3,6 +3,28 @@
 All notable changes to Mialuna are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+- **Delete your own posts, reels and stories** (menu of a post, trash button in
+  a reel and in your story). Mialuna asks your relays to delete the post
+  (NIP-09) and the media servers to delete its photos or video (Blossom
+  `DELETE`), then never shows it again on the phone, even if a relay keeps
+  serving it. It says what could not be done: a server that refused or did not
+  answer is named. A file that another post of yours, or your profile picture,
+  still uses is left on the server. Close-friends posts cannot be recalled from
+  relays, so your friends' apps are told to remove them and the encrypted files
+  are deleted from the server (this needs the one-off upload key, which is kept
+  on the phone from now on; older close-friends posts keep their files).
+
+### Changed
+- The menu of your own post no longer offers to mute, block or report yourself.
+
+### Fixed
+- The top bar of a close-friends story you are watching (yours: viewers, delete,
+  "Close friends", close) no longer overflows on a narrow phone or with large
+  text: the "Close friends" label gives way.
+
 ## [0.17.2] — 2026-11-03 — The caption box follows the composer
 
 ### Fixed

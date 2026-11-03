@@ -13,6 +13,7 @@ import 'package:mialuna/core/nostr/signer.dart';
 import 'package:mialuna/core/storage/local_cache.dart';
 import 'package:mialuna/features/reels/reels_controller.dart';
 import 'package:mialuna/features/reels/reels_screen.dart';
+import 'package:mialuna/features/social/post_deletion.dart';
 import 'package:mialuna/l10n/strings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
@@ -99,14 +100,25 @@ class _FakePlayer extends VideoPlayerController {
   }
 }
 
+/// Stands in for deleting a post: records what it was asked.
+class _Deletion implements PostDeletion {
+  final List<MediaPost> calls = [];
+
+  @override
+  Future<DeletionReport> delete(MediaPost post) async {
+    calls.add(post);
+    return const DeletionReport();
+  }
+}
+
 int _n = 0;
 
-MediaPost _reel() {
+MediaPost _reel({String? author}) {
   final id = '${++_n}'.padLeft(64, '0');
   return MediaPost.tryParse(
     NostrEvent(
       id: id,
-      pubkey: 'ab' * 32,
+      pubkey: author ?? 'ab' * 32,
       createdAt: 1700000000 + _n,
       kind: NostrKinds.shortVideo,
       tags: [
@@ -130,9 +142,13 @@ void main() {
   late Directory tmp;
   late _Players log;
   late List<MediaPost> reels;
+  late NsecSigner me;
+  late _Deletion deletion;
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+    me = NsecSigner.fromNsec(NsecSigner.generatePrivateKey());
+    deletion = _Deletion();
     tmp = Directory.systemTemp.createTempSync('mialuna_reels_');
     log = _Players();
     reels = [for (var i = 0; i < 15; i++) _reel()];
@@ -149,11 +165,8 @@ void main() {
           indexerRelaysProvider.overrideWithValue(const []),
           relayPoolProvider.overrideWithValue(RelayPool(const [])),
           localCacheProvider.overrideWithValue(LocalCache(directory: tmp)),
-          authProvider.overrideWith(
-            () => _FixedAuth(
-              NsecSigner.fromNsec(NsecSigner.generatePrivateKey()),
-            ),
-          ),
+          authProvider.overrideWith(() => _FixedAuth(me)),
+          postDeletionProvider.overrideWithValue(deletion),
           reelsProvider.overrideWith(() => _Reels(reels)),
           currentTabProvider.overrideWith((ref) => 3),
           reelPlayerFactoryProvider.overrideWithValue((_) => _FakePlayer(log)),
@@ -261,5 +274,58 @@ void main() {
       final a = _reel(), b = _reel();
       expect(stableReelOrder(const [], [b, a]).map((r) => r.id), [b.id, a.id]);
     });
+  });
+
+  testWidgets('your own reels have a delete button', (tester) async {
+    reels = [_reel(author: me.publicKey), _reel(author: me.publicKey)];
+    await pump(tester);
+
+    expect(find.byIcon(Icons.delete_outline), findsWidgets);
+    await finish(tester);
+  });
+
+  testWidgets('somebody else\'s reels have none', (tester) async {
+    reels = [_reel(), _reel()];
+    await pump(tester);
+
+    expect(find.byIcon(Icons.delete_outline), findsNothing);
+    await finish(tester);
+  });
+
+  testWidgets('deleting a reel asks, then deletes that reel', (tester) async {
+    final mine = _reel(author: me.publicKey);
+    reels = [mine, _reel()];
+    await pump(tester);
+
+    await tester.tap(find.byIcon(Icons.delete_outline));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Delete this post?'), findsOneWidget);
+    await tester.tap(find.byType(FilledButton));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(deletion.calls, [mine]);
+    await finish(tester);
+  });
+
+  testWidgets('the pager carries on when the reel on screen disappears', (
+    tester,
+  ) async {
+    reels = [for (var i = 0; i < 4; i++) _reel(author: me.publicKey)];
+    final container = await pump(tester);
+    expect(find.text(reels[0].caption), findsOneWidget);
+
+    // What the list does once the reel on screen is deleted.
+    (container.read(reelsProvider.notifier) as _Reels).show(reels.sublist(1));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(tester.takeException(), isNull);
+    expect(find.text(reels[0].caption), findsNothing);
+    expect(find.text(reels[1].caption), findsOneWidget);
+    expect(log.alive, lessThanOrEqualTo(2));
+    await finish(tester);
   });
 }

@@ -1633,4 +1633,57 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get storyShared => 'Storia condivisa';
+
+  @override
+  String get deletePost => 'Elimina';
+
+  @override
+  String get deletePostTitle => 'Eliminare questo post?';
+
+  @override
+  String get deleteStoryTitle => 'Eliminare questa storia?';
+
+  @override
+  String get deletePostBody =>
+      'Mialuna chiederà ai tuoi relay di cancellarlo e ai server multimediali di cancellare le sue foto o il suo video. Un relay che ignora la richiesta, o chi ne ha già salvato una copia, potrebbe ancora averlo.';
+
+  @override
+  String get deletePrivateBody =>
+      'Un post per amici stretti non può essere richiamato dai relay. Mialuna dirà alle app dei tuoi amici di rimuoverlo e chiederà al server multimediale di cancellare i suoi file cifrati. Un amico che ne ha già salvato una copia potrebbe ancora averlo.';
+
+  @override
+  String get deletingPost => 'Eliminazione…';
+
+  @override
+  String get postDeleted => 'Eliminato.';
+
+  @override
+  String get postWasDeleted => 'Questo post è stato eliminato.';
+
+  @override
+  String get deleteNotAllowed =>
+      'Solo l\'account che l\'ha pubblicato può eliminarlo.';
+
+  @override
+  String deleteFailed(Object reason) {
+    return 'Impossibile eliminare: $reason';
+  }
+
+  @override
+  String get deleteNoRelay =>
+      'Nessun relay ha accettato la richiesta di cancellazione, quindi è ancora online. Controlla la connessione e riprova.';
+
+  @override
+  String deleteMediaLeft(Object servers) {
+    return 'Non è stato possibile rimuovere i file da $servers.';
+  }
+
+  @override
+  String get deleteMediaNotAuthorized =>
+      'Il tuo firmatario non ha autorizzato la rimozione dei file, che restano sul server multimediale.';
+
+  @override
+  String deleteFriendsMissed(Object count) {
+    return '$count dei tuoi amici stretti non sono stati avvisati, quindi potrebbe restare sui loro telefoni.';
+  }
 }
