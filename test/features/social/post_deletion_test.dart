@@ -123,27 +123,24 @@ void main() {
       if (e.kind == NostrKinds.deletion) e,
   ];
 
-  test(
-    'asks the relays to delete the post and the media server to delete its file',
-    () async {
-      final h = await upload(1);
-      final p = await post(alice, [h]);
-      final c = app(alice);
+  test('asks the relays to delete the post and the media server to delete its file', () async {
+    final h = await upload(1);
+    final p = await post(alice, [h]);
+    final c = app(alice);
 
-      final report = await c.read(postDeletionProvider).delete(p);
+    final report = await c.read(postDeletionProvider).delete(p);
 
-      expect(report.ok, true);
-      expect(report.complete, true);
-      final request = requests().single;
-      expect(request.pubkey, alice.publicKey);
-      expect(request.tagsNamed('e').single[1], p.id);
-      expect(request.tagsNamed('k').single[1], '${NostrKinds.picture}');
-      expect(verifyEventSignature(request), true);
-      expect(blossom.blobs, isEmpty);
-      expect(blossom.deleteRequests, ['cdn.example.com/$h']);
-      expect(c.read(deletedPostsProvider), contains(p.id));
-    },
-  );
+    expect(report.ok, true);
+    expect(report.complete, true);
+    final request = requests().single;
+    expect(request.pubkey, alice.publicKey);
+    expect(request.tagsNamed('e').single[1], p.id);
+    expect(request.tagsNamed('k').single[1], '${NostrKinds.picture}');
+    expect(verifyEventSignature(request), true);
+    expect(blossom.blobs, isEmpty);
+    expect(blossom.deleteRequests, ['cdn.example.com/$h']);
+    expect(c.read(deletedPostsProvider), contains(p.id));
+  });
 
   test('a video\'s cover image goes with it', () async {
     final video = await upload(1);
@@ -317,23 +314,20 @@ void main() {
     expect(c.read(deletedPostsProvider), isEmpty);
   });
 
-  test(
-    'a signer that refuses the media authorization leaves the files and says so',
-    () async {
-      final h = await upload(1);
-      final p = await post(alice, [h]);
-      alice.refuseKinds.add(NostrKinds.blossomAuth);
-      final c = app(alice);
+  test('a signer that refuses the media authorization leaves the files and says so', () async {
+    final h = await upload(1);
+    final p = await post(alice, [h]);
+    alice.refuseKinds.add(NostrKinds.blossomAuth);
+    final c = app(alice);
 
-      final report = await c.read(postDeletionProvider).delete(p);
+    final report = await c.read(postDeletionProvider).delete(p);
 
-      expect(report.ok, true, reason: 'the post itself is deleted');
-      expect(report.mediaError, 'denied');
-      expect(report.mediaLeft, ['cdn.example.com']);
-      expect(blossom.blobs, contains(h));
-      expect(c.read(deletedPostsProvider), contains(p.id));
-    },
-  );
+    expect(report.ok, true, reason: 'the post itself is deleted');
+    expect(report.mediaError, 'denied');
+    expect(report.mediaLeft, ['cdn.example.com']);
+    expect(blossom.blobs, contains(h));
+    expect(c.read(deletedPostsProvider), contains(p.id));
+  });
 
   test(
     'an accident in the signer is reported, with nothing half done',

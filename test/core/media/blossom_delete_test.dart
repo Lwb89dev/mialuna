@@ -71,9 +71,8 @@ void main() {
       'one authorization names every file, and the files are removed',
       () async {
         final files = [await upload(1), await upload(2), await upload(3)];
-        final results = await clientFor([
-          'https://cdn.example.com',
-        ]).delete(signer: owner, hashes: files);
+        final results = await clientFor(['https://cdn.example.com'])
+            .delete(signer: owner, hashes: files);
 
         expect(results.length, 3);
         expect(
@@ -142,9 +141,8 @@ void main() {
     });
 
     test('a server that does not hold the file counts as done', () async {
-      final results = await clientFor([
-        'https://cdn.example.com',
-      ]).delete(signer: owner, hashes: [hash]);
+      final results = await clientFor(['https://cdn.example.com'])
+          .delete(signer: owner, hashes: [hash]);
 
       expect(results.single.outcome, BlossomDeleteOutcome.absent);
       expect(results.single.gone, true);
@@ -153,9 +151,8 @@ void main() {
     test('a server that refuses says so, and the file stays', () async {
       final h = await upload(1);
       blossom.refuseDeleteWith = 403;
-      final results = await clientFor([
-        'https://cdn.example.com',
-      ]).delete(signer: owner, hashes: [h]);
+      final results = await clientFor(['https://cdn.example.com'])
+          .delete(signer: owner, hashes: [h]);
 
       expect(results.single.outcome, BlossomDeleteOutcome.refused);
       expect(results.single.gone, false);
@@ -166,9 +163,8 @@ void main() {
     test('only the account that uploaded a file can take it down', () async {
       final h = await upload(1);
       final stranger = RecordingSigner.generate();
-      final results = await clientFor([
-        'https://cdn.example.com',
-      ]).delete(signer: stranger, hashes: [h]);
+      final results = await clientFor(['https://cdn.example.com'])
+          .delete(signer: stranger, hashes: [h]);
 
       expect(results.single.outcome, BlossomDeleteOutcome.refused);
       expect(results.single.reason, contains('not the owner'));
@@ -180,9 +176,8 @@ void main() {
       () async {
         final files = [await upload(1), await upload(2), await upload(3)];
         blossom.deadHosts.add('cdn.example.com');
-        final results = await clientFor([
-          'https://cdn.example.com',
-        ]).delete(signer: owner, hashes: files);
+        final results = await clientFor(['https://cdn.example.com'])
+            .delete(signer: owner, hashes: files);
 
         expect(results.length, 3);
         expect(
@@ -210,9 +205,8 @@ void main() {
       () async {
         final files = [await upload(1), await upload(2)];
         blossom.singleFileTokensOnly = true;
-        final results = await clientFor([
-          'https://cdn.example.com',
-        ]).delete(signer: owner, hashes: files);
+        final results = await clientFor(['https://cdn.example.com'])
+            .delete(signer: owner, hashes: files);
 
         expect(
           results.every((r) => r.outcome == BlossomDeleteOutcome.deleted),
@@ -228,9 +222,8 @@ void main() {
     test('a single file needs one authorization, and no second try', () async {
       final h = await upload(1);
       blossom.singleFileTokensOnly = true;
-      await clientFor([
-        'https://cdn.example.com',
-      ]).delete(signer: owner, hashes: [h]);
+      await clientFor(['https://cdn.example.com'])
+          .delete(signer: owner, hashes: [h]);
 
       expect(owner.authorizations('delete').length, 1);
       expect(blossom.deleteRequests.length, 1);
@@ -242,9 +235,8 @@ void main() {
       owner.refuseKinds.add(NostrKinds.blossomAuth);
 
       await expectLater(
-        clientFor([
-          'https://cdn.example.com',
-        ]).delete(signer: owner, hashes: [h]),
+        clientFor(['https://cdn.example.com'])
+            .delete(signer: owner, hashes: [h]),
         throwsA(isA<SignerException>()),
       );
       expect(blossom.deleteRequests, isEmpty);
@@ -258,9 +250,8 @@ void main() {
         blossom.singleFileTokensOnly = true;
         // The shared authorization is signed; the per-file ones are not.
         final picky = _SignsOnce(owner);
-        final results = await clientFor([
-          'https://cdn.example.com',
-        ]).delete(signer: picky, hashes: files);
+        final results = await clientFor(['https://cdn.example.com'])
+            .delete(signer: picky, hashes: files);
 
         expect(
           results.every((r) => r.outcome == BlossomDeleteOutcome.refused),
@@ -283,9 +274,8 @@ void main() {
 
     test('the same file twice is asked once', () async {
       final h = await upload(1);
-      final results = await clientFor([
-        'https://cdn.example.com',
-      ]).delete(signer: owner, hashes: [h, h]);
+      final results = await clientFor(['https://cdn.example.com'])
+          .delete(signer: owner, hashes: [h, h]);
 
       expect(results.length, 1);
       expect(blossom.deleteRequests.length, 1);
