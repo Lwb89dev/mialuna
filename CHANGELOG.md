@@ -3,7 +3,7 @@
 All notable changes to Mialuna are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.18.0] — 2026-11-04 — Delete your posts
 
 ### Added
 - **Delete your own posts, reels and stories** (menu of a post, trash button in
