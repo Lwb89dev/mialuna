@@ -17,6 +17,22 @@ standard stop distributing them after expiry, but **we cannot guarantee
 deletion** from relays, archives or media storage servers. Anyone can save
 or screenshot them.
 
+What Mialuna does about it: once a story of yours has expired it asks **all**
+your relays and your media servers to delete it, photos and videos included
+(Settings → *Delete my stories when they expire*, on by default). Like any
+deletion (see below) it is a request. With a key on the phone it happens by
+itself a few minutes after the 24 hours; with Amber or a remote signer, which
+would have to approve it from a timer, it waits until you press *Delete now*.
+Close-friends stories need no signature for their files (they go with the
+one-off key kept on the phone); their friends' apps let go of an expired story
+by themselves.
+
+To do this the phone keeps a list of your own stories waiting to be cleaned:
+the signed event and the addresses of the files (for a close-friends story only
+those, never its text or its keys). Signing out deletes the list, and what was
+not cleaned by then stays where it is. Only stories seen while they were live
+are on it: those that expired before this existed are not.
+
 ## Who watched your stories
 
 When you watch a story, Mialuna can tell its author. It does so with one

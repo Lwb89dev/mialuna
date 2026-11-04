@@ -1685,4 +1685,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String deleteFriendsMissed(Object count) {
     return '$count of your close friends could not be told, so it may stay on their phones.';
   }
+
+  @override
+  String get storyCleanupSetting => 'Delete my stories when they expire';
+
+  @override
+  String get storyCleanupSettingExplain =>
+      'After 24 hours Mialuna asks your relays and your media servers to delete your stories, their photos and videos included. A server that ignores the request, or someone who kept a copy, may still have them.';
+
+  @override
+  String storyCleanupWaiting(Object count) {
+    return 'Your signer has to approve each cleanup, so it waits until you ask. Expired stories waiting: $count.';
+  }
+
+  @override
+  String get storyCleanupNow => 'Delete now';
+
+  @override
+  String get storyCleanupDone => 'Expired stories deleted.';
+
+  @override
+  String get storyCleanupPartly =>
+      'Some could not be deleted yet; Mialuna will try again.';
 }

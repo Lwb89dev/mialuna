@@ -2869,6 +2869,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} of your close friends could not be told, so it may stay on their phones.'**
   String deleteFriendsMissed(Object count);
+
+  /// No description provided for @storyCleanupSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete my stories when they expire'**
+  String get storyCleanupSetting;
+
+  /// No description provided for @storyCleanupSettingExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'After 24 hours Mialuna asks your relays and your media servers to delete your stories, their photos and videos included. A server that ignores the request, or someone who kept a copy, may still have them.'**
+  String get storyCleanupSettingExplain;
+
+  /// No description provided for @storyCleanupWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Your signer has to approve each cleanup, so it waits until you ask. Expired stories waiting: {count}.'**
+  String storyCleanupWaiting(Object count);
+
+  /// No description provided for @storyCleanupNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete now'**
+  String get storyCleanupNow;
+
+  /// No description provided for @storyCleanupDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired stories deleted.'**
+  String get storyCleanupDone;
+
+  /// No description provided for @storyCleanupPartly.
+  ///
+  /// In en, this message translates to:
+  /// **'Some could not be deleted yet; Mialuna will try again.'**
+  String get storyCleanupPartly;
 }
 
 class _AppLocalizationsDelegate

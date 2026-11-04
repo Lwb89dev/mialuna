@@ -82,7 +82,7 @@ class _MediaOutcome {
   const _MediaOutcome({this.left = const [], this.error});
 }
 
-/// The files of a post, by Blossom address.
+/// The files of one or more posts, by Blossom address.
 class _PostFiles {
   /// File address → the servers the post's URLs for it point at. Those are
   /// the servers that hold the file for certain; an empty set is a file only
@@ -93,15 +93,21 @@ class _PostFiles {
   /// them.
   final Set<String> unaddressed = {};
 
-  _PostFiles(MediaPost post) {
-    for (final item in post.media) {
-      for (final url in [item.url, ?item.previewUrl, ...item.fallbackUrls]) {
-        _add(url);
+  _PostFiles(Iterable<MediaPost> posts) {
+    for (final post in posts) {
+      for (final item in post.media) {
+        _addItem(item);
       }
-      final declared = item.sha256?.toLowerCase();
-      if (declared != null && isBlobHash(declared)) {
-        origins.putIfAbsent(declared, () => {});
-      }
+    }
+  }
+
+  void _addItem(MediaItem item) {
+    for (final url in [item.url, ?item.previewUrl, ...item.fallbackUrls]) {
+      _add(url);
+    }
+    final declared = item.sha256?.toLowerCase();
+    if (declared != null && isBlobHash(declared)) {
+      origins.putIfAbsent(declared, () => {});
     }
   }
 
@@ -164,37 +170,61 @@ class PostDeletion {
     Signer signer,
     String me,
   ) async {
+    final request = await _requestDeletion([post], signer);
+    if (request.failure != null) {
+      return DeletionReport(failure: request.failure, detail: request.detail);
+    }
+    _forget(post);
+    // The files go last: had the request failed, the post would still be
+    // there, with its pictures gone.
+    return _removePublicMedia([post], signer, me);
+  }
+
+  /// One NIP-09 request naming all of [posts] (the standard allows many `e`
+  /// tags), signed once and sent to every relay the pool knows, those it only
+  /// reads from as well: the post may have travelled further than where it
+  /// was published.
+  Future<({DeletionFailure? failure, String? detail})> _requestDeletion(
+    List<MediaPost> posts,
+    Signer signer,
+  ) async {
     final NostrEvent request;
     try {
       request = await signer.signEvent(
         kind: NostrKinds.deletion,
         tags: [
-          ['e', post.id],
-          if (_addressOf(post) case final address?) ['a', address],
-          ['k', '${post.kind}'],
+          for (final post in posts) ['e', post.id],
+          for (final post in posts)
+            if (_addressOf(post) case final address?) ['a', address],
+          for (final kind in {for (final post in posts) post.kind})
+            ['k', '$kind'],
         ],
         content: '',
       );
     } on SignerException catch (e) {
-      return DeletionReport(
-        failure: DeletionFailure.signerRefused,
-        detail: e.message,
-      );
+      return (failure: DeletionFailure.signerRefused, detail: e.message);
     }
-    final report = await _ref.read(relayPoolProvider).publish(request);
+    final pool = _ref.read(relayPoolProvider);
+    final report = await pool.publish(request, extraRelays: pool.readRelays);
     if (!report.publishedSomewhere) {
-      return DeletionReport(
+      return (
         failure: DeletionFailure.noRelayAccepted,
         detail: report.firstFailureReason,
       );
     }
-    _forget(post);
+    return (failure: null, detail: null);
+  }
 
-    // The files go last: had the request failed, the post would still be
-    // there, with its pictures gone.
-    final files = _PostFiles(post);
+  /// Takes the files of [posts] down from the media servers, apart from those
+  /// another post of the account still shows.
+  Future<DeletionReport> _removePublicMedia(
+    List<MediaPost> posts,
+    Signer signer,
+    String me,
+  ) async {
+    final files = _PostFiles(posts);
     try {
-      final inUse = await _usedByOtherPosts(post, me);
+      final inUse = await _usedByOtherPosts({for (final p in posts) p.id}, me);
       final owned = {
         for (final hash in files.origins.keys)
           if (!inUse.contains(hash)) hash: signer,
@@ -248,7 +278,21 @@ class PostDeletion {
     }
     _forget(post);
 
-    final files = _PostFiles(post);
+    return _removePrivateMedia(
+      [post],
+      friendsAsked: friends.length,
+      friendsReached: delivery.delivered.length,
+    );
+  }
+
+  /// Takes the encrypted files of close-friends [posts] down, with the one-off
+  /// keys that uploaded them (no signer is asked: they are on the phone).
+  Future<DeletionReport> _removePrivateMedia(
+    List<MediaPost> posts, {
+    int friendsAsked = 0,
+    int friendsReached = 0,
+  }) async {
+    final files = _PostFiles(posts);
     try {
       final store = _ref.read(uploadKeysProvider);
       final keys = await store.keysFor(files.origins.keys);
@@ -266,15 +310,15 @@ class PostDeletion {
         await store.forget(keys.keys);
       }
       return DeletionReport(
-        friendsAsked: friends.length,
-        friendsReached: delivery.delivered.length,
+        friendsAsked: friendsAsked,
+        friendsReached: friendsReached,
         mediaLeft: outcome.left,
         mediaError: outcome.error,
       );
     } catch (e) {
       return DeletionReport(
-        friendsAsked: friends.length,
-        friendsReached: delivery.delivered.length,
+        friendsAsked: friendsAsked,
+        friendsReached: friendsReached,
         mediaLeft: files.hosts.toList()..sort(),
         mediaError: '$e',
       );
@@ -298,16 +342,19 @@ class PostDeletion {
     if (saved.isSaved(post.id)) unawaited(saved.toggle(post.id));
   }
 
-  /// Files that another post of [me] still shows (the same photo, posted
-  /// twice, is one file), or that their profile uses. Content is addressed by
+  /// Files that a post of [me] other than [excluded] still shows (the same
+  /// photo, posted twice, is one file), or that their profile uses. Content is addressed by
   /// its hash, so taking such a file down would break that post as well.
-  Future<Set<String>> _usedByOtherPosts(MediaPost post, String me) async {
+  Future<Set<String>> _usedByOtherPosts(Set<String> excluded, String me) async {
     final used = <String>{};
     void note(MediaPost other) {
-      if (other.id != post.id) used.addAll(_PostFiles(other).origins.keys);
+      if (!excluded.contains(other.id)) {
+        used.addAll(_PostFiles([other]).origins.keys);
+      }
     }
 
     final gone = _ref.read(deletedPostsProvider);
+    final now = _ref.read(unixClockProvider)();
     final profile = await _profileOf(me);
     for (final url in [?profile?.picture, ?profile?.banner]) {
       if (blobHashOfUrl(url) case final hash?) used.add(hash);
@@ -317,7 +364,11 @@ class PostDeletion {
     ], eoseTimeout: const Duration(seconds: 8));
     final listener = sub.events.listen((event) {
       final other = MediaPost.tryParse(event);
-      if (other != null && !gone.contains(other.id)) note(other);
+      // A post that has expired is not shown any more, though a relay that
+      // ignores NIP-40 may still hand it out: its files are not in use.
+      final shown =
+          other != null && !gone.contains(other.id) && !other.isExpired(now);
+      if (shown) note(other);
     });
     await sub.eose;
     await Future<void>.delayed(const Duration(milliseconds: 250));
@@ -406,3 +457,53 @@ class PostDeletion {
 }
 
 final postDeletionProvider = Provider<PostDeletion>(PostDeletion.new);
+
+/// The pieces of a deletion for the cleanup of expired stories (see
+/// `StoryCleanup`): the same requests, in batches, with no screen, no notice
+/// to friends (their apps let go of an expired story by themselves) and no
+/// tombstone (an expired story is not shown any more).
+class ExpiredDeletion {
+  final Ref _ref;
+  ExpiredDeletion(this._ref);
+
+  PostDeletion get _deletion => _ref.read(postDeletionProvider);
+
+  /// Asks every relay to delete [posts], all of them public and the signed-in
+  /// account's own, with a single request.
+  Future<DeletionReport> requestRelays(List<MediaPost> posts) =>
+      _asOwner(posts, (signer, _) async {
+        final request = await _deletion._requestDeletion(posts, signer);
+        return DeletionReport(failure: request.failure, detail: request.detail);
+      });
+
+  /// Asks the media servers to delete the files of the public [posts], apart
+  /// from those another post still shows.
+  Future<DeletionReport> removePublicMedia(List<MediaPost> posts) => _asOwner(
+    posts,
+    (signer, me) => _deletion._removePublicMedia(posts, signer, me),
+  );
+
+  /// Asks the media servers to delete the encrypted files of close-friends
+  /// [posts], with the keys that uploaded them. Needs no signer.
+  Future<DeletionReport> removePrivateMedia(List<MediaPost> posts) =>
+      _asOwner(posts, (_, _) => _deletion._removePrivateMedia(posts));
+
+  /// Runs [step] when every one of [posts] is the signed-in account's own.
+  Future<DeletionReport> _asOwner(
+    List<MediaPost> posts,
+    Future<DeletionReport> Function(Signer signer, String me) step,
+  ) async {
+    final auth = _ref.read(authProvider);
+    final me = auth.publicKey;
+    if (me == null || posts.any((p) => p.author != me)) {
+      return const DeletionReport(failure: DeletionFailure.notAllowed);
+    }
+    try {
+      return await step(auth.signer, me);
+    } catch (e) {
+      return DeletionReport(failure: DeletionFailure.failed, detail: '$e');
+    }
+  }
+}
+
+final expiredDeletionProvider = Provider<ExpiredDeletion>(ExpiredDeletion.new);

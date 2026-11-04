@@ -16,6 +16,7 @@ import '../settings/settings_controller.dart';
 import '../social/deleted_posts.dart';
 import '../social/follow_controller.dart';
 import '../social/moderation_controller.dart';
+import 'story_cleanup.dart';
 
 /// Stories published by one creator, oldest first (viewing order).
 class StoryGroup {
@@ -70,6 +71,8 @@ class StoriesController extends Notifier<StoriesState> {
     // Another account starts from nothing: nobody else's stories, follows or
     // half-finished load carry over.
     ref.watch(authProvider.select((a) => a.publicKey));
+    // Starts watching for stories of this account that have expired.
+    ref.read(storyCleanupProvider);
     _byId.clear();
     _allowed = null;
     _shown = '';
@@ -259,6 +262,10 @@ class StoriesController extends Notifier<StoriesState> {
     final post = MediaPost.tryParse(e);
     if (post == null || !post.isStory || post.isExpired(_now())) return;
     _byId[e.id] = post;
+    // Your own story is written down, to be taken down once it expires.
+    if (post.author == ref.read(authProvider).publicKey) {
+      ref.read(storyCleanupProvider.notifier).track(post);
+    }
     _flushTimer ??= Timer(const Duration(milliseconds: 300), () {
       _flushTimer = null;
       _regroup();
