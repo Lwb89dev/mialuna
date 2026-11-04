@@ -804,5 +804,16 @@
     "placeholders": {
       "count": {}
     }
-  }
+  },
+  "storyCleanupSetting": "Delete my stories when they expire",
+  "storyCleanupSettingExplain": "After 24 hours Mialuna asks your relays and your media servers to delete your stories, their photos and videos included. A server that ignores the request, or someone who kept a copy, may still have them.",
+  "storyCleanupWaiting": "Your signer has to approve each cleanup, so it waits until you ask. Expired stories waiting: {count}.",
+  "@storyCleanupWaiting": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "storyCleanupNow": "Delete now",
+  "storyCleanupDone": "Expired stories deleted.",
+  "storyCleanupPartly": "Some could not be deleted yet; Mialuna will try again."
 }

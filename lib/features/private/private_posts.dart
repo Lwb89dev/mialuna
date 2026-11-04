@@ -9,6 +9,7 @@ import '../../core/nostr/models/comment.dart';
 import '../../core/nostr/models/media_event.dart';
 import '../../core/nostr/nip59.dart';
 import '../social/deleted_posts.dart';
+import '../stories/story_cleanup.dart';
 import '../trust/web_of_trust_controller.dart';
 
 /// What a close-friends post gathered: likes and private replies, all of
@@ -91,6 +92,7 @@ class PrivatePostsController extends Notifier<PrivatePostsState> {
         if (_deletions[rumor.id] == rumor.pubkey) return true; // taken back
         if (_posts.containsKey(rumor.id)) return true;
         _posts[rumor.id] = rumor;
+        _trackOwnStory(rumor);
         if (_posts.length > _maxStored) {
           final oldest = _posts.values.toList()
             ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
@@ -111,6 +113,16 @@ class PrivatePostsController extends Notifier<PrivatePostsState> {
     _publish();
     _scheduleSave();
     return true;
+  }
+
+  /// Your own close-friends story is written down, to be taken down once it
+  /// expires: by then it is gone from this store, and its files are not.
+  void _trackOwnStory(Rumor rumor) {
+    if (rumor.pubkey != _pub) return;
+    final post = _toPost(rumor);
+    if (post != null && post.isStory) {
+      ref.read(storyCleanupProvider.notifier).track(post);
+    }
   }
 
   /// An author takes posts back (NIP-09 inside the gift wrap, so only the
@@ -229,7 +241,9 @@ class PrivatePostsController extends Notifier<PrivatePostsState> {
     if (generation != _generation || json is! Map) return;
     for (final raw in (json['posts'] as List? ?? const [])) {
       final r = Rumor.tryParse(Map<String, dynamic>.from(raw as Map));
-      if (r != null) _posts[r.id] = r;
+      if (r == null) continue;
+      _posts[r.id] = r;
+      _trackOwnStory(r);
     }
     for (final raw in (json['interactions'] as List? ?? const [])) {
       final r = Rumor.tryParse(Map<String, dynamic>.from(raw as Map));

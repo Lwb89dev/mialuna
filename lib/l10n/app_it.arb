@@ -484,5 +484,16 @@
     "placeholders": {
       "count": {}
     }
-  }
+  },
+  "storyCleanupSetting": "Elimina le mie storie alla scadenza",
+  "storyCleanupSettingExplain": "Dopo 24 ore Mialuna chiede ai tuoi relay e ai tuoi server multimediali di cancellare le tue storie, foto e video compresi. Un server che ignora la richiesta, o chi ne ha tenuto una copia, potrebbe ancora averle.",
+  "storyCleanupWaiting": "Il tuo firmatario deve approvare ogni pulizia, quindi si aspetta che sia tu a chiederla. Storie scadute in attesa: {count}.",
+  "@storyCleanupWaiting": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "storyCleanupNow": "Elimina ora",
+  "storyCleanupDone": "Storie scadute eliminate.",
+  "storyCleanupPartly": "Alcune non si sono ancora potute eliminare; Mialuna riproverà."
 }

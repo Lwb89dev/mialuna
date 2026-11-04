@@ -11,7 +11,7 @@ Mialuna implements and with which conventions.
 | NIP-22 | Comments (kind 1111) | ✅ | Bottom-sheet threads, nested replies |
 | NIP-25 | Reactions (kind 7) | ✅ | Likes with live count |
 | NIP-36/56 | Content warning, reports | ✅ | Sensitive-content overlay; kind 1984 reports |
-| NIP-40 | Expiration | ✅ | Expired events filtered everywhere; basis of Stories |
+| NIP-40 | Expiration | ✅ | Expired events filtered everywhere; basis of Stories. Once an own story has expired, a NIP-09 request (up to 50 `e` tags in one signed event) goes to every relay the pool knows, read-only ones included, and the files are deleted with BUD-02 (one authorization for all of them) |
 | NIP-32 | Labels (Stories) | ✅ | `mialuna.story` to identify Stories |
 | NIP-55 | Amber signer | ✅ | Android, `nostrsigner:` intents |
 | NIP-46 | Bunker | ✅ | Login + remote signing; NIP-44 preferred, NIP-04 fallback |

@@ -89,7 +89,8 @@ class LocalCache {
 
   /// The files that hold one account's data on this device: decrypted
   /// messages, close-friends posts and list, follows, notifications, story
-  /// views, story receipts waiting to be sent, web of trust. All of them go
+  /// views, story receipts waiting to be sent, own stories waiting to be taken
+  /// down once expired, web of trust. All of them go
   /// when the account signs out.
   static List<String> accountFiles(String pubkey) => [
     'dm_$pubkey.json',
@@ -99,6 +100,7 @@ class LocalCache {
     'notifications_$pubkey.json',
     'story_views_$pubkey.json',
     storyReceiptsFile(pubkey),
+    'story_cleanup_$pubkey.json',
     'wot_$pubkey.json',
   ];
 

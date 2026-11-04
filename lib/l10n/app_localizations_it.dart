@@ -1686,4 +1686,26 @@ class AppLocalizationsIt extends AppLocalizations {
   String deleteFriendsMissed(Object count) {
     return '$count dei tuoi amici stretti non sono stati avvisati, quindi potrebbe restare sui loro telefoni.';
   }
+
+  @override
+  String get storyCleanupSetting => 'Elimina le mie storie alla scadenza';
+
+  @override
+  String get storyCleanupSettingExplain =>
+      'Dopo 24 ore Mialuna chiede ai tuoi relay e ai tuoi server multimediali di cancellare le tue storie, foto e video compresi. Un server che ignora la richiesta, o chi ne ha tenuto una copia, potrebbe ancora averle.';
+
+  @override
+  String storyCleanupWaiting(Object count) {
+    return 'Il tuo firmatario deve approvare ogni pulizia, quindi si aspetta che sia tu a chiederla. Storie scadute in attesa: $count.';
+  }
+
+  @override
+  String get storyCleanupNow => 'Elimina ora';
+
+  @override
+  String get storyCleanupDone => 'Storie scadute eliminate.';
+
+  @override
+  String get storyCleanupPartly =>
+      'Alcune non si sono ancora potute eliminare; Mialuna riproverà.';
 }

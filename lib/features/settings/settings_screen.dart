@@ -17,6 +17,7 @@ import '../private/close_friends_screen.dart';
 import '../profile/profile_widgets.dart';
 import '../notifications/notification_settings.dart';
 import '../social/moderation_controller.dart';
+import '../stories/story_cleanup_setting.dart';
 import '../stories/story_views_setting.dart';
 import 'system_notifications_tile.dart';
 import '../trust/trust_section.dart';
@@ -416,6 +417,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const TrustSection(),
           const SizedBox(height: 16),
           const StoryViewsSetting(),
+          const StoryCleanupSetting(),
           const SizedBox(height: 24),
           Text(context.l10n.storage, style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
