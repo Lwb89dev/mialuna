@@ -17,21 +17,10 @@ standard stop distributing them after expiry, but **we cannot guarantee
 deletion** from relays, archives or media storage servers. Anyone can save
 or screenshot them.
 
-What Mialuna does about it: once a story of yours has expired it asks **all**
-your relays and your media servers to delete it, photos and videos included
-(Settings → *Delete my stories when they expire*, on by default). Like any
-deletion (see below) it is a request. With a key on the phone it happens by
-itself a few minutes after the 24 hours; with Amber or a remote signer, which
-would have to approve it from a timer, it waits until you press *Delete now*.
-Close-friends stories need no signature for their files (they go with the
-one-off key kept on the phone); their friends' apps let go of an expired story
-by themselves.
-
-To do this the phone keeps a list of your own stories waiting to be cleaned:
-the signed event and the addresses of the files (for a close-friends story only
-those, never its text or its keys). Signing out deletes the list, and what was
-not cleaned by then stays where it is. Only stories seen while they were live
-are on it: those that expired before this existed are not.
+What Mialuna does about it: once a story of yours has expired it asks your
+relays and your media servers to delete it, photos and videos included, by
+itself or when you press a button, as described in *Deleting your stories when
+they expire* below. Like any deletion it is a request.
 
 ## Who watched your stories
 
@@ -85,6 +74,10 @@ for.
 - **nsec**: stored only in the device's encrypted storage, never
   transmitted or logged. Removed on logout.
 
+Deleting a post, and deleting expired stories, need your signature (a deletion
+request, and an authorization for the media servers). With Amber or a remote
+signer you are asked to approve; Mialuna never starts that from a timer.
+
 ## Media
 
 Uploads go to the Blossom servers you configure — and only to those, in the
@@ -96,23 +89,88 @@ cannot be cleaned it is **not uploaded**.
 
 ## Deleting a post
 
-*Delete* in the menu of your own post, reel or story does two separate things:
-it sends your relays a deletion request (NIP-09, kind 5) and asks the media
-servers that hold its photos and videos to delete them (Blossom `DELETE`,
-signed with your key). Both are **requests**: a relay may ignore the first,
-and anyone who already saved a copy keeps it. Whatever happens, the post is
-never shown on your phone again.
+*Delete* in the menu of your own post, a reel, or the trash button in your own
+story asks first, then does three things, in this order:
 
-A file that another post of yours (or your profile picture) still uses is left
-on the server, since a file is addressed by its content and deleting it would
-break that post as well. If a media server refuses or cannot be reached,
-Mialuna tells you which one still holds the file. A server that says "deleted"
-is taken at its word: some are only a front for another storage or a cache,
-and a copy there can outlive the answer (seen with `blossom.band`, whose files
-are also served from `image.nostr.build`).
+1. **The relays.** One deletion request (NIP-09, kind 5) naming the post, signed
+   with your key, goes to every relay Mialuna is connected to, those you only
+   read from included: a post may have travelled further than the relays you
+   published it to. If no relay accepts it, nothing else is done, since the post
+   is still out there, and you are told.
+2. **The media servers**, once a relay has accepted. Each photo, video and cover
+   image of the post is deleted with a Blossom `DELETE`, authorized by an event
+   signed with your key that names the files and is valid for ten minutes. It
+   goes to the servers the post's file addresses point at and to your own
+   media servers, which may hold a copy; only `https` addresses of public hosts
+   are asked. One signature covers all the files of the post. A server that
+   reads one file per authorization is asked again file by file (Amber asks you
+   again each time).
+3. **This phone.** The post's id goes into a list of deleted posts, and the post
+   is never shown again on this phone (Home, Discover, Reels, the story rail,
+   profiles), even if a relay keeps serving it. If you had saved it, it is taken
+   out of your saved posts, which publishes your updated saved list as unsaving
+   does.
+
+Both requests are **requests**: a relay may ignore the first, and anyone who
+already saved a copy keeps it. A file that another post of yours, or your
+profile picture, still uses is left on the server, since a file is addressed by
+its content and deleting it would break that post as well. If a media server
+refuses or cannot be reached, Mialuna tells you which one still holds the file
+(there is no automatic retry for this one). A server that says "deleted" is
+taken at its word: some are only a front for another storage or a cache, and a
+copy there can outlive the answer (seen with `blossom.band`, whose files are
+also served from `image.nostr.build`).
+
+**Who learns what.** The relays see a public event from you naming the post
+(its id and kind). Every media server that is asked sees your IP address, the
+time, the file's hash and, for a public post, your public key, since the
+authorization is signed with it; a server that does not hold the file just
+answers "not found". Nothing is sent to any server of Mialuna: there is none.
 
 Mialuna does not read other people's deletion requests: a post its author
 deleted disappears for you when your relays stop serving it.
+
+## Deleting your stories when they expire
+
+A story is shown for 24 hours. Until Mialuna 0.19 that was all: the story was
+hidden, while its photo or video stayed on the media server and a relay that
+ignores NIP-40 kept serving it. Now, once a story of yours has expired:
+
+* **What is asked.** The same as when you delete a post, in one batch for all
+  the stories that are due: one deletion request to every relay Mialuna knows
+  (up to 50 stories per request), then the deletion of their files on the media
+  servers, with one signature for all of them. The files are only asked for
+  once a relay has answered, so that the check that no other post of yours
+  still shows a file has something to look at. A file a live post of yours
+  still shows is left on the server.
+* **When.** Twenty seconds after the app starts, every ten minutes while it
+  runs, and when it comes back to the foreground. Nothing runs in the
+  background once Android has put the app to sleep.
+* **Whose signature.** With a key on the phone it happens by itself. Amber and
+  remote signers would have to ask for your approval from a timer, which
+  Mialuna never does: for them **Settings → Delete my stories when they expire**
+  shows how many are waiting and a *Delete now* button, and the approval is
+  asked only then. Close-friends stories need no signature at all (see below).
+* **If it fails.** A relay or a server that does not answer is asked again 15
+  minutes later, then after longer and longer pauses (up to 6 hours), eight
+  tries in all; then Mialuna gives up on that story. The relays and the media
+  servers are retried separately, so a failing server does not make the relays
+  be asked twice.
+* **Turning it off.** The switch is on by default. Off, nothing is done by
+  itself; the list below keeps filling, so turning it on again takes down what
+  expired meanwhile. *Delete now* still works.
+
+To do this the phone keeps a list of your own stories waiting to be taken down:
+for each, its signed event (public anyway) or, for a close-friends story, only
+the addresses of its files, never its text, its audience or its keys. A story
+is on the list if Mialuna saw it while it was live: one you publish here, or
+one published from another phone that this one loaded. Stories that expired
+before this existed are not on it. Signing out deletes the list, and what was
+not taken down by then stays where it is.
+
+As with a deleted post, the relays and the media servers learn what is
+described above, and the same limits hold: a request can be ignored, and a copy
+somebody kept stays.
 
 ## Close friends
 
@@ -124,11 +182,19 @@ unreadable data; the upload is signed with a one-off key, so the file is not
 linked to your account. Likes and replies on such a post go to its author only.
 
 That one-off key is kept on your phone (next to the post, not inside it, so
-your friends never hold it) and used once more: to ask the server to delete
-the file when you delete the post. Relays cannot be asked to delete such a
-post, since each copy is signed by a throw-away key; instead Mialuna tells
-your friends' apps, in a gift wrap of its own, to remove it. Posts made before
-this version have no kept key: their files stay on the server (encrypted).
+your friends never hold it) and used once more: only the key that uploaded a
+file can ask the server to delete it, so deleting the post, or its 24 hours
+being over for a story, uses it to take the file down. No signature of yours is
+needed for that. The key is forgotten once the file is gone. It opens nothing
+else: the file is ciphertext, and what decrypts it travels inside the post.
+Posts made before Mialuna 0.18 have no kept key: their files stay on the server
+(encrypted).
+
+Relays cannot be asked to delete such a post, since each copy is signed by a
+throw-away key. Instead, when you delete one, Mialuna tells your friends' apps
+to remove it, in a gift wrap of its own (a deletion notice from you, which a
+friend's app accepts only from the post's author), so only they can read it.
+For an expired story nothing is sent: their apps let go of it by themselves.
 
 What this does **not** do: it cannot stop a friend from taking a screenshot or
 sharing what they saw; removing a friend only affects future posts; the
@@ -196,9 +262,24 @@ Event caches, profiles, relay lists of other people, private messages and
 drafts stay on the device. **Settings → Clear cache** empties the feed caches.
 **Signing out** removes everything the account left on the phone: the key, the
 wallet link (a Nostr Wallet Connect secret is the right to spend), decrypted
-messages and close-friends posts, the friends list, the web of trust, every
-cache and draft, and the account's own preferences (saved posts, muted people,
-blocks, watched stories). Nothing is included in Android backups.
+messages and close-friends posts, the friends list, the web of trust, the list
+of stories waiting to be taken down, every cache and draft, and the account's
+own preferences (saved posts, muted people, blocks, watched stories). Nothing is
+included in Android backups.
+
+Two small lists are **not** removed by signing out, and **Clear cache** leaves
+them too; only uninstalling the app, or clearing its data in Android, removes
+them:
+
+* **The one-off upload keys** of your close-friends files (one list per
+  account, at most 600 keys, each forgotten once its file is deleted). They
+  cannot be made again, and without them those files could never be deleted
+  from the server. A key is a random number tied to nothing but one encrypted
+  file.
+* **The ids of deleted posts** (not tied to an account, at most 1000): the posts
+  you deleted, and the close-friends posts whose author took them back. An id
+  is the public name of one event; the list is what keeps a post that a relay
+  refuses to forget from showing again, for whoever uses this phone next.
 
 ## What other servers learn
 
@@ -209,3 +290,7 @@ fetches `http(s)` addresses of public hosts. Opening a profile whose name is
 credentials, nothing but the answer is read). Zaps ask the recipient's Lightning
 server for an invoice; the invoice amount is checked against the one you chose
 before the wallet is asked to pay.
+
+Deleting a post, or a story that expired, makes requests to your relays and to
+the media servers that hold its files (or may hold a copy): see *Deleting a
+post* for what each of them learns.

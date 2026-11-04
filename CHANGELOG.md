@@ -3,7 +3,7 @@
 All notable changes to Mialuna are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.19.0] — 2026-11-04 — Stories delete themselves
 
 ### Added
 - **Your stories are deleted when they expire.** A story was only hidden after
@@ -11,14 +11,28 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   ignore NIP-40 kept serving it. Now Mialuna remembers each of your stories
   (the live ones it sees, on this or another phone, and the ones you publish)
   and, once they have expired, asks **every relay** it knows and your media
-  servers to delete them, all that are due in one request and one signature.
+  servers to delete them: all that are due in one request and one signature.
   Settings → *Delete my stories when they expire* (on by default). With a key
-  on the phone it happens by itself; with Amber or a remote signer, which would
-  have to approve from a timer, it waits for *Delete now*. A relay or server
-  that fails is asked again later (15 minutes, doubling up to 6 hours, for up
-  to 8 tries). Close-friends stories need no signature: their files go with the
-  one-off key kept on the phone. Stories that expired before this version are
-  not covered.
+  on the phone it happens by itself (20 seconds after start, every 10 minutes,
+  and when the app comes back to the foreground); with Amber or a remote
+  signer, which would have to approve from a timer, it waits for *Delete now*.
+  A relay or server that fails is asked again later (15 minutes, doubling up
+  to 6 hours, for up to 8 tries), relays and servers separately. The files are
+  asked for once a relay has answered, so that the check that no other post
+  still shows a file has something to look at. Close-friends stories need no
+  signature: their files go with the one-off key kept on the phone. Stories
+  that expired before this version are not covered.
+- **PRIVACY.md describes deleting in full:** what is asked of whom and in what
+  order, who learns what, how often, what stays on the phone, and the two
+  small lists that signing out does not remove (the one-off upload keys and
+  the ids of deleted posts).
+
+### Changed
+- Deleting a post now sends the NIP-09 request to every relay Mialuna knows,
+  those you only read from included (it went to the write relays only).
+- A file used only by a post that has expired no longer counts as "in use": a
+  relay that ignores NIP-40 and still serves an expired story could keep its
+  file on the server for good.
 
 ## [0.18.0] — 2026-11-04 — Delete your posts
 
