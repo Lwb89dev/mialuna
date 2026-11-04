@@ -393,9 +393,13 @@ void main() {
             ],
           ),
         );
+        // Signing a hundred stories can take seconds on a slow machine: the
+        // receipt is held to the time it was read, not to the time before.
+        final readAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
         final byStory = a.read(storyViewsProvider).byStory;
         expect(byStory.length, StoryViewsController.maxStoriesPerReceipt);
-        expect(byStory.values.first.single.at, lessThanOrEqualTo(now + 1));
+        expect(byStory.values.first.single.at, lessThanOrEqualTo(readAt + 1));
+        expect(byStory.values.first.single.at, lessThan(now + 100000));
       },
     );
   });
