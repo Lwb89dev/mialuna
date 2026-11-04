@@ -142,55 +142,49 @@ void main() {
   tearDown(() => relay.stop());
 
   group('deleting a close-friends post', () {
-    test(
-      'tells the friends, and takes the encrypted file down with the key that put it there',
-      () async {
-        final both = await posted();
-        final a = both.alice;
-        final b = both.bob;
-        final post = a.read(privatePostsProvider).posts.single;
-        final file = blossom.blobs.keys.single;
-        bool inHome() {
-          final home = b.read(feedProvider(FeedMode.following));
-          return home.posts.any((p) => p.id == post.id);
-        }
+    test('tells the friends, and takes the encrypted file down with the key that put it there', () async {
+      final both = await posted();
+      final a = both.alice;
+      final b = both.bob;
+      final post = a.read(privatePostsProvider).posts.single;
+      final file = blossom.blobs.keys.single;
+      bool inHome() {
+        final home = b.read(feedProvider(FeedMode.following));
+        return home.posts.any((p) => p.id == post.id);
+      }
 
-        b.listen(feedProvider(FeedMode.following), (_, _) {});
-        await eventually(inHome, reason: 'the friend has it in Home');
-        expect(await a.read(uploadKeysProvider).keysFor([file]), hasLength(1));
+      b.listen(feedProvider(FeedMode.following), (_, _) {});
+      await eventually(inHome, reason: 'the friend has it in Home');
+      expect(await a.read(uploadKeysProvider).keysFor([file]), hasLength(1));
 
-        final report = await a.read(postDeletionProvider).delete(post);
+      final report = await a.read(postDeletionProvider).delete(post);
 
-        expect(report.ok, true, reason: report.detail);
-        expect(report.friendsAsked, 2);
-        expect(report.friendsReached, 1, reason: 'Dave has no inbox');
-        expect(report.complete, false);
-        expect(report.mediaLeft, isEmpty);
+      expect(report.ok, true, reason: report.detail);
+      expect(report.friendsAsked, 2);
+      expect(report.friendsReached, 1, reason: 'Dave has no inbox');
+      expect(report.complete, false);
+      expect(report.mediaLeft, isEmpty);
 
-        // Gone from the author's phone, and from the friend's: store and Home.
-        expect(a.read(privatePostsProvider).posts, isEmpty);
-        expect(a.read(deletedPostsProvider), contains(post.id));
-        await eventually(() => b.read(privatePostsProvider).posts.isEmpty);
-        expect(b.read(deletedPostsProvider), contains(post.id));
-        await eventually(() => !inHome(), reason: 'the post stayed in Home');
+      // Gone from the author's phone, and from the friend's: store and Home.
+      expect(a.read(privatePostsProvider).posts, isEmpty);
+      expect(a.read(deletedPostsProvider), contains(post.id));
+      await eventually(() => b.read(privatePostsProvider).posts.isEmpty);
+      expect(b.read(deletedPostsProvider), contains(post.id));
+      await eventually(() => !inHome(), reason: 'the post stayed in Home');
 
-        // The file is gone, asked for by the one-time key, not by Alice.
-        expect(blossom.blobs, isEmpty);
-        final askedBy = blossom.deleteTokens.map((t) => t.pubkey).toSet();
-        expect(askedBy, blossom.uploaderPubkeys.toSet());
-        expect(askedBy, hasLength(1));
-        expect(askedBy, isNot(contains(alice.publicKey)));
-        expect(await a.read(uploadKeysProvider).keysFor([file]), isEmpty);
+      // The file is gone, asked for by the one-time key, not by Alice.
+      expect(blossom.blobs, isEmpty);
+      final askedBy = blossom.deleteTokens.map((t) => t.pubkey).toSet();
+      expect(askedBy, blossom.uploaderPubkeys.toSet());
+      expect(askedBy, hasLength(1));
+      expect(askedBy, isNot(contains(alice.publicKey)));
+      expect(await a.read(uploadKeysProvider).keysFor([file]), isEmpty);
 
-        // No relay was asked in the open: nothing readable names the post.
-        expect(
-          relay.stored.where((e) => e.kind == NostrKinds.deletion),
-          isEmpty,
-        );
-        final dump = jsonEncode(relay.stored.map((e) => e.toJson()).toList());
-        expect(dump, isNot(contains(post.id)));
-      },
-    );
+      // No relay was asked in the open: nothing readable names the post.
+      expect(relay.stored.where((e) => e.kind == NostrKinds.deletion), isEmpty);
+      final dump = jsonEncode(relay.stored.map((e) => e.toJson()).toList());
+      expect(dump, isNot(contains(post.id)));
+    });
 
     test(
       'a file whose key was not kept stays, and the report says where',

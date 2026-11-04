@@ -96,9 +96,8 @@ void main() {
   test(
     'a damaged file reads as empty and is rewritten on the next key',
     () async {
-      File(
-        '${dir.path}/${UploadKeys.fileFor('alice')}',
-      ).writeAsStringSync('{oops');
+      File('${dir.path}/${UploadKeys.fileFor('alice')}')
+          .writeAsStringSync('{oops');
       final keys = UploadKeys(cache, 'alice');
 
       expect(await keys.keysFor([hash(1)]), isEmpty);

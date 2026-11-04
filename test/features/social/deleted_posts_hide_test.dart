@@ -114,54 +114,48 @@ void main() {
     addTearDown(relay.stop);
   });
 
-  test(
-    'Home drops a deleted post, and a relay that serves it again cannot bring it back',
-    () async {
-      final keep = await photo('keep', at: 1700000100);
-      final gone = await photo('gone', at: 1700000200);
-      relay.add(keep);
-      relay.add(gone);
-      final c = app();
-      expect(await home(c), ['gone', 'keep']);
+  test('Home drops a deleted post, and a relay that serves it again cannot bring it back', () async {
+    final keep = await photo('keep', at: 1700000100);
+    final gone = await photo('gone', at: 1700000200);
+    relay.add(keep);
+    relay.add(gone);
+    final c = app();
+    expect(await home(c), ['gone', 'keep']);
 
-      c.read(deletedPostsProvider.notifier).add([gone.id]);
-      expect(
-        c.read(feedProvider(FeedMode.following)).posts.map((p) => p.caption),
-        ['keep'],
-      );
+    c.read(deletedPostsProvider.notifier).add([gone.id]);
+    expect(
+      c.read(feedProvider(FeedMode.following)).posts.map((p) => p.caption),
+      ['keep'],
+    );
 
-      // The relay never deleted it: a refresh asks for it once more.
-      await c.read(feedProvider(FeedMode.following).notifier).refresh();
-      expect(
-        c.read(feedProvider(FeedMode.following)).posts.map((p) => p.caption),
-        ['keep'],
-      );
-    },
-  );
+    // The relay never deleted it: a refresh asks for it once more.
+    await c.read(feedProvider(FeedMode.following).notifier).refresh();
+    expect(
+      c.read(feedProvider(FeedMode.following)).posts.map((p) => p.caption),
+      ['keep'],
+    );
+  });
 
-  test(
-    'a post saved on the phone before it was deleted does not come back at start',
-    () async {
-      final gone = await photo('gone');
-      relay.add(gone);
-      final first = app();
-      expect(await home(first), ['gone']);
-      final feed = first.read(feedProvider(FeedMode.following).notifier);
-      await feed.persistCache();
-      first.read(deletedPostsProvider.notifier).add([gone.id]);
-      await Future<void>.delayed(const Duration(milliseconds: 200));
-      first.dispose();
+  test('a post saved on the phone before it was deleted does not come back at start', () async {
+    final gone = await photo('gone');
+    relay.add(gone);
+    final first = app();
+    expect(await home(first), ['gone']);
+    final feed = first.read(feedProvider(FeedMode.following).notifier);
+    await feed.persistCache();
+    first.read(deletedPostsProvider.notifier).add([gone.id]);
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    first.dispose();
 
-      // The next run reads the saved Home first, before any relay answers.
-      await relay.stop();
-      relay = await FakeRelay().start();
-      final second = app();
-      second.listen(feedProvider(FeedMode.following), (_, _) {});
-      await Future<void>.delayed(const Duration(seconds: 1));
+    // The next run reads the saved Home first, before any relay answers.
+    await relay.stop();
+    relay = await FakeRelay().start();
+    final second = app();
+    second.listen(feedProvider(FeedMode.following), (_, _) {});
+    await Future<void>.delayed(const Duration(seconds: 1));
 
-      expect(second.read(feedProvider(FeedMode.following)).posts, isEmpty);
-    },
-  );
+    expect(second.read(feedProvider(FeedMode.following)).posts, isEmpty);
+  });
 
   test('Reels drops a deleted reel', () async {
     final keep = await reel('keep');
