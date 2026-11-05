@@ -23,9 +23,6 @@ void main() {
     expect(permissions, {
       'android.permission.INTERNET',
       'android.permission.POST_NOTIFICATIONS',
-      'android.permission.READ_MEDIA_IMAGES',
-      'android.permission.READ_MEDIA_VIDEO',
-      'android.permission.READ_EXTERNAL_STORAGE',
     });
   });
 

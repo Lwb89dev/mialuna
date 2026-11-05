@@ -235,6 +235,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bunkerInvalidKey => 'The bunker did not return a valid key';
 
   @override
+  String get signerInvalidResponse =>
+      'The signer returned an invalid signed event';
+
+  @override
   String get bunkerTimeout => 'Bunker timed out';
 
   @override
@@ -1133,6 +1137,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appearance => 'Appearance';
+
+  @override
+  String get publishingSettings => 'Publishing';
+
+  @override
+  String get addMialunaHashtag => 'Add #mialuna';
+
+  @override
+  String get addMialunaHashtagNote =>
+      'Add the official hashtag to public posts and stories. You can turn this off at any time.';
 
   @override
   String get themeLight => 'Light';

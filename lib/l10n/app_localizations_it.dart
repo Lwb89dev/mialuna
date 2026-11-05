@@ -236,6 +236,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Il bunker non ha restituito una chiave valida';
 
   @override
+  String get signerInvalidResponse =>
+      'Il firmatario ha restituito un evento firmato non valido';
+
+  @override
   String get bunkerTimeout => 'Timeout dal bunker';
 
   @override
@@ -1135,6 +1139,16 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get appearance => 'Aspetto';
+
+  @override
+  String get publishingSettings => 'Pubblicazione';
+
+  @override
+  String get addMialunaHashtag => 'Aggiungi #mialuna';
+
+  @override
+  String get addMialunaHashtagNote =>
+      'Aggiungi l\'hashtag ufficiale ai post e alle storie pubbliche. Puoi disattivarlo in qualsiasi momento.';
 
   @override
   String get themeLight => 'Chiaro';

@@ -40,8 +40,11 @@ class InteractionsRepository {
   final Map<String, _PostData> _data = {};
   final Set<String> _requested = {};
   final Set<String> _wanted = {};
+  final Set<String> _wantedCommentLikes = {};
+  final Set<String> _removedReactionIds = {};
   final _changes = StreamController<String>.broadcast();
   Timer? _timer;
+  Timer? _commentLikesTimer;
   bool _disposed = false;
 
   InteractionsRepository(this.pool);
@@ -88,6 +91,41 @@ class InteractionsRepository {
     sub.close();
   }
 
+  void requestCommentLikes(String commentId) {
+    if (_disposed || !_requested.add(commentId)) return;
+    _data.putIfAbsent(commentId, _PostData.new);
+    _wantedCommentLikes.add(commentId);
+    _commentLikesTimer ??= Timer(
+      const Duration(milliseconds: 120),
+      _flushCommentLikes,
+    );
+  }
+
+  Future<void> _flushCommentLikes() async {
+    _commentLikesTimer = null;
+    if (_wantedCommentLikes.isEmpty || _disposed) return;
+    final batch = _wantedCommentLikes.take(40).toList();
+    _wantedCommentLikes.removeAll(batch);
+    if (_wantedCommentLikes.isNotEmpty) {
+      _commentLikesTimer = Timer(
+        const Duration(milliseconds: 60),
+        _flushCommentLikes,
+      );
+    }
+    final sub = pool.subscribe([
+      NostrFilter(
+        kinds: const [NostrKinds.reaction],
+        tagFilters: {'#e': batch},
+        limit: batch.length * 40,
+      ),
+    ], eoseTimeout: const Duration(seconds: 8));
+    final listener = sub.events.listen((e) => ingest(e, batch));
+    await sub.eose;
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    await listener.cancel();
+    sub.close();
+  }
+
   void ingest(NostrEvent event, [Iterable<String>? known]) {
     final ids = known ?? _data.keys;
     if (event.kind == NostrKinds.reaction) {
@@ -97,7 +135,7 @@ class InteractionsRepository {
         if (t.length >= 2 && t[0] == 'e') target = t[1];
       }
       final data = target == null ? null : _data[target];
-      if (data == null) return;
+      if (data == null || _removedReactionIds.contains(event.id)) return;
       final prev = data.reactions[event.pubkey];
       if (prev != null && prev.createdAt >= event.createdAt) return;
       data.reactions[event.pubkey] = event;
@@ -148,12 +186,14 @@ class InteractionsRepository {
 
   void addLocalReaction(String postId, NostrEvent reaction) {
     final data = _data.putIfAbsent(postId, _PostData.new);
+    _removedReactionIds.remove(reaction.id);
     data.reactions[reaction.pubkey] = reaction;
     _changes.add(postId);
   }
 
   void removeLocalReaction(String postId, String pubkey) {
-    _data[postId]?.reactions.remove(pubkey);
+    final removed = _data[postId]?.reactions.remove(pubkey);
+    if (removed != null) _removedReactionIds.add(removed.id);
     _changes.add(postId);
   }
 
@@ -165,6 +205,7 @@ class InteractionsRepository {
   void dispose() {
     _disposed = true;
     _timer?.cancel();
+    _commentLikesTimer?.cancel();
     _changes.close();
   }
 }

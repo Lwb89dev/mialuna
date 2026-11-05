@@ -156,6 +156,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 24),
+          Text(
+            context.l10n.publishingSettings,
+            style: theme.textTheme.titleMedium,
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(Icons.tag),
+            title: Text(context.l10n.addMialunaHashtag),
+            subtitle: Text(context.l10n.addMialunaHashtagNote),
+            value: settings.addMialunaHashtag,
+            onChanged: ref.read(settingsProvider.notifier).setAddMialunaHashtag,
+          ),
+          const SizedBox(height: 16),
           Text(context.l10n.relays, style: theme.textTheme.titleMedium),
           const SizedBox(height: 4),
           Text(

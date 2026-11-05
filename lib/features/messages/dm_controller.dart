@@ -567,6 +567,9 @@ class DmController extends Notifier<DmState> {
     }
     if (body.isEmpty) return;
     if (peer == me) throw DmException(AppStrings.current.cannotMessageYourself);
+    final generation = _generation;
+    bool active() =>
+        generation == _generation && ref.read(authProvider).publicKey == me;
 
     final rumor = Rumor.create(
       pubkey: me,
@@ -597,6 +600,7 @@ class DmController extends Notifier<DmState> {
 
     try {
       final peerRelays = await inboxRelaysOf(peer);
+      if (!active()) return;
       if (peerRelays.isEmpty) {
         mark(DmStatus.failed);
         throw DmException(AppStrings.current.recipientNoPrivateMessages);
@@ -607,6 +611,7 @@ class DmController extends Notifier<DmState> {
         rumor: rumor,
         recipient: peer,
       );
+      if (!active()) return;
       final report = await pool.publish(
         toPeer,
         extraRelays: peerRelays,
@@ -626,12 +631,14 @@ class DmController extends Notifier<DmState> {
       // Copy for the sender's own devices (best effort).
       unawaited(() async {
         try {
+          if (!active()) return;
           final mine = state.inboxRelays;
           final toMe = await GiftWrap.wrap(
             signer: signer,
             rumor: rumor,
             recipient: me,
           );
+          if (!active()) return;
           await pool.publish(
             toMe,
             extraRelays: mine,

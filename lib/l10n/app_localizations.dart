@@ -500,6 +500,12 @@ abstract class AppLocalizations {
   /// **'The bunker did not return a valid key'**
   String get bunkerInvalidKey;
 
+  /// No description provided for @signerInvalidResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'The signer returned an invalid signed event'**
+  String get signerInvalidResponse;
+
   /// No description provided for @bunkerTimeout.
   ///
   /// In en, this message translates to:
@@ -2017,6 +2023,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Appearance'**
   String get appearance;
+
+  /// No description provided for @publishingSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Publishing'**
+  String get publishingSettings;
+
+  /// No description provided for @addMialunaHashtag.
+  ///
+  /// In en, this message translates to:
+  /// **'Add #mialuna'**
+  String get addMialunaHashtag;
+
+  /// No description provided for @addMialunaHashtagNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the official hashtag to public posts and stories. You can turn this off at any time.'**
+  String get addMialunaHashtagNote;
 
   /// No description provided for @themeLight.
   ///

@@ -7,6 +7,7 @@ import '../../app/providers.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/event.dart';
 import '../../core/nostr/filter.dart';
+import '../../core/nostr/models/media_event.dart';
 import '../../core/nostr/relay_pool.dart';
 import '../../core/nostr/zap_service.dart';
 import '../../core/notify/system_notifier.dart';
@@ -41,6 +42,18 @@ class NotificationItem {
   });
 
   int get createdAt => event.createdAt;
+
+  String? get postId {
+    if (kind == NotificationKind.comment) {
+      return event.firstTagValue('E') ?? event.firstTagValue('e');
+    }
+    if (kind != NotificationKind.reaction) return null;
+    String? target;
+    for (final tag in event.tags) {
+      if (tag.length >= 2 && tag[0] == 'e') target = tag[1];
+    }
+    return target;
+  }
 }
 
 class NotificationsState {
@@ -334,3 +347,37 @@ final notificationsProvider =
     NotifierProvider<NotificationsController, NotificationsState>(
       NotificationsController.new,
     );
+
+final notificationPostProvider = FutureProvider.autoDispose
+    .family<MediaPost?, String>((ref, targetId) async {
+      final store = ref.read(eventStoreProvider);
+
+      Future<NostrEvent?> load(String id) async {
+        final cached = store.byId(id);
+        if (cached != null) return cached;
+        final sub = ref.read(relayPoolProvider).subscribe([
+          NostrFilter(ids: [id], limit: 1),
+        ], eoseTimeout: const Duration(seconds: 8));
+        NostrEvent? found;
+        final listener = sub.events.listen((event) {
+          if (event.id == id) found ??= event;
+        });
+        await sub.eose;
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+        await listener.cancel();
+        sub.close();
+        final event = found;
+        if (event != null) store.add(event);
+        return event;
+      }
+
+      final event = await load(targetId);
+      if (event == null) return null;
+      final direct = MediaPost.tryParse(event);
+      if (direct != null) return direct;
+      if (event.kind != NostrKinds.comment) return null;
+      final rootId = event.firstTagValue('E') ?? event.firstTagValue('e');
+      if (rootId == null || rootId == targetId) return null;
+      final root = await load(rootId);
+      return root == null ? null : MediaPost.tryParse(root);
+    });

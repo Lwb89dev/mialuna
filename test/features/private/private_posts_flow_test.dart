@@ -16,6 +16,7 @@ import 'package:mialuna/core/nostr/models/media_event.dart';
 import 'package:mialuna/core/nostr/relay_pool.dart';
 import 'package:mialuna/core/nostr/signer.dart';
 import 'package:mialuna/core/storage/local_cache.dart';
+import 'package:mialuna/features/comments/comment_likes_controller.dart';
 import 'package:mialuna/features/create/create_controller.dart';
 import 'package:mialuna/features/feed/feed_controller.dart';
 import 'package:mialuna/features/messages/dm_controller.dart';
@@ -246,8 +247,11 @@ void main() {
           .read(interactionsProvider(post).notifier)
           .comment(post, 'che bella!');
       expect(reply, isNotNull);
+      final target = (post: post, comment: reply!);
+      b.listen(commentLikesProvider(target), (_, _) {});
+      expect(await b.read(commentLikesProvider(target).notifier).like(), true);
 
-      // The author sees both…
+      // The author sees all three…
       await eventually(
         () =>
             a
@@ -255,8 +259,12 @@ void main() {
                 .of(post.id)
                 .likers
                 .contains(bob.publicKey) &&
-            a.read(privatePostsProvider).of(post.id).replies.length == 1,
-        reason: 'the author never saw the like and the reply',
+            a.read(privatePostsProvider).of(post.id).replies.length == 1 &&
+            a
+                .read(privatePostsProvider)
+                .commentLikers(reply.id)
+                .contains(bob.publicKey),
+        reason: 'the author never saw the likes and the reply',
       );
       expect(
         a.read(privatePostsProvider).of(post.id).replies.single.text,
@@ -264,6 +272,8 @@ void main() {
       );
       // …the friend sees their own,
       expect(b.read(privatePostsProvider).of(post.id).likers, {bob.publicKey});
+      expect(b.read(commentLikesProvider(target)).count, 1);
+      expect(b.read(commentLikesProvider(target)).likedByMe, true);
       // …and nothing about it is on a public relay.
       expect(
         relay.stored.where(

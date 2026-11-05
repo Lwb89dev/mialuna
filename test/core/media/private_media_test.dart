@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -169,5 +170,50 @@ void main() {
     );
     up = true;
     expect((await service.videoFile(item)).readAsBytesSync(), plain);
+  });
+
+  test('an image finishing after a full cleanup is not cached', () async {
+    var gets = 0;
+    final started = Completer<void>();
+    final release = Completer<void>();
+    final service = PrivateMediaService(
+      MockClient((req) async {
+        gets++;
+        if (!started.isCompleted) started.complete();
+        await release.future;
+        return http.Response.bytes(blob.bytes, 200);
+      }),
+      directory: dir,
+    );
+    final item = itemFor(blob);
+    final pending = service.imageBytes(item);
+    await started.future;
+    await service.cleanUp(everything: true);
+    release.complete();
+    expect(await pending, plain);
+
+    expect(await service.imageBytes(item), plain);
+    expect(gets, 2);
+  });
+
+  test('a video finishing after a full cleanup leaves no file', () async {
+    final started = Completer<void>();
+    final release = Completer<void>();
+    final service = PrivateMediaService(
+      MockClient((req) async {
+        if (!started.isCompleted) started.complete();
+        await release.future;
+        return http.Response.bytes(blob.bytes, 200);
+      }),
+      directory: dir,
+    );
+    final pending = service.videoFile(itemFor(blob, mime: 'video/mp4'));
+    await started.future;
+    await service.cleanUp(everything: true);
+    release.complete();
+
+    await expectLater(pending, throwsA(isA<MediaCipherException>()));
+    final cache = Directory('${dir.path}/mialuna_private');
+    expect(cache.existsSync() ? cache.listSync() : const [], isEmpty);
   });
 }

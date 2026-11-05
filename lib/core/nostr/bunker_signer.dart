@@ -258,7 +258,18 @@ class BunkerSigner extends Signer {
     ], const Duration(seconds: 60));
     final signed =
         jsonDecode(response['result'] as String) as Map<String, dynamic>;
-    return NostrEvent.fromJson(signed);
+    final event = NostrEvent.fromJson(signed);
+    if (!isExpectedSignedEvent(
+      event,
+      pubkey: publicKey,
+      createdAt: ts,
+      kind: kind,
+      tags: tags,
+      content: content,
+    )) {
+      throw SignerException(AppStrings.current.signerInvalidResponse);
+    }
+    return event;
   }
 
   @override
