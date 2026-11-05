@@ -23,8 +23,9 @@ We aim to respond within 7 days.
 
 ## What the app does to keep its attack surface small
 
-- **Android**: the only permissions are INTERNET, notifications and media
-  access; one exported activity (the launcher), no deep links, no other
+- **Android**: the only permissions are INTERNET and notifications (the system
+  picker needs no standing media permission); one exported activity (the
+  launcher), no deep links, no other
   component; `allowBackup=false` and empty backup / device-transfer rules (the
   decrypted messages never reach a cloud backup); cleartext traffic and
   user-installed CAs are refused in release builds; R8 shrinking is on; private

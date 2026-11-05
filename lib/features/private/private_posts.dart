@@ -17,7 +17,12 @@ import '../trust/web_of_trust_controller.dart';
 class PrivateInteractions {
   final Set<String> likers;
   final List<Comment> replies;
-  const PrivateInteractions({this.likers = const {}, this.replies = const []});
+  final Map<String, Set<String>> commentLikers;
+  const PrivateInteractions({
+    this.likers = const {},
+    this.replies = const [],
+    this.commentLikers = const {},
+  });
 }
 
 class PrivatePostsState {
@@ -33,6 +38,11 @@ class PrivatePostsState {
 
   PrivateInteractions of(String postId) =>
       interactions[postId] ?? const PrivateInteractions();
+
+  Set<String> commentLikers(String commentId) => {
+    for (final interaction in interactions.values)
+      ...?interaction.commentLikers[commentId],
+  };
 }
 
 /// Store of everything that arrives through gift wraps and is a media post
@@ -188,24 +198,24 @@ class PrivatePostsController extends Notifier<PrivatePostsState> {
       posts.add(post);
     }
     posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    final byPost = <String, List<Rumor>>{};
+    final byTarget = <String, List<Rumor>>{};
     for (final r in _interactions.values) {
       final target = r.firstTag('e');
-      if (target != null) byPost.putIfAbsent(target, () => []).add(r);
+      if (target != null) byTarget.putIfAbsent(target, () => []).add(r);
     }
     final interactions = <String, PrivateInteractions>{};
     for (final post in posts) {
-      final raw = byPost[post.id];
+      final raw = byTarget[post.id];
       if (raw == null) continue;
       // Anyone could address a reply to any id: the author sees what
       // friends sent; a friend only sees what they wrote and what the author
       // wrote back.
-      final visible = post.author == me
-          ? raw
-          : [
-              for (final r in raw)
-                if (r.pubkey == me || r.pubkey == post.author) r,
-            ];
+      bool canSee(Rumor r) =>
+          post.author == me || r.pubkey == me || r.pubkey == post.author;
+      final visible = [
+        for (final r in raw)
+          if (canSee(r)) r,
+      ];
       final likers = <String>{};
       final replies = <Comment>[];
       for (final r in visible) {
@@ -231,6 +241,16 @@ class PrivatePostsController extends Notifier<PrivatePostsState> {
       interactions[post.id] = PrivateInteractions(
         likers: likers,
         replies: replies,
+        commentLikers: {
+          for (final comment in replies)
+            comment.id: {
+              for (final r in byTarget[comment.id] ?? const <Rumor>[])
+                if (r.kind == NostrKinds.reaction &&
+                    r.content != '-' &&
+                    canSee(r))
+                  r.pubkey,
+            },
+        },
       );
     }
     state = PrivatePostsState(posts: posts, interactions: interactions);

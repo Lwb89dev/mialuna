@@ -119,6 +119,73 @@ void main() {
       expect(events.map((e) => e.content), ['good']);
     });
 
+    test('a known id does not authenticate a tampered copy', () async {
+      final relay = await startRelay();
+      final real = await signed(alice, content: 'authentic');
+      final forged = NostrEvent(
+        id: real.id,
+        pubkey: real.pubkey,
+        createdAt: real.createdAt,
+        kind: real.kind,
+        tags: real.tags,
+        content: 'tampered',
+        sig: real.sig,
+      );
+      relay.add(real);
+      final pool = RelayPool([RelayConfig(relay.url)]);
+      addTearDown(pool.dispose);
+
+      final first = await collect(
+        pool.subscribe([
+          const NostrFilter(kinds: [20]),
+        ]),
+      );
+      expect(first.single.content, 'authentic');
+      relay.stored
+        ..clear()
+        ..add(forged);
+      final second = await collect(
+        pool.subscribe([
+          const NostrFilter(kinds: [20]),
+        ]),
+      );
+      expect(second, isEmpty);
+    });
+
+    test(
+      'a forged copy cannot hide the authentic one in the same batch',
+      () async {
+        final hostile = await startRelay();
+        final honest = await startRelay()
+          ..reqDelay = const Duration(milliseconds: 10);
+        final real = await signed(alice, content: 'authentic');
+        hostile.add(
+          NostrEvent(
+            id: real.id,
+            pubkey: real.pubkey,
+            createdAt: real.createdAt,
+            kind: real.kind,
+            tags: real.tags,
+            content: 'tampered',
+            sig: real.sig,
+          ),
+        );
+        honest.add(real);
+        final pool = RelayPool([
+          RelayConfig(hostile.url),
+          RelayConfig(honest.url),
+        ]);
+        addTearDown(pool.dispose);
+
+        final events = await collect(
+          pool.subscribe([
+            const NostrFilter(kinds: [20]),
+          ]),
+        );
+        expect(events.single.content, 'authentic');
+      },
+    );
+
     test('events that do not match the filter are ignored', () async {
       final relay = await startRelay();
       relay.add(await signed(alice, kind: 1, content: 'a note'));

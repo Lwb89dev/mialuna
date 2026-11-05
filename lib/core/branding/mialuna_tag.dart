@@ -1,8 +1,8 @@
 import '../text/hashtags.dart';
 
-/// Central branding policy for the official hashtag. Every media post
-/// published through Mialuna carries #mialuna; this is the single place
-/// where that rule lives.
+/// Central branding policy for the official hashtag. Public media posts carry
+/// #mialuna when the corresponding setting is enabled; this is the single
+/// place where the formatting rule lives.
 abstract final class MialunaTag {
   static const hashtag = 'mialuna';
 

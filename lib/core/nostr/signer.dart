@@ -160,3 +160,24 @@ bool verifyEventSignature(NostrEvent event) {
     return false;
   }
 }
+
+/// Whether an external signer returned exactly the requested event, with a
+/// valid signature, instead of a different or unrelated signed event.
+bool isExpectedSignedEvent(
+  NostrEvent event, {
+  required String pubkey,
+  required int createdAt,
+  required int kind,
+  required List<List<String>> tags,
+  required String content,
+}) {
+  final expected = NostrEvent.unsigned(
+    pubkey: pubkey,
+    createdAt: createdAt,
+    kind: kind,
+    tags: tags,
+    content: content,
+  );
+  return event.serializeForSigning() == expected.serializeForSigning() &&
+      verifyEventSignature(event);
+}

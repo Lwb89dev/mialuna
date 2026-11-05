@@ -62,6 +62,7 @@ class SettingsController extends Notifier<AppSettings> {
   static const _dataSaverKey = 'mialuna_data_saver';
   static const _themeKey = 'mialuna_theme_mode';
   static const _languageKey = 'mialuna_language';
+  static const _mialunaTagKey = 'mialuna_add_official_hashtag';
 
   @override
   AppSettings build() => ref.read(initialSettingsProvider);
@@ -118,6 +119,7 @@ class SettingsController extends Notifier<AppSettings> {
         orElse: () => ThemeMode.system,
       ),
       language: _knownLanguage(prefs.getString(_languageKey)),
+      addMialunaHashtag: prefs.getBool(_mialunaTagKey) ?? true,
     );
   }
 
@@ -158,6 +160,12 @@ class SettingsController extends Notifier<AppSettings> {
     state = state.copyWith(dataSaver: value);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_dataSaverKey, value);
+  }
+
+  Future<void> setAddMialunaHashtag(bool value) async {
+    state = state.copyWith(addMialunaHashtag: value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_mialunaTagKey, value);
   }
 
   static List<RelayConfig> cleanRelays(Iterable<RelayConfig> relays) {
@@ -234,6 +242,7 @@ class SettingsController extends Notifier<AppSettings> {
       dataSaver: state.dataSaver,
       themeMode: state.themeMode,
       language: state.language,
+      addMialunaHashtag: state.addMialunaHashtag,
     );
     await _persist();
   }
@@ -318,6 +327,9 @@ class AppSettings {
   /// 'system' (follow the phone) or one of [appLanguages].
   final String language;
 
+  /// Whether public posts and stories get the official #mialuna hashtag.
+  final bool addMialunaHashtag;
+
   const AppSettings({
     required this.relays,
     this.blossomServers = defaultBlossomServers,
@@ -328,6 +340,7 @@ class AppSettings {
     this.dataSaver = false,
     this.themeMode = ThemeMode.system,
     this.language = systemLanguage,
+    this.addMialunaHashtag = true,
   });
 
   factory AppSettings.defaults() => AppSettings(
@@ -347,6 +360,7 @@ class AppSettings {
     bool? dataSaver,
     ThemeMode? themeMode,
     String? language,
+    bool? addMialunaHashtag,
   }) => AppSettings(
     relays: relays ?? this.relays,
     blossomServers: blossomServers ?? this.blossomServers,
@@ -357,6 +371,7 @@ class AppSettings {
     dataSaver: dataSaver ?? this.dataSaver,
     themeMode: themeMode ?? this.themeMode,
     language: language ?? this.language,
+    addMialunaHashtag: addMialunaHashtag ?? this.addMialunaHashtag,
   );
 }
 

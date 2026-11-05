@@ -26,7 +26,7 @@ lib/
     platform/ secure_window (FLAG_SECURE for private screens)
     text/     hashtags (the one definition), clip (display cap)
     trust/    the web of trust
-    branding/ the #mialuna rule
+    branding/ the optional #mialuna rule
     theme/
   features/
     feed/ stories/ reels/ explore/(Scopri) profile/ create/ comments/

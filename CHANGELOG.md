@@ -3,6 +3,38 @@
 All notable changes to Mialuna are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.20.0] — 2026-11-05 — Comment likes, clearer notifications, safer signing
+
+### Added
+- **Like and unlike comments.** Every comment now has a heart and a like count.
+  Public likes are published as Nostr reactions and removed with a deletion
+  request; close-friends likes are delivered privately to the people involved.
+- **Reaction and comment notifications lead to the post.** They show a photo or
+  video thumbnail when the post is available and open it when tapped. If the
+  notification refers to a comment, Mialuna finds the original post first.
+- **Settings → Publishing → Add #mialuna.** The official hashtag is still added
+  to public posts and stories by default, but can now be turned off. The choice
+  is remembered, and close-friends posts never receive the hashtag.
+
+### Changed
+- Android no longer requests standing permission to read the photo and video
+  library: the system picker provides only the media explicitly chosen for
+  publishing. Internet and notifications remain the only app permissions.
+- iOS now includes the photo library, camera and microphone usage descriptions
+  needed when choosing or recording media.
+
+### Fixed
+- **External signer responses are checked before use.** Amber signatures and
+  bunker-signed events are rejected when the signature is invalid; a bunker
+  must also return exactly the event Mialuna asked it to sign, not a different
+  or unrelated event with a valid signature.
+- A relay can no longer make a tampered event pass verification by reusing the
+  id of an event already verified. The verification cache now covers the whole
+  event, and valid events are not dropped when the cache is cleared.
+- Switching accounts or signing out now stops private messages and close-friends
+  deliveries still being prepared for the previous account. In-flight decrypted
+  media can no longer refill memory or disk caches after those caches are wiped.
+
 ## [0.19.0] — 2026-11-04 — Stories delete themselves
 
 ### Added

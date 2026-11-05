@@ -137,7 +137,7 @@ relays are a local fake, signers are real keys behind a scriptable wrapper
 | Amber (NIP-55) and bunker (NIP-46) | medium | Confirm: no prompt at start-up with pending receipts; one prompt pair when leaving the stories; a dismissed prompt is not repeated within 5 min. |
 | Process death / suspend | medium | Kill the app with a receipt pending and confirm it is resent; confirm turning the setting off, then killing the app, leaves no outbox file. |
 | Lifecycle in the viewer | low | Home button, notification shade and incoming call must pause the story and its count. |
-| `RelayPool` `_verified.clear()` (P1) | low | Deliver `alreadyVerified ∪ verified` from `_flushQueue`. |
+| `RelayPool` verification cache | fixed subsequently | The cache now fingerprints the whole event, not only its id; valid events in the flushing batch survive a cache reset. |
 | Global moderation / audience keys (P2) | low | Scope them by pubkey if a real account switcher is ever added. |
 | Web of trust for receipts (P3) | low | Decide whether strangers' receipts should be hidden when the filter is on. |
 | First-use explanation of receipts; default for external signers | product | See *Product tradeoffs*. |

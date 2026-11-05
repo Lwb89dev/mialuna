@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/strings.dart';
-import '../feed/widgets/post_card.dart' show formatPostTime;
+import '../feed/widgets/inline_video.dart';
+import '../feed/widgets/nostr_image.dart';
+import '../feed/widgets/post_card.dart' show PostScreen, formatPostTime;
 import '../profile/profile_widgets.dart';
 import 'notifications_controller.dart';
 
@@ -82,15 +84,20 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 }
 
-class _NotificationTile extends StatelessWidget {
+class _NotificationTile extends ConsumerWidget {
   final NotificationItem item;
   final bool highlighted;
   const _NotificationTile({required this.item, required this.highlighted});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
+    final postId = item.postId;
+    final post = postId == null
+        ? null
+        : ref.watch(notificationPostProvider(postId));
+    final mediaPost = post?.value;
     final (icon, text) = switch (item.kind) {
       NotificationKind.reaction => (Icons.favorite, l10n.reactedToYourMoment),
       NotificationKind.comment => (
@@ -115,6 +122,16 @@ class _NotificationTile extends StatelessWidget {
       tileColor: highlighted
           ? theme.colorScheme.secondary.withValues(alpha: 0.12)
           : null,
+      onTap: postId == null
+          ? null
+          : () async {
+              final post = await ref.read(
+                notificationPostProvider(postId).future,
+              );
+              if (post != null && context.mounted) {
+                await PostScreen.open(context, post);
+              }
+            },
       leading: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -151,6 +168,20 @@ class _NotificationTile extends StatelessWidget {
         formatPostTime(item.createdAt),
         style: theme.textTheme.bodySmall,
       ),
+      trailing: mediaPost == null
+          ? null
+          : SizedBox.square(
+              dimension: 48,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: mediaPost.media.first.isVideo
+                    ? VideoPoster(item: mediaPost.media.first)
+                    : NostrImage(
+                        item: mediaPost.media.first,
+                        preferThumbnail: true,
+                      ),
+              ),
+            ),
     );
   }
 }

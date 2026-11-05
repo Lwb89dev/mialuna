@@ -52,25 +52,34 @@ void main() {
 
   NotificationsState read(ProviderContainer c) => c.read(notificationsProvider);
 
-  Future<NostrEvent> reaction(Signer from, {int? at, String content = '+'}) =>
-      signed(
-        from,
-        kind: NostrKinds.reaction,
-        content: content,
-        createdAt: at ?? now,
-        tags: [
-          ['e', 'a' * 64],
-          ['p', me.publicKey],
-        ],
-      );
+  Future<NostrEvent> reaction(
+    Signer from, {
+    int? at,
+    String content = '+',
+    String? postId,
+  }) => signed(
+    from,
+    kind: NostrKinds.reaction,
+    content: content,
+    createdAt: at ?? now,
+    tags: [
+      ['e', postId ?? 'a' * 64],
+      ['p', me.publicKey],
+    ],
+  );
 
-  Future<NostrEvent> comment(Signer from, String text, {int? at}) => signed(
+  Future<NostrEvent> comment(
+    Signer from,
+    String text, {
+    int? at,
+    String? postId,
+  }) => signed(
     from,
     kind: NostrKinds.comment,
     content: text,
     createdAt: at ?? now,
     tags: [
-      ['E', 'a' * 64],
+      ['E', postId ?? 'a' * 64],
       ['p', me.publicKey],
     ],
   );
@@ -257,5 +266,32 @@ void main() {
     final item = read(c).items.single;
     expect(item.zap, isNull, reason: 'no amount, no sender is believed');
     expect(item.actor, wallet.publicKey, reason: 'the wallet service, not Bob');
+  });
+
+  test('reactions and comments resolve the moment they refer to', () async {
+    final post = await signed(
+      me,
+      createdAt: now - 7200,
+      tags: [
+        ['imeta', 'url https://cdn.example.com/moment.jpg', 'm image/jpeg'],
+      ],
+    );
+    relay.add(post);
+    relay.add(await reaction(bob, postId: post.id, at: now - 60));
+    relay.add(await comment(carol, 'bella!', postId: post.id, at: now - 30));
+    final c = app();
+    await ready(c, items: 2);
+
+    final items = read(c).items;
+    expect(items.map((item) => item.postId), [post.id, post.id]);
+    final resolved = await c.read(notificationPostProvider(post.id).future);
+    expect(resolved?.id, post.id);
+    expect(resolved?.media.single.url, 'https://cdn.example.com/moment.jpg');
+    expect(c.read(eventStoreProvider).byId(post.id), post);
+
+    final viaComment = await c.read(
+      notificationPostProvider(items.first.event.id).future,
+    );
+    expect(viaComment?.id, post.id, reason: 'a comment like finds its root');
   });
 }

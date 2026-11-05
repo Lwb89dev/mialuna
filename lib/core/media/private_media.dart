@@ -25,6 +25,7 @@ class PrivateMediaService {
   final Map<String, Future<Uint8List>> _inflight = {};
   final Map<String, Future<File>> _files = {};
   int _memoryBytes = 0;
+  int _generation = 0;
 
   PrivateMediaService(this._http, {this._directory});
 
@@ -43,6 +44,7 @@ class PrivateMediaService {
       _memory[key] = hit; // refresh LRU position
       return Future.value(hit);
     }
+    final generation = _generation;
     return _inflight[key] ??=
         _load(
               url,
@@ -52,7 +54,7 @@ class PrivateMediaService {
               mirrors: preview ? const [] : item.fallbackUrls,
             )
             .then((bytes) {
-              _remember(key, bytes);
+              if (generation == _generation) _remember(key, bytes);
               return bytes;
             })
             .whenComplete(() {
@@ -69,9 +71,17 @@ class PrivateMediaService {
       );
     }
     final key = '${item.url}|${encryption.key}';
+    final generation = _generation;
     return _files[key] ??= () async {
+      void checkGeneration() {
+        if (generation != _generation) {
+          throw MediaCipherException(AppStrings.current.mediaUnreachable);
+        }
+      }
+
       try {
         final dir = await _folder();
+        checkGeneration();
         final name =
             '${MediaCipher.sha256Hex(key.codeUnits)}.${_extension(item)}';
         final file = File('${dir.path}/$name');
@@ -83,9 +93,15 @@ class PrivateMediaService {
           expectedCipher: item.sha256,
           mirrors: item.fallbackUrls,
         );
+        checkGeneration();
         final tmp = File('${file.path}.part');
         await tmp.writeAsBytes(bytes, flush: true);
+        checkGeneration();
         await tmp.rename(file.path);
+        if (generation != _generation) {
+          await file.delete();
+          checkGeneration();
+        }
         return file;
       } catch (_) {
         _files.remove(key); // a failure must not be remembered: allow retry
@@ -175,6 +191,12 @@ class PrivateMediaService {
 
   /// Removes decrypted videos older than a day (at start-up) or all of them.
   Future<void> cleanUp({bool everything = false}) async {
+    if (everything) {
+      _generation++;
+      _memory.clear();
+      _memoryBytes = 0;
+      _files.clear();
+    }
     try {
       final dir = await _folder();
       final limit = DateTime.now().subtract(_fileMaxAge);
@@ -185,10 +207,5 @@ class PrivateMediaService {
         }
       }
     } catch (_) {}
-    if (everything) {
-      _memory.clear();
-      _memoryBytes = 0;
-      _files.clear();
-    }
   }
 }

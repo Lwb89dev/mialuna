@@ -20,6 +20,7 @@ import '../../core/nostr/signer.dart';
 import '../../l10n/strings.dart';
 import '../private/close_friends.dart';
 import '../private/private_delivery.dart';
+import '../settings/settings_controller.dart';
 import '../stories/stories_controller.dart';
 
 enum ComposerMode { photo, video, reel, story }
@@ -90,9 +91,10 @@ class ComposerState {
     this.overlays = const [],
   });
 
-  /// The caption exactly as it will be published (with #mialuna applied).
-  /// Close-friends posts are not discoverable, so they carry no hashtag.
-  String get finalCaption => audience == Audience.closeFriends
+  /// The caption exactly as it will be published. Close-friends posts are not
+  /// discoverable, so they never carry the official hashtag.
+  String finalCaption({bool addMialunaTag = true}) =>
+      audience == Audience.closeFriends || !addMialunaTag
       ? caption.trim()
       : MialunaTag.applyToCaption(caption);
 
@@ -433,23 +435,23 @@ class ComposerController extends Notifier<ComposerState> {
     }
 
     _progress(0.95, AppStrings.current.publishing);
-    final caption = state.finalCaption; // includes #mialuna exactly once
+    final addMialunaTag = ref.read(settingsProvider).addMialunaHashtag;
+    final caption = state.finalCaption(addMialunaTag: addMialunaTag);
     final isStory = state.mode == ComposerMode.story;
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final tags = MialunaTag.applyToTags(
-      MediaPost.buildTags(
-        media: mediaItems,
-        caption: caption,
-        title: MediaPost.deriveTitle(state.caption),
-        publishedAt: now,
-        duration: videoDuration,
-        extraHashtags: const [MialunaTag.hashtag],
-        contentWarning: state.sensitive ? 'sensitive content' : null,
-        isStory: isStory,
-        expiresAt: isStory ? now + 86400 : null,
-        overlays: state.overlays,
-      ),
+    final builtTags = MediaPost.buildTags(
+      media: mediaItems,
+      caption: caption,
+      title: MediaPost.deriveTitle(state.caption),
+      publishedAt: now,
+      duration: videoDuration,
+      extraHashtags: addMialunaTag ? const [MialunaTag.hashtag] : const [],
+      contentWarning: state.sensitive ? 'sensitive content' : null,
+      isStory: isStory,
+      expiresAt: isStory ? now + 86400 : null,
+      overlays: state.overlays,
     );
+    final tags = addMialunaTag ? MialunaTag.applyToTags(builtTags) : builtTags;
 
     try {
       final kind = switch (state.mode) {
@@ -638,7 +640,7 @@ class ComposerController extends Notifier<ComposerState> {
     final isStory = state.mode == ComposerMode.story;
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final expiresAt = isStory ? now + 86400 : null;
-    final caption = state.finalCaption;
+    final caption = state.finalCaption();
     final kind = switch (state.mode) {
       ComposerMode.photo => NostrKinds.picture,
       ComposerMode.video => NostrKinds.video,

@@ -74,6 +74,59 @@ void main() {
     expect(a.read(dmProvider).inboxConfigured, true);
   });
 
+  test(
+    'a private delivery stops when the account changes at the signer',
+    () async {
+      final scripted = ScriptedSigner(alice)..gate = Completer<void>();
+      final auth = SwitchableAuth(scripted);
+      final a = await h.online(scripted, auth: auth);
+      final wrapsBefore = relay.stored.where((e) => e.kind == 1059).length;
+      final pending = a.read(privateDeliveryProvider).send(
+        Rumor.create(
+          pubkey: alice.publicKey,
+          kind: NostrKinds.reaction,
+          tags: [
+            ['e', 'd' * 64],
+            ['p', bob.publicKey],
+            ['k', '20'],
+          ],
+          content: '+',
+        ),
+        [bob.publicKey],
+        copyToSelf: false,
+      );
+      await eventually(() => scripted.encryptCalls == 1);
+
+      auth.switchTo(carol);
+      scripted.gate!.complete();
+      final report = await pending;
+
+      expect(report.delivered, isEmpty);
+      expect(report.failed[bob.publicKey], 'cancelled');
+      expect(relay.stored.where((e) => e.kind == 1059), hasLength(wrapsBefore));
+    },
+  );
+
+  test(
+    'a direct message stops when the account changes at the signer',
+    () async {
+      final scripted = ScriptedSigner(alice)..gate = Completer<void>();
+      final auth = SwitchableAuth(scripted);
+      final a = await h.online(scripted, auth: auth);
+      final wrapsBefore = relay.stored.where((e) => e.kind == 1059).length;
+      final pending = a
+          .read(dmProvider.notifier)
+          .send(bob.publicKey, 'must not cross accounts');
+      await eventually(() => scripted.encryptCalls == 1);
+
+      auth.switchTo(carol);
+      scripted.gate!.complete();
+      await pending;
+
+      expect(relay.stored.where((e) => e.kind == 1059), hasLength(wrapsBefore));
+    },
+  );
+
   test('the next account\'s follow list is not "loaded" by the last', () async {
     relay.reqDelay = const Duration(milliseconds: 700);
     final auth = SwitchableAuth(alice);

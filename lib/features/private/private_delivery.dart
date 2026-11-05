@@ -88,7 +88,8 @@ class PrivateDelivery {
     final failed = <String, String>{};
     var selfCopy = false;
     bool cancelled(String pk, bool isMe) {
-      if (shouldContinue?.call() ?? true) return false;
+      final sameAccount = _ref.read(authProvider).publicKey == me;
+      if (sameAccount && (shouldContinue?.call() ?? true)) return false;
       if (!isMe) failed[pk] = _cancelled;
       return true;
     }
@@ -158,6 +159,23 @@ class PrivateDelivery {
       return _ref.read(privatePostsProvider.notifier).ingest(rumor);
     }
     final report = await send(rumor, [post.author]);
+    return report.reachedSomeone;
+  }
+
+  Future<bool> likeComment(MediaPost post, Comment comment) async {
+    final me = _ref.read(authProvider).publicKey;
+    if (me == null) return false;
+    final rumor = Rumor.create(
+      pubkey: me,
+      kind: NostrKinds.reaction,
+      tags: buildReactionTags(comment.event),
+      content: '+',
+    );
+    final to = {post.author, comment.author}..remove(me);
+    if (to.isEmpty) {
+      return _ref.read(privatePostsProvider.notifier).ingest(rumor);
+    }
+    final report = await send(rumor, to);
     return report.reachedSomeone;
   }
 

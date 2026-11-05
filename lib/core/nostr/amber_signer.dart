@@ -123,7 +123,7 @@ class AmberSigner extends Signer {
         if (sig == null || sig.isEmpty) {
           throw SignerException(AppStrings.current.amberEmptySignature);
         }
-        return NostrEvent(
+        final event = NostrEvent(
           id: id,
           pubkey: publicKey,
           createdAt: ts,
@@ -132,6 +132,10 @@ class AmberSigner extends Signer {
           content: content,
           sig: sig,
         );
+        if (!verifyEventSignature(event)) {
+          throw SignerException(AppStrings.current.signerInvalidResponse);
+        }
+        return event;
       } on PlatformException catch (e) {
         throw SignerException(
           e.message ?? AppStrings.current.amberSignRejected,

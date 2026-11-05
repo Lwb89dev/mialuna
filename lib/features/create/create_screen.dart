@@ -7,6 +7,7 @@ import '../../l10n/strings.dart';
 import '../stories/story_text_editor.dart';
 import '../private/close_friends.dart';
 import '../private/close_friends_screen.dart';
+import '../settings/settings_controller.dart';
 import 'create_controller.dart';
 import 'editor/image_editor_screen.dart';
 
@@ -383,7 +384,13 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                 child: Text(
                   state.audience == Audience.closeFriends
                       ? context.l10n.privatePostNote
-                      : context.l10n.willPublishAs(state.finalCaption),
+                      : context.l10n.willPublishAs(
+                          state.finalCaption(
+                            addMialunaTag: ref
+                                .watch(settingsProvider)
+                                .addMialunaHashtag,
+                          ),
+                        ),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.outline,
                   ),

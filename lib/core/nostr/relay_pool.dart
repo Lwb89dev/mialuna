@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:isolate';
+
+import 'package:crypto/crypto.dart';
 
 import 'event.dart';
 import 'filter.dart';
@@ -128,7 +131,7 @@ class _Entry {
 class RelayPool {
   final Map<String, _Entry> _entries = {};
   final Map<String, _Sub> _subs = {};
-  final Set<String> _verified = {};
+  final Map<String, String> _verified = {};
   final _statusController =
       StreamController<Map<String, RelayConnectionState>>.broadcast();
   final List<(_Sub, NostrEvent)> _queue = [];
@@ -366,12 +369,15 @@ class RelayPool {
     if (!sub.controller.isClosed) sub.controller.close();
   }
 
+  static String _fingerprint(NostrEvent event) =>
+      sha256.convert(utf8.encode(jsonEncode(event.toJson()))).toString();
+
   void _onEvent(String subId, NostrEvent event) {
     final sub = _subs[subId];
     if (sub == null || sub.seen.contains(event.id)) return;
     if (event.isExpired()) return;
     if (!sub.filters.any((f) => f.matches(event))) return;
-    if (!verifySignatures || _verified.contains(event.id)) {
+    if (!verifySignatures || _verified[event.id] == _fingerprint(event)) {
       _deliver(sub, event);
       return;
     }
@@ -392,17 +398,17 @@ class RelayPool {
     _queue.clear();
     final unique = <String, NostrEvent>{};
     for (final (_, e) in batch) {
-      unique.putIfAbsent(e.id, () => e);
+      unique.putIfAbsent(_fingerprint(e), () => e);
     }
     final toVerify = [
-      for (final e in unique.values)
-        if (!_verified.contains(e.id)) e,
+      for (final entry in unique.entries)
+        if (_verified[entry.value.id] != entry.key) entry.value,
     ];
     Set<String> good;
     if (toVerify.length <= 3) {
       good = {
         for (final e in toVerify)
-          if (verifyEventSignature(e)) e.id,
+          if (verifyEventSignature(e)) _fingerprint(e),
       };
     } else {
       final jsons = [for (final e in toVerify) e.toJson()];
@@ -411,18 +417,24 @@ class RelayPool {
       } catch (_) {
         good = {
           for (final e in toVerify)
-            if (verifyEventSignature(e)) e.id,
+            if (verifyEventSignature(e)) _fingerprint(e),
         };
       }
     }
     if (_disposed) return;
+    final valid = <String>{...good};
+    for (final entry in unique.entries) {
+      if (_verified[entry.value.id] == entry.key) valid.add(entry.key);
+    }
     if (_verified.length > 8000) _verified.clear();
-    _verified.addAll(good);
+    for (final entry in unique.entries) {
+      if (good.contains(entry.key)) _verified[entry.value.id] = entry.key;
+    }
     final touched = <_Sub>{};
     for (final (sub, event) in batch) {
       sub.pending--;
       touched.add(sub);
-      if (_verified.contains(event.id) && _subs.containsKey(sub.id)) {
+      if (valid.contains(_fingerprint(event)) && _subs.containsKey(sub.id)) {
         _deliver(sub, event);
       }
     }
@@ -619,13 +631,14 @@ class RelayPool {
   }
 }
 
-/// Isolate entry point: ids of the events whose id and signature are valid.
+/// Isolate entry point: fingerprints of the events whose id and signature are
+/// valid. The fingerprint distinguishes a tampered copy with the same id.
 List<String> _verifyAll(List<Map<String, dynamic>> jsons) {
   final ok = <String>[];
   for (final json in jsons) {
     try {
       final event = NostrEvent.fromJson(json);
-      if (verifyEventSignature(event)) ok.add(event.id);
+      if (verifyEventSignature(event)) ok.add(RelayPool._fingerprint(event));
     } catch (_) {}
   }
   return ok;
