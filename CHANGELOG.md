@@ -3,6 +3,15 @@
 All notable changes to Mialuna are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Changed
+- **Web of trust is always on.** The Settings switch stays on. The first time
+  you open the app, Mialuna reads who you follow and builds the Discover feed
+  from that network; later opens reuse it. While that first build runs, a
+  centered card shows the progress. Discover no longer shows the open network.
+  Onboarding explains this.
+
 ## [0.20.0] — 2026-11-05 — Comment likes, clearer notifications, safer signing
 
 ### Added

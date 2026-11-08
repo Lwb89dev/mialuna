@@ -18,8 +18,8 @@ import '../settings/settings_controller.dart';
 import '../stories/stories_controller.dart';
 import '../stories/stories_rail.dart';
 
-/// Home: the posts of the people you follow. Everything else lives in the
-/// Discover tab. Guests (who cannot follow anyone) see Discover here.
+/// Home: the posts of the people you follow. The Discover tab is the web of
+/// trust. Guests (who cannot follow anyone) see the open network here.
 class FeedScreen extends ConsumerStatefulWidget {
   const FeedScreen({super.key});
 
@@ -185,8 +185,9 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
               count: unreadMessages,
               child: const Icon(Icons.send_outlined),
             ),
-            onPressed: () => Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const InboxScreen())),
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const InboxScreen())),
           ),
         ],
       ),

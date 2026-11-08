@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
+import '../../core/auth/auth_controller.dart';
 import '../../core/branding/mialuna_tag.dart';
 import '../../core/nostr/event.dart';
 import '../../core/nostr/filter.dart';
@@ -20,19 +22,90 @@ import '../profile/profile_widgets.dart';
 import '../search/people_search.dart';
 import '../social/deleted_posts.dart';
 import '../social/moderation_controller.dart';
+import '../trust/web_of_trust_controller.dart';
 
-/// Discover: everything the relays have (not just the people you follow),
-/// as an image-first grid, with search by person, hashtag or words.
-class ExploreScreen extends ConsumerStatefulWidget {
+/// Discover: only the web of trust, as an image-first grid. Search stays
+/// inside that same network.
+class ExploreScreen extends ConsumerWidget {
   /// Query to run on open (e.g. `#sunset` from a tapped hashtag).
   final String? initialQuery;
   const ExploreScreen({super.key, this.initialQuery});
 
   @override
-  ConsumerState<ExploreScreen> createState() => _ExploreScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authProvider);
+    if (auth.restoring) return const _ExploreWaiting();
+    if (auth.isGuest) return const _ExploreGuest();
+    return _ExploreFeed(initialQuery: initialQuery);
+  }
 }
 
-class _ExploreScreenState extends ConsumerState<ExploreScreen> {
+class _ExploreWaiting extends StatelessWidget {
+  const _ExploreWaiting();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+  }
+}
+
+class _ExploreGuest extends StatelessWidget {
+  const _ExploreGuest();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: _guestBody(context, theme, scheme),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _guestBody(BuildContext context, ThemeData theme, ColorScheme scheme) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.hub_outlined, size: 40, color: scheme.primary),
+        const SizedBox(height: 16),
+        Text(
+          context.l10n.wotTitle,
+          style: theme.textTheme.titleLarge,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          context.l10n.wotDiscoverSignIn,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+        FilledButton(
+          onPressed: () => context.go('/login'),
+          child: Text(context.l10n.signIn),
+        ),
+      ],
+    );
+  }
+}
+
+class _ExploreFeed extends ConsumerStatefulWidget {
+  final String? initialQuery;
+  const _ExploreFeed({this.initialQuery});
+
+  @override
+  ConsumerState<_ExploreFeed> createState() => _ExploreFeedState();
+}
+
+class _ExploreFeedState extends ConsumerState<_ExploreFeed> {
   final _searchController = TextEditingController();
   final _scroll = ScrollController();
   final Map<String, MediaPost> _results = {};
@@ -69,7 +142,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   void _maybeLoadMore() {
     if (_activeLabel != null || !_scroll.hasClients) return;
     if (_scroll.position.extentAfter < 900) {
-      ref.read(feedProvider(FeedMode.discover).notifier).loadMore();
+      ref.read(feedProvider(FeedMode.webOfTrust).notifier).loadMore();
     }
   }
 
@@ -85,22 +158,49 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     });
   }
 
+  /// The same filter, restricted to the web of trust. An npub outside it
+  /// matches nobody, so the query is empty.
+  List<NostrFilter> _withinTrust(NostrFilter filter) {
+    final authors = ref.read(wotAuthorsProvider).toList()..sort();
+    final pinned = filter.authors;
+    if (pinned != null) {
+      final allowed = [
+        for (final pk in pinned)
+          if (authors.contains(pk)) pk,
+      ];
+      if (allowed.isEmpty) return const [];
+      return [filter.copyWith(authors: allowed)];
+    }
+    if (authors.isEmpty) return const [];
+    return [
+      for (var i = 0; i < authors.length; i += 80)
+        filter.copyWith(authors: authors.sublist(i, _end(i, authors.length))),
+    ];
+  }
+
+  int _end(int start, int length) {
+    final end = start + 80;
+    return end > length ? length : end;
+  }
+
   void _search(String hashtag) {
     final normalized = hashtag.replaceFirst('#', '').toLowerCase().trim();
     if (normalized.isEmpty) return;
     _activeLabel = '#$normalized';
-    _runQuery([
-      NostrFilter(
-        kinds: NostrKinds.mediaKinds,
-        tagFilters: {
-          '#t': [normalized],
-        },
-        limit: 60,
+    _runQuery(
+      _withinTrust(
+        NostrFilter(
+          kinds: NostrKinds.mediaKinds,
+          tagFilters: {
+            '#t': [normalized],
+          },
+          limit: 60,
+        ),
       ),
-    ]);
+    );
   }
 
-  /// Universal search: hashtag, npub account, or NIP-50 full-text.
+  /// Universal search inside the web of trust: hashtag, npub, or NIP-50.
   void _searchUniversal(String input) {
     final query = input.trim();
     if (query.isEmpty) {
@@ -110,25 +210,42 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     if (Nip19.isValidNpub(query)) {
       final pubkey = Nip19.decodeNpub(query);
       _activeLabel = context.l10n.postsByAuthor(query.substring(0, 12));
-      _runQuery([
-        NostrFilter(kinds: NostrKinds.mediaKinds, authors: [pubkey], limit: 60),
-      ]);
+      _runQuery(
+        _withinTrust(
+          NostrFilter(
+            kinds: NostrKinds.mediaKinds,
+            authors: [pubkey],
+            limit: 60,
+          ),
+        ),
+      );
     } else if (query.startsWith('#') || Hashtags.isBareWord(query)) {
       _search(query);
     } else {
       _activeLabel = '“$query”';
-      _runQuery([
-        NostrFilter(
-          kinds: NostrKinds.mediaKinds,
-          search: query, // NIP-50; relays without support return nothing
-          limit: 60,
+      _runQuery(
+        _withinTrust(
+          NostrFilter(
+            kinds: NostrKinds.mediaKinds,
+            search: query, // NIP-50; relays without support return nothing
+            limit: 60,
+          ),
         ),
-      ]);
+      );
     }
   }
 
   Future<void> _runQuery(List<NostrFilter> filters) async {
     _lastFilters = filters;
+    if (filters.isEmpty) {
+      _listener?.cancel();
+      _sub?.close();
+      setState(() {
+        _results.clear();
+        _loading = false;
+      });
+      return;
+    }
     _listener?.cancel();
     _sub?.close();
     setState(() {
@@ -141,6 +258,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     _sub = sub;
     _listener = sub.events.listen((event) {
       if (_results.containsKey(event.id)) return;
+      if (!ref.read(wotAuthorsProvider).contains(event.pubkey)) return;
       if (ref.read(muteProvider).contains(event.pubkey) ||
           ref.read(blockProvider).contains(event.pubkey)) {
         return;
@@ -159,9 +277,14 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     if (mounted && identical(_sub, sub)) setState(() => _loading = false);
   }
 
+  String _emptyMessage(BuildContext context, bool searching, FeedState feed) {
+    if (!searching && (feed.error?.isNotEmpty ?? false)) return feed.error!;
+    return context.l10n.noResultsOnRelays;
+  }
+
   Future<void> _refresh() async {
     if (_activeLabel == null) {
-      await ref.read(feedProvider(FeedMode.discover).notifier).refresh();
+      await ref.read(feedProvider(FeedMode.webOfTrust).notifier).refresh();
     } else if (_lastFilters.isNotEmpty) {
       await _runQuery(_lastFilters);
     }
@@ -184,7 +307,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     });
     final broken = ref.watch(brokenMediaProvider);
     final deleted = ref.watch(deletedPostsProvider);
-    final discover = ref.watch(feedProvider(FeedMode.discover));
+    final discover = ref.watch(feedProvider(FeedMode.webOfTrust));
     final searching = _activeLabel != null;
     final source = searching ? _results.values.toList() : discover.posts;
     final posts = [
@@ -197,10 +320,13 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
 
     final typed = _searchController.text.trim();
     final people = ref.watch(peopleSearchProvider);
+    final trusted = ref.watch(wotAuthorsProvider);
+    final peopleHits = [
+      for (final pk in people.results)
+        if (trusted.contains(pk)) pk,
+    ];
     final showPeople =
-        typed.length >= 2 &&
-        !typed.startsWith('#') &&
-        people.results.isNotEmpty;
+        typed.length >= 2 && !typed.startsWith('#') && peopleHits.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
@@ -244,7 +370,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                   spacing: 8,
                   children: [
                     ChoiceChip(
-                      label: Text(context.l10n.recent),
+                      label: Text(context.l10n.wotTitle),
                       selected: !searching,
                       onSelected: (_) => _showDiscover(),
                     ),
@@ -272,9 +398,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                    itemCount: people.results.take(15).length,
+                    itemCount: peopleHits.take(15).length,
                     itemBuilder: (context, i) {
-                      final pk = people.results[i];
+                      final pk = peopleHits[i];
                       return GestureDetector(
                         onTap: () => openProfile(context, pk),
                         child: SizedBox(
@@ -307,7 +433,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                 child: Text(
                   searching
                       ? context.l10n.searchDependsOnRelays
-                      : context.l10n.recentPostsEverywhere,
+                      : context.l10n.wotDiscoverHint,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.outline,
                   ),
@@ -323,7 +449,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                       : Padding(
                           padding: const EdgeInsets.all(32),
                           child: Text(
-                            context.l10n.noResultsOnRelays,
+                            _emptyMessage(context, searching, discover),
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.outline,

@@ -106,9 +106,11 @@ class LocalCache {
 
   static const draftsFile = 'drafts.json';
 
-  /// Event cache files, one per feed so "following" and "discover" never mix.
+  /// Event cache files, one per feed so "following", the open network and
+  /// the web of trust never mix.
   static const followingEventsFile = 'events_following.json';
   static const discoverEventsFile = 'events_discover.json';
+  static const wotEventsFile = 'events_wot.json';
 
   Future<void> saveEvents(
     List<NostrEvent> events, {
@@ -157,7 +159,12 @@ class LocalCache {
 
   /// Wipes every cached feed.
   Future<void> clearEvents() async {
-    for (final f in [_eventsFile, followingEventsFile, discoverEventsFile]) {
+    for (final f in [
+      _eventsFile,
+      followingEventsFile,
+      discoverEventsFile,
+      wotEventsFile,
+    ]) {
       await deleteFile(f);
     }
   }

@@ -6,8 +6,9 @@ import '../../l10n/strings.dart';
 import '../feed/widgets/post_card.dart' show formatPostTime;
 import 'web_of_trust_controller.dart';
 
-/// Settings: the switch of the web of trust, what it has worked out, and a
-/// button to work it out again.
+/// Settings: the web of trust is always on. The switch shows that and does
+/// not turn it off. What the network has worked out, and a button to work
+/// it out again, sit under it.
 class TrustSection extends ConsumerWidget {
   const TrustSection({super.key});
 
@@ -16,17 +17,19 @@ class TrustSection extends ConsumerWidget {
     final theme = Theme.of(context);
     final wot = ref.watch(webOfTrustProvider);
     final controller = ref.read(webOfTrustProvider.notifier);
-    final working = wot.phase == WotPhase.discovering;
+    final working = wot.building;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(context.l10n.wotTitle, style: theme.textTheme.titleMedium),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(context.l10n.wotEnable),
-          subtitle: Text(context.l10n.wotExplain(wotThreshold)),
-          value: wot.enabled,
-          onChanged: controller.setEnabled,
+        IgnorePointer(
+          child: SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(context.l10n.wotEnable),
+            subtitle: Text(context.l10n.wotExplain(wotThreshold)),
+            value: true,
+            onChanged: (_) {},
+          ),
         ),
         if (wot.enabled) ...[
           if (working) LinearProgressIndicator(value: _progress(wot)),

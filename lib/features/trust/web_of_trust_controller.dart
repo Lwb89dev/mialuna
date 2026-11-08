@@ -13,7 +13,7 @@ import '../social/follow_controller.dart';
 enum WotPhase { idle, discovering, complete, failed }
 
 class WotState {
-  /// The user turned the filter on (off by default, per account).
+  /// Always on for a signed-in account. Guests have no follow list to read.
   final bool enabled;
 
   /// Accounts followed by at least [wotThreshold] of your follows. (Your own
@@ -41,9 +41,11 @@ class WotState {
   });
 
   /// Whether content is actually being filtered. Needs a computed network:
-  /// turning the switch on must not hide everything until the first
-  /// computation ends — it shows everything, unfiltered, until then.
+  /// the first build must not hide everything until it ends.
   bool get filtering => enabled && computedAt > 0;
+
+  /// The follow lists are being read and the Discover feed is being prepared.
+  bool get building => phase == WotPhase.discovering;
 
   WotState copyWith({
     bool? enabled,
@@ -66,33 +68,60 @@ class WotState {
   );
 }
 
-/// A local, opt-in web of trust against spam, after Outkast's: an account is
-/// trusted when you follow it, or when enough of the people you follow also
-/// follow it. Nothing here asks any scoring service; it is a reading of the
-/// follow lists (NIP-02) that every client already fetches, kept on this
-/// phone. It filters what strangers can push at you — comments, notifications,
-/// private posts and messages — never Discover, whose purpose is meeting
-/// people you do not know yet.
+/// A local web of trust, after Outkast's: an account is trusted when you
+/// follow it, or when enough of the people you follow also follow it.
+///
+/// It is always on. The first time an account is opened, the follow lists
+/// (NIP-02) are read on this phone and the Discover feed is built from the
+/// result. Later launches reuse that network; it is read again only when
+/// the user asks. Nothing here calls a scoring service. It decides which
+/// posts Discover shows, and what strangers can push at you — comments,
+/// notifications, private posts and messages.
 class WebOfTrustController extends Notifier<WotState> {
-  /// A computed network older than this is refreshed when the app starts.
-  static const staleAfter = Duration(hours: 12);
-
   String? _pub;
   int _generation = 0;
-  bool _running = false;
+  Future<void>? _inflight;
+  final List<Completer<void>> _waiters = [];
 
   String get _file => 'wot_$_pub.json';
+
+  bool get _settled =>
+      _pub == null ||
+      state.computedAt > 0 ||
+      state.phase == WotPhase.failed ||
+      state.phase == WotPhase.complete;
+
+  /// Completes when this account's network has been loaded or the build has
+  /// finished (including a failure, such as following nobody).
+  Future<void> get ready {
+    if (_settled) return Future.value();
+    final waiter = Completer<void>();
+    _waiters.add(waiter);
+    return waiter.future;
+  }
+
+  void _release({bool force = false}) {
+    if (!force && !_settled) return;
+    for (final waiter in _waiters) {
+      if (!waiter.isCompleted) waiter.complete();
+    }
+    _waiters.clear();
+  }
 
   @override
   WotState build() {
     final generation = ++_generation;
-    ref.onDispose(() => _generation++);
-    _running = false;
+    _inflight = null;
+    _release(force: true);
+    ref.onDispose(() {
+      _generation++;
+      _release(force: true);
+    });
     final pub = ref.watch(authProvider.select((a) => a.publicKey));
     _pub = pub;
     if (pub == null) return const WotState();
     Future.microtask(() => _start(pub, generation));
-    return const WotState();
+    return const WotState(enabled: true);
   }
 
   static int _now() => DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -100,56 +129,69 @@ class WebOfTrustController extends Notifier<WotState> {
   Future<void> _start(String pub, int generation) async {
     final json = await ref.read(localCacheProvider).readJson(_file);
     if (generation != _generation) return;
-    if (json is Map) {
+    // A build started before the cache was read (for example the user opened
+    // Discover immediately) already owns the state.
+    if (state.computedAt > 0 || _inflight != null) return;
+    final at = json is Map ? (json['at'] as num?)?.toInt() ?? 0 : 0;
+    if (json is Map && at > 0) {
       state = WotState(
-        enabled: json['enabled'] == true,
-        computedAt: (json['at'] as num?)?.toInt() ?? 0,
+        enabled: true,
+        computedAt: at,
         directCount: (json['direct'] as num?)?.toInt() ?? 0,
         qualified: {
           for (final p in (json['q'] as List? ?? const []))
             if (p is String) p,
         },
-        phase: (json['at'] as num? ?? 0) > 0
-            ? WotPhase.complete
-            : WotPhase.idle,
+        phase: WotPhase.complete,
       );
+      _save();
+      _release();
+      return;
     }
-    final stale = _now() - state.computedAt > staleAfter.inSeconds;
-    if (state.enabled && stale) {
-      try {
-        await ref.read(followListProvider.notifier).usable;
-      } catch (_) {}
-      if (generation == _generation) unawaited(refresh());
-    }
+    // First launch for this account: there is no network yet.
+    state = const WotState(enabled: true);
+    _save();
+    unawaited(refresh());
   }
 
   void _save() {
     if (_pub == null) return;
     ref.read(localCacheProvider).writeJson(_file, {
-      'enabled': state.enabled,
+      'enabled': true,
       'at': state.computedAt,
       'direct': state.directCount,
       'q': state.qualified.toList(),
     });
   }
 
-  /// Turns the filter on or off. Turning it on is the moment to build the
-  /// network for the first time: otherwise the switch would do nothing until
-  /// the user found the refresh button.
+  /// The switch no longer turns the network off. Passing false does nothing;
+  /// passing true builds the network when it has never been computed.
   Future<void> setEnabled(bool enabled) async {
-    state = state.copyWith(enabled: enabled, error: state.error);
+    if (!enabled || _pub == null) return;
+    state = state.copyWith(enabled: true);
     _save();
-    if (enabled && state.computedAt == 0) await refresh();
+    if (state.computedAt == 0) await refresh();
   }
 
   /// Reads the follow list of every account you follow and recomputes who
   /// qualifies. A chunk that cannot be fetched just contributes nothing: for
   /// a trust computation, failing towards "fewer people trusted" is the safe
   /// direction.
-  Future<void> refresh() async {
+  Future<void> refresh() {
+    if (_pub == null) return Future.value();
+    final running = _inflight;
+    if (running != null) return running;
     final generation = _generation;
-    if (_running || _pub == null) return;
-    _running = true;
+    final job = _run(generation);
+    _inflight = job;
+    return job.whenComplete(() {
+      if (identical(_inflight, job)) _inflight = null;
+    });
+  }
+
+  Future<void> _run(int generation) async {
+    if (generation != _generation || _pub == null) return;
+    state = state.copyWith(phase: WotPhase.discovering, fetched: 0, total: 0);
     try {
       try {
         await ref
@@ -161,14 +203,29 @@ class WebOfTrustController extends Notifier<WotState> {
       }
       if (generation != _generation) return;
       await _compute(generation);
+    } catch (e) {
+      if (generation == _generation) {
+        state = state.copyWith(phase: WotPhase.failed, error: '$e');
+      }
     } finally {
-      _running = false;
+      if (generation == _generation) _finishRun();
     }
+  }
+
+  void _finishRun() {
+    if (state.phase == WotPhase.discovering) {
+      state = state.copyWith(
+        phase: WotPhase.failed,
+        error: AppStrings.current.loadFailed,
+      );
+    }
+    _release();
   }
 
   Future<void> _compute(int generation) async {
     final me = _pub!;
     final follows = {...ref.read(followListProvider)}..remove(me);
+    if (generation != _generation) return;
     if (follows.isEmpty) {
       state = state.copyWith(
         phase: WotPhase.failed,
@@ -241,14 +298,22 @@ final webOfTrustProvider = NotifierProvider<WebOfTrustController, WotState>(
   WebOfTrustController.new,
 );
 
-/// Who passes the filter: everyone while it is off (or not yet computed);
-/// otherwise you, the people you follow, and your web of trust. Watch it and
-/// call [TrustFilter.allows].
+/// Who Discover may show: you, the people you follow, and whoever enough of
+/// them follow. Strangers are absent even before the first build finishes.
+final wotAuthorsProvider = Provider<Set<String>>((ref) {
+  final me = ref.watch(authProvider.select((a) => a.publicKey));
+  if (me == null) return const {};
+  final follows = ref.watch(followListProvider);
+  final qualified = ref.watch(webOfTrustProvider.select((s) => s.qualified));
+  return {me, ...follows, ...qualified};
+});
+
+/// Who passes the spam filter: everyone while the network is not computed
+/// yet; otherwise you, the people you follow, and your web of trust. Watch
+/// it and call [TrustFilter.allows].
 final trustFilterProvider = Provider<TrustFilter>((ref) {
   final filtering = ref.watch(webOfTrustProvider.select((s) => s.filtering));
   if (!filtering) return TrustFilter.open;
-  final qualified = ref.watch(webOfTrustProvider.select((s) => s.qualified));
-  final me = ref.watch(authProvider.select((a) => a.publicKey));
-  final follows = ref.watch(followListProvider);
-  return TrustFilter(true, {...qualified, ...follows, ?me});
+  final authors = ref.watch(wotAuthorsProvider);
+  return TrustFilter(true, authors);
 });

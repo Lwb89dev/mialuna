@@ -430,6 +430,14 @@
   "welcome1": "Mialuna is a visual social network: photos, videos, Reels and Stories — never text-only posts.",
   "welcome2": "It runs on Nostr, an open protocol: your identity is a key you own, not an account a company can take away. No ads, no trackers, no central servers.",
   "welcome3": "Share your light with people everywhere, from any app that speaks the same open language.",
+  "onboardingWot": "Web of trust is always on. The first time you open Mialuna it reads who you follow and builds the Discover feed from that network: you, the people you follow, and whoever at least {min} of them follow. The next times you open the app, that feed is already there.",
+  "@onboardingWot": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
   "publicAndPrivate": "Public and private",
   "publicAndPrivateIntro": "Mialuna is built on Nostr, an open network. What you publish is public: posts, photos and videos stay visible to anyone with the link, even outside Mialuna.",
   "closeFriendsExplain1": "Only the people on this list receive your \"Close friends\" posts, stories and videos. The list is inside the post; you do not have to pick it every time.",
@@ -683,8 +691,8 @@
     }
   },
   "wotTitle": "Web of trust",
-  "wotEnable": "Filter spam with your web of trust",
-  "wotExplain": "Hide comments, notifications, private posts and messages from people you don't follow and that aren't followed by at least {min} of the people you follow. Worked out on this phone from public follow lists; nothing is sent to any server. Discover is never filtered.",
+  "wotEnable": "Web of trust is always on",
+  "wotExplain": "Always on. Discover shows only this network: you, the people you follow, and whoever is followed by at least {min} of them. The same network hides comments, notifications, private posts and messages from everyone else. It is worked out on this phone from public follow lists the first time you open the app; later opens reuse it. Nothing is sent to any server.",
   "@wotExplain": {
     "placeholders": {
       "min": {
@@ -693,7 +701,12 @@
     }
   },
   "wotRefresh": "Refresh network now",
-  "wotStatusIdle": "Not computed yet. Turn the filter on, or refresh, to build your network.",
+  "wotStatusIdle": "Not built yet. It is built the first time you open the app.",
+  "wotBuildingTitle": "Building your Discover feed",
+  "wotBuildingBody": "Reading who the people you follow also follow, and preparing Discover.",
+  "wotDiscoverHint": "Only your web of trust: people you follow, and people enough of them follow.",
+  "wotDiscoverSignIn": "Discover shows your web of trust. Sign in and, the first time, Mialuna reads who you follow and builds this feed. Later opens reuse it.",
+  "wotDiscoverEmpty": "No posts from your web of trust yet.",
   "wotStatusDiscovering": "Checking who your follows follow… {done} of {total}",
   "@wotStatusDiscovering": {
     "placeholders": {

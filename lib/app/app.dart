@@ -5,6 +5,7 @@ import '../core/theme/mialuna_theme.dart';
 import '../features/settings/settings_controller.dart';
 import '../features/social/moderation_controller.dart';
 import '../features/stories/story_receipts.dart';
+import '../features/trust/wot_building_overlay.dart';
 import '../l10n/strings.dart';
 import 'relay_sync.dart';
 import 'router.dart';
@@ -30,7 +31,13 @@ Widget buildMialunaApp(WidgetRef ref) {
     builder: (context, child) {
       // Code without a BuildContext (controllers, services) reads this.
       AppStrings.current = AppLocalizations.of(context);
-      return child ?? const SizedBox.shrink();
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          child ?? const SizedBox.shrink(),
+          const WotBuildingOverlay(),
+        ],
+      );
     },
     routerConfig: router,
   );

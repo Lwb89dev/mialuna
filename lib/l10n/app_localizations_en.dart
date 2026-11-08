@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -475,7 +474,8 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other:
           'Only your $count close friends will see this. Photos and videos are encrypted on your phone before they are uploaded.',
-      one: 'Only your 1 close friend will see this. Photos and videos are encrypted on your phone before they are uploaded.',
+      one:
+          'Only your 1 close friend will see this. Photos and videos are encrypted on your phone before they are uploaded.',
     );
     return '$_temp0';
   }
@@ -938,6 +938,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get welcome3 =>
       'Share your light with people everywhere, from any app that speaks the same open language.';
+
+  @override
+  String onboardingWot(int min) {
+    return 'Web of trust is always on. The first time you open Mialuna it reads who you follow and builds the Discover feed from that network: you, the people you follow, and whoever at least $min of them follow. The next times you open the app, that feed is already there.';
+  }
 
   @override
   String get publicAndPrivate => 'Public and private';
@@ -1478,11 +1483,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wotTitle => 'Web of trust';
 
   @override
-  String get wotEnable => 'Filter spam with your web of trust';
+  String get wotEnable => 'Web of trust is always on';
 
   @override
   String wotExplain(int min) {
-    return 'Hide comments, notifications, private posts and messages from people you don\'t follow and that aren\'t followed by at least $min of the people you follow. Worked out on this phone from public follow lists; nothing is sent to any server. Discover is never filtered.';
+    return 'Always on. Discover shows only this network: you, the people you follow, and whoever is followed by at least $min of them. The same network hides comments, notifications, private posts and messages from everyone else. It is worked out on this phone from public follow lists the first time you open the app; later opens reuse it. Nothing is sent to any server.';
   }
 
   @override
@@ -1490,7 +1495,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wotStatusIdle =>
-      'Not computed yet. Turn the filter on, or refresh, to build your network.';
+      'Not built yet. It is built the first time you open the app.';
+
+  @override
+  String get wotBuildingTitle => 'Building your Discover feed';
+
+  @override
+  String get wotBuildingBody =>
+      'Reading who the people you follow also follow, and preparing Discover.';
+
+  @override
+  String get wotDiscoverHint =>
+      'Only your web of trust: people you follow, and people enough of them follow.';
+
+  @override
+  String get wotDiscoverSignIn =>
+      'Discover shows your web of trust. Sign in and, the first time, Mialuna reads who you follow and builds this feed. Later opens reuse it.';
+
+  @override
+  String get wotDiscoverEmpty => 'No posts from your web of trust yet.';
 
   @override
   String wotStatusDiscovering(int done, int total) {

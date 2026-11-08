@@ -143,12 +143,15 @@ no push service. A private-message notification carries only the sender.
 
 After Outkast's: the network is your follows plus every account followed by at
 least 10 of them (kind 3 of each follow read in chunks of 50, newest per
-author), computed on the device, cached per account, refreshed after 12 hours
-and on demand, opt-in, and only active once a network was computed. It filters
-what strangers can push at you — comments on posts, reactions/comments/zaps in
-Notifications (new followers stay visible), close-friends posts and stories,
-and private messages (kept as "message requests", not counted as unread, until
-you answer). Discover and Reels are never filtered.
+author), computed on the device and cached per account. It is always on. The
+first time an account is opened, Mialuna reads those follow lists and builds
+the Discover feed from the result; later launches reuse it, and it is read
+again only when the user asks in Settings. It is active once a network was
+computed. It filters what strangers can push at you — comments on posts,
+reactions/comments/zaps in Notifications (new followers stay visible),
+close-friends posts and stories, and private messages (kept as "message
+requests", not counted as unread, until you answer). Discover shows only this
+network. Reels are not filtered.
 
 ## Media hygiene
 

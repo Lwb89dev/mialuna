@@ -5,6 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/nostr/nwc_controller.dart';
+import '../../core/trust/trust_network.dart';
 import '../../l10n/strings.dart';
 import '../private/close_friends_screen.dart' show CloseFriendsExplainer;
 import 'login_panel.dart';
@@ -293,6 +294,12 @@ class _WelcomePage extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           context.l10n.welcome3,
+          style: theme.textTheme.bodyLarge,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          context.l10n.onboardingWot(wotThreshold),
           style: theme.textTheme.bodyLarge,
           textAlign: TextAlign.center,
         ),

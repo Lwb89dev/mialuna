@@ -33,8 +33,9 @@ centralized platform.
   rotate) and their `#hashtags` are tappable; public or close friends only;
   see who watched your story, from the note
 - **Home & Discover** — Home shows the people you follow; Discover shows
-  everything else (media grid, hashtag and words search, official
-  `#mialuna` feed) and finds people by name (NIP-50 relays, NIP-05)
+  only your web of trust (media grid, hashtag and words search inside that
+  network, official `#mialuna` feed) and finds people you trust by name
+  (NIP-50 relays, NIP-05)
 - **Social** — NIP-25 reactions, NIP-22 comments with nested replies,
   NIP-02 follow lists, bookmarks, NIP-57 Lightning zaps, notifications,
   profiles of anyone, pinch-to-zoom and inline video in the feed
@@ -57,7 +58,8 @@ centralized platform.
   synced automatically (read/write roles, outbox model), NIP-42 AUTH,
   per-relay publication reports, offline cache
 - **Privacy & moderation** — mute, block, sensitive-content warnings (NIP-36),
-  reporting, secure credential storage, an optional web of trust against spam
+  reporting, secure credential storage, a web of trust against spam that also
+  fills Discover
 - **Hardened by default** — no backups, no cleartext, private screens blocked
   from screenshots, safe fetching of third-party servers, signing out wipes the
   account (see [SECURITY.md](SECURITY.md) and [PRIVACY.md](PRIVACY.md))

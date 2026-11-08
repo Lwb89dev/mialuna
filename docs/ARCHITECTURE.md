@@ -50,8 +50,9 @@ and every upload against `test/support/fake_blossom.dart`.
   edits are published back; other authors are read from *their* write relays
   (outbox model).
 - **Home vs Discover**: Home is the people you follow (queried in chunks, on
-  your relays and theirs) plus private posts addressed to you; Discover is the
-  rest.
+  your relays and theirs) plus private posts addressed to you. Discover is
+  only the web of trust (you, the people you follow, and whoever enough of
+  them follow). Guests, who have no follow list, see the open network on Home.
 - **Fail closed**: nothing is uploaded unless metadata was removed and, for
   close-friends posts, the bytes are encrypted.
 - **Private store**: gift-wrapped rumors (messages, posts, likes, replies) are

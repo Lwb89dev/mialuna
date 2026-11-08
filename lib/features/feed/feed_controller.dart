@@ -15,14 +15,19 @@ import '../private/private_posts.dart';
 import '../social/deleted_posts.dart';
 import '../social/follow_controller.dart';
 import '../social/moderation_controller.dart';
+import '../trust/web_of_trust_controller.dart';
 
 /// Which posts a feed shows.
 enum FeedMode {
   /// Only people you follow (plus yourself) — the Home feed.
   following,
 
-  /// Everything the relays have — the Discover feed.
+  /// Everything the relays have. Guests see this on Home; the Discover tab
+  /// does not.
   discover,
+
+  /// Discover: you, the people you follow, and your web of trust.
+  webOfTrust,
 }
 
 class FeedState {
@@ -118,9 +123,13 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
 
   FeedMode get _mode => arg;
 
-  String get _cacheFile => _mode == FeedMode.following
-      ? LocalCache.followingEventsFile
-      : LocalCache.discoverEventsFile;
+  bool get _ownedCache => _mode != FeedMode.discover;
+
+  String get _cacheFile => switch (_mode) {
+    FeedMode.following => LocalCache.followingEventsFile,
+    FeedMode.webOfTrust => LocalCache.wotEventsFile,
+    FeedMode.discover => LocalCache.discoverEventsFile,
+  };
 
   @override
   FeedState build(FeedMode arg) {
@@ -146,6 +155,8 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
         privatePostsProvider.select((s) => s.posts),
         (_, posts) => _mergePrivate(posts),
       );
+    }
+    if (arg == FeedMode.following || arg == FeedMode.webOfTrust) {
       // Following someone (or unfollowing) changes what belongs here.
       ref.listen(followListProvider, (prev, next) {
         // Who, not how many: swapping one account for another keeps the count.
@@ -167,9 +178,17 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
           _cursor = null;
           _cacheRestored = false;
           _started = false;
+          _authors = const {};
           state = const FeedState();
           Future.microtask(_initialLoad);
         }
+      });
+    }
+    if (arg == FeedMode.webOfTrust) {
+      ref.listen(webOfTrustProvider.select((s) => s.qualified), (prev, next) {
+        if (!_started || prev == null) return;
+        if (prev.length == next.length && prev.containsAll(next)) return;
+        refresh();
       });
     }
     Future.microtask(_initialLoad);
@@ -184,10 +203,50 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
       ref.read(brokenMediaProvider).contains(post.id) ||
       ref.read(deletedPostsProvider).contains(post.id) ||
       post.hashtags.any(ref.read(mutedHashtagsProvider).contains) ||
-      (_mode == FeedMode.following &&
-          !post.isPrivate && // sent to you on purpose, followed or not
+      (_mode != FeedMode.discover &&
+          !(_mode == FeedMode.following && post.isPrivate) &&
           _authors.isNotEmpty &&
           !_authors.contains(post.author));
+
+  String _emptyMessage() {
+    if (_mode == FeedMode.following) {
+      return AppStrings.current.noRecentPostsFromFollowed;
+    }
+    if (_mode == FeedMode.webOfTrust) {
+      return AppStrings.current.wotDiscoverEmpty;
+    }
+    return AppStrings.current.noMomentsFound;
+  }
+
+  /// Waits for the web of trust, then keeps its authors. Returns false when
+  /// there is nobody in the network and the empty state is already set.
+  Future<bool> _prepareTrustAuthors() async {
+    try {
+      await ref
+          .read(webOfTrustProvider.notifier)
+          .ready
+          .timeout(const Duration(minutes: 2));
+    } on TimeoutException {
+      // Ask for whoever is known so far.
+    }
+    if (_disposed) return false;
+    final follows = ref.read(followListProvider);
+    final qualified = ref.read(webOfTrustProvider).qualified;
+    _authors = ref.read(wotAuthorsProvider);
+    if (follows.isEmpty && qualified.isEmpty) {
+      _byId.clear();
+      _cursor = null;
+      state = FeedState(
+        isLoading: false,
+        followsNobody: true,
+        hasMore: false,
+        error: AppStrings.current.wotDiscoverEmpty,
+      );
+      return false;
+    }
+    state = state.copyWith(followsNobody: false, clearError: true);
+    return true;
+  }
 
   /// The accounts whose posts belong in the following feed: the ones you
   /// follow, and you. Waits (bounded) for the follow list.
@@ -229,7 +288,7 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
     _cacheRestored = true;
     final cache = ref.read(localCacheProvider);
     final List<NostrEvent> cached;
-    if (_mode == FeedMode.following) {
+    if (_ownedCache) {
       final me = ref.read(authProvider).publicKey;
       if (me == null) return;
       cached = await cache.loadOwnedEvents(me, file: _cacheFile);
@@ -260,9 +319,9 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
   bool _accept(NostrEvent event, {bool restored = false}) {
     if (_byId.containsKey(event.id)) return false;
     if (!restored &&
-        _mode == FeedMode.following &&
+        _mode != FeedMode.discover &&
         !_authors.contains(event.pubkey)) {
-      return false; // a relay answered with someone we do not follow
+      return false; // a relay answered with someone outside this feed
     }
     final post = MediaPost.tryParse(event);
     if (post == null || post.isStory || post.isExpired()) return false;
@@ -439,6 +498,10 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
     return _running = () async {
       try {
         ref.read(relayPoolProvider).connect();
+        if (_mode == FeedMode.webOfTrust) {
+          final show = await _prepareTrustAuthors();
+          if (_disposed || !show) return;
+        }
         if (_mode == FeedMode.following) {
           _authors = await _followedAuthors();
           if (_disposed) return;
@@ -467,11 +530,7 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
         state = state.copyWith(
           isLoading: false,
           clearError: true,
-          error: _byId.isEmpty
-              ? (_mode == FeedMode.following
-                    ? AppStrings.current.noRecentPostsFromFollowed
-                    : AppStrings.current.noMomentsFound)
-              : null,
+          error: _byId.isEmpty ? _emptyMessage() : null,
         );
         _commit(loading: false, hasMore: true);
       } catch (e) {
@@ -549,7 +608,7 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
       for (final p in state.posts.where((p) => !p.isPrivate).take(150)) p.event,
     ];
     final cache = ref.read(localCacheProvider);
-    if (_mode == FeedMode.discover) {
+    if (!_ownedCache) {
       await cache.saveEvents(events, file: _cacheFile);
       return;
     }

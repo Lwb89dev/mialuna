@@ -104,11 +104,17 @@ void main() {
   tearDown(() => relay.stop());
 
   group('the network', () {
-    test('is off by default: everybody passes', () async {
+    test('is on from the first launch, and cannot be turned off', () async {
       final c = app();
       c.listen(webOfTrustProvider, (_, _) {});
-      expect(c.read(trustFilterProvider).allows(stranger.publicKey), true);
-      expect(c.read(webOfTrustProvider).enabled, false);
+      c.listen(followListProvider, (_, _) {});
+      expect(c.read(webOfTrustProvider).enabled, true);
+      await c.read(webOfTrustProvider.notifier).ready;
+      expect(c.read(webOfTrustProvider).filtering, true);
+      expect(c.read(trustFilterProvider).allows(stranger.publicKey), false);
+      await c.read(webOfTrustProvider.notifier).setEnabled(false);
+      expect(c.read(webOfTrustProvider).enabled, true);
+      expect(c.read(webOfTrustProvider).filtering, true);
     });
 
     test(
@@ -134,17 +140,21 @@ void main() {
       },
     );
 
-    test('on, but never computed: nothing is hidden meanwhile', () async {
+    test('follows nobody yet: nothing is hidden, and it says why', () async {
       relay.stored.clear(); // no follow list anywhere: nothing can be built
       await LocalCache(directory: dir).writeJson('wot_${me.publicKey}.json', {
-        'enabled': true,
+        'enabled': false,
         'at': 0,
         'q': <String>[],
       });
       final c = app();
       c.listen(webOfTrustProvider, (_, _) {});
-      await eventually(() => c.read(webOfTrustProvider).enabled);
-      expect(c.read(webOfTrustProvider).filtering, false);
+      c.listen(followListProvider, (_, _) {});
+      await c.read(webOfTrustProvider.notifier).ready;
+      final wot = c.read(webOfTrustProvider);
+      expect(wot.enabled, true);
+      expect(wot.phase, WotPhase.failed);
+      expect(wot.filtering, false);
       expect(c.read(trustFilterProvider).allows(stranger.publicKey), true);
     });
 
@@ -170,10 +180,14 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 300));
 
         relay.silent = true;
+        final phases = <WotPhase>[];
         final again = app();
-        again.listen(webOfTrustProvider, (_, _) {});
+        again.listen(webOfTrustProvider, (_, next) => phases.add(next.phase));
         again.listen(followListProvider, (_, _) {});
         await eventually(() => again.read(webOfTrustProvider).filtering);
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+        expect(again.read(webOfTrustProvider).phase, WotPhase.complete);
+        expect(phases, isNot(contains(WotPhase.discovering)));
         expect(again.read(webOfTrustProvider).qualified, {target.publicKey});
         expect(again.read(trustFilterProvider).allows(target.publicKey), true);
       },
@@ -368,9 +382,12 @@ void main() {
           'amici',
         ]);
 
-        // Turn the filter off and the stranger's post is there after all.
+        // The switch cannot turn the network off: the stranger stays out.
         await c.read(webOfTrustProvider.notifier).setEnabled(false);
-        await eventually(() => c.read(privatePostsProvider).posts.length == 2);
+        expect(c.read(webOfTrustProvider).enabled, true);
+        expect(c.read(privatePostsProvider).posts.map((p) => p.caption), [
+          'amici',
+        ]);
       },
     );
 

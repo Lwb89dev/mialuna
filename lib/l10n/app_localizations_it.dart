@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -476,7 +475,8 @@ class AppLocalizationsIt extends AppLocalizations {
       locale: localeName,
       other:
           'Lo vedranno solo i tuoi $count amici più stretti. Foto e video vengono cifrati sul telefono prima di essere caricati.',
-      one: 'Lo vedrà solo il tuo 1 amico più stretto. Foto e video vengono cifrati sul telefono prima di essere caricati.',
+      one:
+          'Lo vedrà solo il tuo 1 amico più stretto. Foto e video vengono cifrati sul telefono prima di essere caricati.',
     );
     return '$_temp0';
   }
@@ -939,6 +939,11 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get welcome3 =>
       'Condividi la tua luce con persone ovunque, da qualsiasi app che parli lo stesso linguaggio aperto.';
+
+  @override
+  String onboardingWot(int min) {
+    return 'La rete di fiducia è sempre attiva. Al primo avvio Mialuna legge chi segui e costruisce il feed di Scopri da quella rete: tu, le persone che segui e chi è seguito da almeno $min di loro. Agli avvii successivi il feed è già pronto.';
+  }
 
   @override
   String get publicAndPrivate => 'Pubblico e privato';
@@ -1480,11 +1485,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get wotTitle => 'Rete di fiducia';
 
   @override
-  String get wotEnable => 'Filtra lo spam con la tua rete di fiducia';
+  String get wotEnable => 'La rete di fiducia è sempre attiva';
 
   @override
   String wotExplain(int min) {
-    return 'Nasconde commenti, notifiche, post privati e messaggi di chi non segui e non è seguito da almeno $min delle persone che segui. Calcolata su questo telefono dalle liste dei follow pubbliche; non viene inviato nulla a nessun server. Scopri non viene mai filtrato.';
+    return 'Sempre attiva. Scopri mostra solo questa rete: tu, le persone che segui e chi è seguito da almeno $min di loro. La stessa rete nasconde commenti, notifiche, post privati e messaggi di tutti gli altri. Viene calcolata su questo telefono dalle liste dei follow pubbliche al primo avvio; gli avvii successivi la riusano. Non viene inviato nulla a nessun server.';
   }
 
   @override
@@ -1492,7 +1497,26 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get wotStatusIdle =>
-      'Non ancora calcolata. Attiva il filtro, o aggiorna, per costruire la tua rete.';
+      'Non ancora costruita. Viene calcolata al primo avvio dell\'app.';
+
+  @override
+  String get wotBuildingTitle => 'Costruzione del feed di Scopri';
+
+  @override
+  String get wotBuildingBody =>
+      'Sto leggendo chi seguono le persone che segui, e preparo Scopri.';
+
+  @override
+  String get wotDiscoverHint =>
+      'Solo la tua rete di fiducia: chi segui e chi è seguito da abbastanza di loro.';
+
+  @override
+  String get wotDiscoverSignIn =>
+      'Scopri mostra la tua rete di fiducia. Accedi e, la prima volta, Mialuna legge chi segui e costruisce questo feed. Agli avvii successivi lo riusa.';
+
+  @override
+  String get wotDiscoverEmpty =>
+      'Ancora nessun post dalla tua rete di fiducia.';
 
   @override
   String wotStatusDiscovering(int done, int total) {

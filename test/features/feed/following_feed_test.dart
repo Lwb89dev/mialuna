@@ -119,7 +119,7 @@ void main() {
     expect(state.posts.any((p) => p.author == carol.publicKey), false);
   });
 
-  test('Discover shows everyone', () async {
+  test('the open network still shows everyone', () async {
     relay.add(await photo(bob, 'bob-post'));
     relay.add(await photo(carol, 'carol-post'));
 
@@ -128,6 +128,45 @@ void main() {
     expect(state.posts.map((p) => p.caption).toSet(), {
       'bob-post',
       'carol-post',
+    });
+  });
+
+  test('Discover shows only the web of trust', () async {
+    final target = newSigner();
+    final crowd = [for (var i = 0; i < 10; i++) newSigner()];
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    relay.add(
+      await signed(
+        me,
+        kind: 3,
+        createdAt: now + 20,
+        tags: [
+          for (final f in crowd) ['p', f.publicKey],
+        ],
+      ),
+    );
+    for (final f in crowd) {
+      relay.add(
+        await signed(
+          f,
+          kind: 3,
+          tags: [
+            ['p', target.publicKey],
+          ],
+        ),
+      );
+    }
+    relay.add(await photo(target, 'trusted'));
+    relay.add(await photo(crowd.first, 'followed'));
+    relay.add(await photo(carol, 'stranger'));
+    relay.add(await photo(me, 'mine'));
+
+    final c = app(me);
+    final state = await settled(c, FeedMode.webOfTrust);
+    expect(state.posts.map((p) => p.caption).toSet(), {
+      'trusted',
+      'followed',
+      'mine',
     });
   });
 

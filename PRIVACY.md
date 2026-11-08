@@ -56,17 +56,18 @@ stories"** turns it off.
   counted only for your own stories that are still live; one naming any other
   story is ignored. No server ever counts the views.
 
-## Web of trust (optional)
+## Web of trust
 
-Settings → Web of trust is off by default. When on, Mialuna works out on this
-phone whom to trust — the people you follow, and whoever is followed by at
-least ten of them — by reading the follow lists (kind 3) that relays already
-publish, and hides comments, notifications, private posts and messages from
-everyone else (messages wait in "message requests"; Discover is never
-filtered). The result is kept on this device; nothing is sent to any server
-and no third-party scoring service is used. Asking relays for the follow lists
-of the people you follow does reveal, to those relays, whose lists you asked
-for.
+Web of trust is always on. The first time you open Mialuna it works out on
+this phone whom to trust — the people you follow, and whoever is followed by
+at least ten of them — by reading the follow lists (kind 3) that relays
+already publish, and builds the Discover feed from that network. Later opens
+reuse it. It also hides comments, notifications, private posts and messages
+from everyone else (messages wait in "message requests"). The result is kept
+on this device; nothing is sent to any server and no third-party scoring
+service is used. Asking relays for the follow lists of the people you follow
+does reveal, to those relays, whose lists you asked for. That read happens
+on the first launch, and again only if you refresh the network in Settings.
 
 ## Keys
 
