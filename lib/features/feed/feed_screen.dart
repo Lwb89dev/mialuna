@@ -185,9 +185,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
               count: unreadMessages,
               child: const Icon(Icons.send_outlined),
             ),
-            onPressed: () => Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const InboxScreen())),
+            onPressed: () => Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const InboxScreen())),
           ),
         ],
       ),
