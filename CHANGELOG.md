@@ -5,12 +5,34 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
-### Changed
+## [0.21.0] — 2026-11-08 — Web of trust, and the app in 25 languages
+
+### Added
 - **Web of trust is always on.** The Settings switch stays on. The first time
   you open the app, Mialuna reads who you follow and builds the Discover feed
-  from that network; later opens reuse it. While that first build runs, a
-  centered card shows the progress. Discover no longer shows the open network.
-  Onboarding explains this.
+  from that network (you, the people you follow, and whoever at least 10 of
+  them follow). Later opens reuse it. While that first build runs, a centered
+  card shows the progress. Onboarding explains this.
+- **Twenty-three more languages.** The app was in English and Italian. It is
+  now also in the other official languages of the European Union except
+  Maltese and Irish, plus Chinese, Japanese and Russian: Bulgarian, Croatian,
+  Czech, Danish, Dutch, Estonian, Finnish, French, German, Greek, Hungarian,
+  Latvian, Lithuanian, Polish, Portuguese, Romanian, Slovak, Slovenian,
+  Spanish and Swedish. Settings lists each language by its own name. A phone
+  language the app does not translate opens in English.
+
+### Changed
+- **Discover shows only your web of trust.** Search on that screen stays
+  inside the same network. Without an account, Discover asks you to sign in.
+  Home, for someone without an account, still shows the open network.
+- The spam filter (comments, notifications, private posts and messages) still
+  waits until a network has actually been built, then uses it.
+
+### Fixed
+- Long translations no longer spill off the story composer, the story text
+  editor, or the New moment screen when the text size is large.
+- Turning off "tell authors you saw their story" waits until the receipt
+  still on the phone has been removed.
 
 ## [0.20.0] — 2026-11-05 — Comment likes, clearer notifications, safer signing
 

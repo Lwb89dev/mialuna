@@ -312,33 +312,30 @@ class _StoryComposerScreenState extends ConsumerState<StoryComposerScreen> {
           if (closeOnly) _closeFriendsNote(auth.signer.canEncrypt, friends),
           if (state.error != null) _note(state.error!, color: Colors.redAccent),
           if (state.isPublishing) _progress(state),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          // Chips on their own line: a long "share" used to squeeze them
+          // down to the icon and overflow.
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              // Wraps onto a second line when the screen or the text is big.
-              Expanded(
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    _audienceChip(
-                      Audience.public,
-                      Icons.public,
-                      context.l10n.audiencePublic,
-                      state,
-                    ),
-                    _audienceChip(
-                      Audience.closeFriends,
-                      Icons.star_outline,
-                      context.l10n.closeFriends,
-                      state,
-                    ),
-                  ],
-                ),
+              _audienceChip(
+                Audience.public,
+                Icons.public,
+                context.l10n.audiencePublic,
+                state,
               ),
-              const SizedBox(width: 8),
-              _shareButton(state, canShare),
+              _audienceChip(
+                Audience.closeFriends,
+                Icons.star_outline,
+                context.l10n.closeFriends,
+                state,
+              ),
             ],
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: _shareButton(state, canShare),
           ),
         ],
       ),
@@ -346,22 +343,39 @@ class _StoryComposerScreenState extends ConsumerState<StoryComposerScreen> {
   }
 
   /// In the brand rose: the navy of the theme is lost on a dark bar.
-  Widget _shareButton(ComposerState state, bool canShare) => FilledButton(
-    onPressed: canShare ? _share : null,
-    style: FilledButton.styleFrom(
-      backgroundColor: MialunaColors.twilightRose,
-      foregroundColor: MialunaColors.midnightNavy,
-      disabledBackgroundColor: Colors.white24,
-      disabledForegroundColor: Colors.white54,
-    ),
-    child: state.isPublishing
-        ? const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
-        : Text(context.l10n.storyShare),
-  );
+  /// The label scales down when a long translation is wider than the bar.
+  Widget _shareButton(ComposerState state, bool canShare) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return FilledButton(
+          onPressed: canShare ? _share : null,
+          style: FilledButton.styleFrom(
+            maximumSize: Size(constraints.maxWidth, double.infinity),
+            backgroundColor: MialunaColors.twilightRose,
+            foregroundColor: MialunaColors.midnightNavy,
+            disabledBackgroundColor: Colors.white24,
+            disabledForegroundColor: Colors.white54,
+          ),
+          child: state.isPublishing ? _shareSpinner() : _shareLabel(),
+        );
+      },
+    );
+  }
+
+  Widget _shareSpinner() {
+    return const SizedBox(
+      width: 20,
+      height: 20,
+      child: CircularProgressIndicator(strokeWidth: 2),
+    );
+  }
+
+  Widget _shareLabel() {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(context.l10n.storyShare, maxLines: 1),
+    );
+  }
 
   Widget _note(String text, {Color color = Colors.white70}) => Padding(
     padding: const EdgeInsets.only(bottom: 8),

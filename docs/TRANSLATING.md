@@ -9,10 +9,10 @@ the Dart code (a test fails if Italian text sneaks back in).
 1. Copy `lib/l10n/app_en.arb` to `lib/l10n/app_<code>.arb` (e.g. `app_fr.arb`),
    change `"@@locale"` to the code and translate every value. Keep the
    `{placeholders}` exactly as they are; do not copy the `@key` metadata blocks.
-2. Add the code to `appLanguages` in
-   `lib/features/settings/settings_controller.dart` and a label for it in the
-   language picker of `settings_screen.dart` (the language's own name, like
-   "Français", is the same in every language).
+2. Add the code to `appLanguages` and the language's own name to
+   `languageEndonyms` in `lib/features/settings/settings_controller.dart`
+   (the name, like "Français", is the same in every language). The Settings
+   picker is one dropdown, so a new language does not need a new widget.
 3. Run `flutter gen-l10n`, then `flutter test test/l10n`. The tests check that
    your file has exactly the English keys and the same placeholders.
 

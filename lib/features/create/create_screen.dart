@@ -91,6 +91,45 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
     if (texts != null) composer.setOverlays(texts);
   }
 
+  Widget _barTitle(String text) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: AlignmentDirectional.centerStart,
+      child: Text(text, maxLines: 1),
+    );
+  }
+
+  Widget _publishAction(
+    ComposerState state,
+    bool guest,
+    CloseFriendsState friends,
+  ) {
+    final enabled =
+        state.canPublish &&
+        !guest &&
+        (state.audience == Audience.public || friends.members.isNotEmpty);
+    return Align(
+      alignment: AlignmentDirectional.centerEnd,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: TextButton(
+          onPressed: enabled ? _publish : null,
+          child: state.isPublishing
+              ? _publishSpinner()
+              : Text(context.l10n.publish),
+        ),
+      ),
+    );
+  }
+
+  Widget _publishSpinner() {
+    return const SizedBox(
+      width: 20,
+      height: 20,
+      child: CircularProgressIndicator(strokeWidth: 2),
+    );
+  }
+
   Future<void> _publish() async {
     final ok = await ref.read(composerProvider.notifier).publish();
     if (!mounted) return;
@@ -126,25 +165,18 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(context.l10n.newMoment),
-        actions: [
-          TextButton(
-            onPressed:
-                state.canPublish &&
-                    !auth.isGuest &&
-                    (state.audience == Audience.public ||
-                        friends.members.isNotEmpty)
-                ? _publish
-                : null,
-            child: state.isPublishing
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(context.l10n.publish),
-          ),
-        ],
+        // Title and Publish share one row. A long translation at a large
+        // text size used to overflow the action slot.
+        titleSpacing: 16,
+        title: Row(
+          children: [
+            Expanded(child: _barTitle(context.l10n.newMoment)),
+            Flexible(
+              flex: 2,
+              child: _publishAction(state, auth.isGuest, friends),
+            ),
+          ],
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -162,26 +194,27 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
               ),
             ),
           SegmentedButton<ComposerMode>(
+            expandedInsets: EdgeInsets.zero,
             segments: [
               ButtonSegment(
                 value: ComposerMode.photo,
                 icon: const Icon(Icons.photo_outlined),
-                label: Text(context.l10n.kindPhoto),
+                label: _scaleLabel(context.l10n.kindPhoto),
               ),
               ButtonSegment(
                 value: ComposerMode.video,
                 icon: const Icon(Icons.videocam_outlined),
-                label: Text(context.l10n.kindVideo),
+                label: _scaleLabel(context.l10n.kindVideo),
               ),
               ButtonSegment(
                 value: ComposerMode.reel,
                 icon: const Icon(Icons.play_circle_outline),
-                label: Text(context.l10n.kindReel),
+                label: _scaleLabel(context.l10n.kindReel),
               ),
               ButtonSegment(
                 value: ComposerMode.story,
                 icon: const Icon(Icons.auto_stories_outlined),
-                label: Text(context.l10n.kindStory),
+                label: _scaleLabel(context.l10n.kindStory),
               ),
             ],
             selected: {state.mode},
@@ -514,6 +547,11 @@ class _PickerTile extends StatelessWidget {
   }
 }
 
+/// One line that shrinks instead of pushing the segment past the screen.
+Widget _scaleLabel(String text) {
+  return FittedBox(fit: BoxFit.scaleDown, child: Text(text, maxLines: 1));
+}
+
 /// Public or close friends — remembered, so the list does not have to be
 /// picked for every post.
 class _AudienceSelector extends StatelessWidget {
@@ -541,17 +579,18 @@ class _AudienceSelector extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: SegmentedButton<Audience>(
+            expandedInsets: EdgeInsets.zero,
             showSelectedIcon: false,
             segments: [
               ButtonSegment(
                 value: Audience.public,
                 icon: const Icon(Icons.public),
-                label: Text(context.l10n.audiencePublic),
+                label: _scaleLabel(context.l10n.audiencePublic),
               ),
               ButtonSegment(
                 value: Audience.closeFriends,
                 icon: const Icon(Icons.star_outline),
-                label: Text(context.l10n.closeFriends),
+                label: _scaleLabel(context.l10n.closeFriends),
               ),
             ],
             selected: {audience},

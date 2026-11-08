@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -474,8 +475,7 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other:
           'Only your $count close friends will see this. Photos and videos are encrypted on your phone before they are uploaded.',
-      one:
-          'Only your 1 close friend will see this. Photos and videos are encrypted on your phone before they are uploaded.',
+      one: 'Only your 1 close friend will see this. Photos and videos are encrypted on your phone before they are uploaded.',
     );
     return '$_temp0';
   }

@@ -444,8 +444,18 @@ class _InlineTextWriterState extends State<_InlineTextWriter> {
           icon: const Icon(Icons.format_color_fill_outlined),
           onPressed: _cycleBackground,
         ),
-        const Spacer(),
-        TextButton(
+        Expanded(child: _doneAction(l10n)),
+      ],
+    ),
+  );
+
+  Widget _doneAction(AppLocalizations l10n) {
+    return Align(
+      alignment: AlignmentDirectional.centerEnd,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: AlignmentDirectional.centerEnd,
+        child: TextButton(
           onPressed: finish,
           child: Text(
             l10n.done,
@@ -456,9 +466,9 @@ class _InlineTextWriterState extends State<_InlineTextWriter> {
             ),
           ),
         ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 
   Widget _middle(AppLocalizations l10n) => Row(
     children: [
@@ -620,6 +630,29 @@ class StoryPill extends StatelessWidget {
     this.icon,
   });
 
+  /// A font chip sits in a horizontal list (unbounded width) and keeps its
+  /// natural size. A chip in a bounded bar scales the word down to fit.
+  Widget _pillRow(double maxWidth) {
+    final word = maxWidth.isFinite ? _scaled(label) : label;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (icon != null) ...[Icon(icon), const SizedBox(width: 6)],
+        word,
+      ],
+    );
+  }
+
+  Widget _scaled(Widget child) {
+    return Flexible(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: AlignmentDirectional.centerStart,
+        child: child,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ink = selected ? Colors.black : Colors.white;
@@ -639,12 +672,9 @@ class StoryPill extends StatelessWidget {
               data: IconThemeData(color: ink, size: 16),
               child: DefaultTextStyle.merge(
                 style: TextStyle(color: ink),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (icon != null) ...[Icon(icon), const SizedBox(width: 6)],
-                    Flexible(child: label),
-                  ],
+                child: LayoutBuilder(
+                  builder: (context, constraints) =>
+                      _pillRow(constraints.maxWidth),
                 ),
               ),
             ),

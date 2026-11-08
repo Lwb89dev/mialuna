@@ -72,7 +72,7 @@ class StoryViewReceipts extends Notifier<bool> {
     if (!_loaded.isCompleted) _loaded.complete();
     // What has not left the phone yet does not leave: now, not at the next
     // send, and not after a restart.
-    if (!enabled) ref.read(storyViewReporterProvider).withdraw();
+    if (!enabled) await ref.read(storyViewReporterProvider).withdraw();
     final prefs = await ref.read(sharedPreferencesLoader)();
     await prefs.setBool(_key, enabled);
   }
@@ -465,13 +465,15 @@ class StoryViewReporter {
   /// The user no longer wants receipts sent: whatever has not left goes,
   /// from memory and from disk. A send already past the point of handing its
   /// gift wrap to a relay cannot be taken back.
-  void withdraw() {
+  Future<void> withdraw() async {
     _epoch++;
     _wanted.clear();
     _retryTimer?.cancel();
     _retryTimer = null;
     _queue.clear();
-    if (owner != null && !_closed) unawaited(_cache.deleteFile(_file));
+    // The file is gone before this returns. A caller that checks the disk
+    // immediately, and a restart, must not still find the receipt.
+    if (owner != null && !_closed) await _cache.deleteFile(_file);
   }
 
   /// Sign-out: forgets everything and writes nothing more (the files of the

@@ -71,7 +71,28 @@ class _StoryTextEditorScreenState extends State<StoryTextEditorScreen> {
     child: Row(
       children: [
         const CloseButton(color: Colors.white),
-        const Spacer(),
+        Expanded(child: _topActions(l10n)),
+      ],
+    ),
+  );
+
+  /// Add-text and Done shrink together when a long "done" does not fit
+  /// beside the close button at a large text size.
+  Widget _topActions(AppLocalizations l10n) {
+    return Align(
+      alignment: AlignmentDirectional.centerEnd,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: AlignmentDirectional.centerEnd,
+        child: _addAndDone(l10n),
+      ),
+    );
+  }
+
+  Widget _addAndDone(AppLocalizations l10n) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
         IconButton(
           tooltip: l10n.storyAddText,
           color: Colors.white,
@@ -90,8 +111,8 @@ class _StoryTextEditorScreenState extends State<StoryTextEditorScreen> {
           ),
         ),
       ],
-    ),
-  );
+    );
+  }
 
   Widget _hint(AppLocalizations l10n) => Padding(
     padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),

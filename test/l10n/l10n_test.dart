@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mialuna/core/branding/app_info.dart';
 import 'package:mialuna/features/settings/settings_controller.dart';
+import 'package:mialuna/l10n/locale_fallback.dart';
 import 'package:mialuna/l10n/strings.dart';
 
 Map<String, dynamic> arb(String code) =>
@@ -34,6 +35,7 @@ void main() {
   test('English is the template and every language has its ARB file', () {
     expect(languages, containsAll(['en', 'it']));
     expect(languages.toSet(), appLanguages.toSet(), reason: 'appLanguages');
+    expect(languageEndonyms.keys.toSet(), appLanguages.toSet());
     expect(
       AppLocalizations.supportedLocales.map((l) => l.languageCode).toSet(),
       languages.toSet(),
@@ -101,6 +103,56 @@ void main() {
     expect(AppStrings.current.cancel, 'Annulla');
     AppStrings.use(const Locale('en'));
     expect(AppStrings.current.cancel, 'Cancel');
+  });
+
+  test('every language formats counts and arguments', () {
+    for (final locale in AppLocalizations.supportedLocales) {
+      final t = lookupAppLocalizations(locale);
+      expect(t.peopleCount(1), isNotEmpty, reason: locale.languageCode);
+      expect(t.peopleCount(2), contains('2'), reason: locale.languageCode);
+      expect(t.storyTextsCount(0), isNotEmpty, reason: locale.languageCode);
+      expect(
+        t.uploadingProgress(2, 5),
+        contains('2'),
+        reason: locale.languageCode,
+      );
+      expect(
+        t.uploadingProgress(2, 5),
+        contains('5'),
+        reason: locale.languageCode,
+      );
+      expect(t.weekdayShort('mon'), isNotEmpty, reason: locale.languageCode);
+      expect(
+        t.aboutText('9.9.9'),
+        contains('Mialuna 9.9.9'),
+        reason: locale.languageCode,
+      );
+      expect(t.onboardingWot(10), contains('10'), reason: locale.languageCode);
+    }
+  });
+
+  test('an unknown phone language falls back to English', () {
+    final supported = AppLocalizations.supportedLocales;
+    expect(
+      resolveAppLocale(const [Locale('mt')], supported).languageCode,
+      'en',
+    );
+    expect(
+      resolveAppLocale(const [Locale('ga')], supported).languageCode,
+      'en',
+    );
+    expect(
+      resolveAppLocale(const [
+        Locale('fr'),
+        Locale('en'),
+      ], supported).languageCode,
+      'fr',
+    );
+    expect(
+      resolveAppLocale(const [Locale('en', 'GB')], supported).languageCode,
+      'en',
+    );
+    expect(resolveAppLocale(null, supported).languageCode, 'en');
   });
 
   test('the version shown in Settings is the one in pubspec.yaml', () {

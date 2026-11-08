@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -475,8 +476,7 @@ class AppLocalizationsIt extends AppLocalizations {
       locale: localeName,
       other:
           'Lo vedranno solo i tuoi $count amici più stretti. Foto e video vengono cifrati sul telefono prima di essere caricati.',
-      one:
-          'Lo vedrà solo il tuo 1 amico più stretto. Foto e video vengono cifrati sul telefono prima di essere caricati.',
+      one: 'Lo vedrà solo il tuo 1 amico più stretto. Foto e video vengono cifrati sul telefono prima di essere caricati.',
     );
     return '$_temp0';
   }

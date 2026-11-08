@@ -6,6 +6,7 @@ import '../features/settings/settings_controller.dart';
 import '../features/social/moderation_controller.dart';
 import '../features/stories/story_receipts.dart';
 import '../features/trust/wot_building_overlay.dart';
+import '../l10n/locale_fallback.dart';
 import '../l10n/strings.dart';
 import 'relay_sync.dart';
 import 'router.dart';
@@ -26,6 +27,7 @@ Widget buildMialunaApp(WidgetRef ref) {
     themeMode: ref.watch(settingsProvider.select((s) => s.themeMode)),
     // null = the phone's language; English when it is not one we translate.
     locale: language == systemLanguage ? null : Locale(language),
+    localeListResolutionCallback: resolveAppLocale,
     supportedLocales: AppLocalizations.supportedLocales,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     builder: (context, child) {

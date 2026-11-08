@@ -43,8 +43,64 @@ final initialSettingsProvider = Provider<AppSettings>(
 const systemLanguage = 'system';
 
 /// Languages the app is translated into: the codes of lib/l10n/app_<code>.arb.
-/// Adding a language = a new ARB file + its code here (docs/TRANSLATING.md).
-const appLanguages = ['en', 'it'];
+/// Adding a language = a new ARB file, its code here, and its endonym below
+/// (docs/TRANSLATING.md). Order is the language's own name, for the picker.
+const appLanguages = [
+  'bg',
+  'zh',
+  'cs',
+  'da',
+  'de',
+  'et',
+  'en',
+  'es',
+  'fr',
+  'hr',
+  'it',
+  'lv',
+  'lt',
+  'hu',
+  'nl',
+  'ja',
+  'pl',
+  'pt',
+  'ro',
+  'ru',
+  'sk',
+  'sl',
+  'fi',
+  'sv',
+  'el',
+];
+
+/// The language's own name. The same label in every language.
+const languageEndonyms = {
+  'bg': 'Български',
+  'zh': '中文',
+  'cs': 'Čeština',
+  'da': 'Dansk',
+  'de': 'Deutsch',
+  'et': 'Eesti',
+  'en': 'English',
+  'es': 'Español',
+  'fr': 'Français',
+  'hr': 'Hrvatski',
+  'it': 'Italiano',
+  'lv': 'Latviešu',
+  'lt': 'Lietuvių',
+  'hu': 'Magyar',
+  'nl': 'Nederlands',
+  'ja': '日本語',
+  'pl': 'Polski',
+  'pt': 'Português',
+  'ro': 'Română',
+  'ru': 'Русский',
+  'sk': 'Slovenčina',
+  'sl': 'Slovenščina',
+  'fi': 'Suomi',
+  'sv': 'Svenska',
+  'el': 'Ελληνικά',
+};
 
 String _knownLanguage(String? code) =>
     appLanguages.contains(code) ? code! : systemLanguage;

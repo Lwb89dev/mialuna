@@ -132,29 +132,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(height: 16),
           Text(context.l10n.languageTitle, style: theme.textTheme.titleSmall),
           const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<String>(
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment(
-                  value: systemLanguage,
-                  label: Text(context.l10n.languageSystem),
-                ),
-                ButtonSegment(
-                  value: 'en',
-                  label: Text(context.l10n.languageEnglish),
-                ),
-                ButtonSegment(
-                  value: 'it',
-                  label: Text(context.l10n.languageItalian),
-                ),
-              ],
-              selected: {settings.language},
-              onSelectionChanged: (s) =>
-                  ref.read(settingsProvider.notifier).setLanguage(s.first),
-            ),
-          ),
+          _LanguagePicker(language: settings.language),
           const SizedBox(height: 24),
           Text(
             context.l10n.publishingSettings,
@@ -653,4 +631,49 @@ class _TagSection extends StatelessWidget {
       ],
     );
   }
+}
+
+/// One closed row. Twenty-five names do not fit in a segmented control,
+/// and the layout test renders this screen at text scale 2.
+class _LanguagePicker extends ConsumerWidget {
+  final String language;
+
+  const _LanguagePicker({required this.language});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            isExpanded: true,
+            value: language,
+            borderRadius: BorderRadius.circular(16),
+            items: [
+              _languageItem(systemLanguage, context.l10n.languageSystem),
+              for (final code in appLanguages)
+                _languageItem(code, languageEndonyms[code]!),
+            ],
+            onChanged: (code) {
+              if (code == null) return;
+              ref.read(settingsProvider.notifier).setLanguage(code);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+DropdownMenuItem<String> _languageItem(String value, String label) {
+  return DropdownMenuItem(
+    value: value,
+    child: Text(label, overflow: TextOverflow.ellipsis),
+  );
 }
