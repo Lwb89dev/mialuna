@@ -5,6 +5,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.22.0] — 2026-11-09 — Pictures stay put
+
+### Fixed
+- **Pictures no longer reload when you come back to a screen.** Opening a
+  photo from Discover, a hashtag or a profile and going back made every
+  thumbnail blank out and load again. Pictures were being decoded at their
+  original size (tens of MB each) instead of the size they are shown at, which
+  overflowed the in-memory image cache; they are now decoded at the shown size,
+  the cache is larger, and a picture already on screen stays there while it is
+  re-read.
+
 ## [0.21.0] — 2026-11-08 — Web of trust, and the app in 25 languages
 
 ### Added

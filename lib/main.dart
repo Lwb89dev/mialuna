@@ -16,6 +16,13 @@ import 'features/settings/settings_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Decoded pictures (already resized to the size they are shown at). The
+  // default 100 MB is a couple of feed photos plus a grid: anything beyond it
+  // is decoded again from disk when a screen is uncovered. Flutter empties
+  // this cache by itself when the system runs low on memory.
+  PaintingBinding.instance.imageCache
+    ..maximumSizeBytes = 256 << 20
+    ..maximumSize = 2000;
   final prefs = await SharedPreferences.getInstance();
   final onboardingDone = prefs.getBool(onboardingDoneKey) ?? false;
   runApp(
