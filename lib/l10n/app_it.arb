@@ -314,7 +314,7 @@
   "loginLocalKey": "Chiave locale",
   "loginGuest": "Ospite",
   "followUpdateFailed": "Impossibile aggiornare i seguiti ora. Riprova.",
-  "noReelsComeBack": "Nessun reel trovato sui relay.\nTorna presto!",
+  "noReelsComeBack": "Ancora nessun reel da chi segui o dalla tua rete di fiducia.\nTorna presto!",
   "followUpdateFailedShort": "Impossibile aggiornare i seguiti ora",
   "needOneReadRelay": "Serve almeno un relay di lettura.",
   "listSavedLocally": "Lista salvata su questo dispositivo, non pubblicata.",

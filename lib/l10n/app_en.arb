@@ -500,7 +500,7 @@
   "loginLocalKey": "Local key",
   "loginGuest": "Guest",
   "followUpdateFailed": "Could not update your follows right now. Try again.",
-  "noReelsComeBack": "No reels found on the relays.\nCome back soon!",
+  "noReelsComeBack": "No reels from the people you follow or your web of trust yet.\nCome back soon!",
   "followUpdateFailedShort": "Could not update your follows right now",
   "needOneReadRelay": "At least one read relay is required.",
   "listSavedLocally": "List saved on this device, not published.",

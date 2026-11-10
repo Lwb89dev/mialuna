@@ -151,7 +151,8 @@ computed. It filters what strangers can push at you — comments on posts,
 reactions/comments/zaps in Notifications (new followers stay visible),
 close-friends posts and stories, and private messages (kept as "message
 requests", not counted as unread, until you answer). Discover shows only this
-network. Reels are not filtered.
+network. Reels show the same people (you, your follows and the web of trust),
+newest first.
 
 ## Media hygiene
 

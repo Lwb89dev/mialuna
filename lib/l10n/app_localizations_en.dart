@@ -1110,7 +1110,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noReelsComeBack =>
-      'No reels found on the relays.\nCome back soon!';
+      'No reels from the people you follow or your web of trust yet.\nCome back soon!';
 
   @override
   String get followUpdateFailedShort =>

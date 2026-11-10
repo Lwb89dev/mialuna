@@ -2031,7 +2031,7 @@ abstract class AppLocalizations {
   /// No description provided for @noReelsComeBack.
   ///
   /// In en, this message translates to:
-  /// **'No reels found on the relays.\nCome back soon!'**
+  /// **'No reels from the people you follow or your web of trust yet.\nCome back soon!'**
   String get noReelsComeBack;
 
   /// No description provided for @followUpdateFailedShort.

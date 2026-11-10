@@ -5,6 +5,22 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.23.0] — 2026-11-10 — Reels from your own network
+
+### Changed
+- **Reels show your own network, newest first.** The Reels tab used to list
+  every short video the relays had, which was mostly adult content from
+  strangers. It now shows only videos from you, the people you follow and
+  your web of trust, ordered by post date. Following someone, or the web of
+  trust finishing its first build, refreshes the list.
+
+### Fixed
+- **Reels with a content warning stay covered.** A video marked as sensitive
+  is hidden behind a cover and is not downloaded until you tap Show, as in
+  the Home feed.
+- **Muted hashtags now apply to Reels** as well as to the feeds.
+- **A reel dated in the future can no longer pin itself on top** of the list.
+
 ## [0.22.0] — 2026-11-09 — Pictures stay put
 
 ### Fixed

@@ -11,6 +11,7 @@ import 'package:mialuna/core/nostr/models/media_event.dart';
 import 'package:mialuna/core/nostr/relay_pool.dart';
 import 'package:mialuna/core/nostr/signer.dart';
 import 'package:mialuna/core/storage/local_cache.dart';
+import 'package:mialuna/features/feed/widgets/post_card.dart';
 import 'package:mialuna/features/reels/reels_controller.dart';
 import 'package:mialuna/features/reels/reels_screen.dart';
 import 'package:mialuna/features/social/post_deletion.dart';
@@ -113,7 +114,7 @@ class _Deletion implements PostDeletion {
 
 int _n = 0;
 
-MediaPost _reel({String? author}) {
+MediaPost _reel({String? author, String? warning}) {
   final id = '${++_n}'.padLeft(64, '0');
   return MediaPost.tryParse(
     NostrEvent(
@@ -128,6 +129,7 @@ MediaPost _reel({String? author}) {
           'm video/mp4',
           'dim 720x1280',
         ],
+        if (warning != null) ['content-warning', warning],
       ],
       content: 'reel $_n',
       sig: '',
@@ -328,4 +330,27 @@ void main() {
     expect(log.alive, lessThanOrEqualTo(2));
     await finish(tester);
   });
+
+  testWidgets(
+    'a reel with a content warning stays covered and loads nothing until shown',
+    (tester) async {
+      log.initializes = true;
+      reels = [_reel(warning: 'nudity'), _reel()];
+      await pump(tester);
+      expect(find.text('nudity'), findsOneWidget);
+      expect(log.made, 0);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(SensitiveCover),
+          matching: find.byType(OutlinedButton),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('nudity'), findsNothing);
+      expect(log.made, 1);
+      expect(log.playing, 1);
+      await finish(tester);
+    },
+  );
 }

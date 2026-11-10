@@ -481,7 +481,7 @@ class _PostMediaState extends ConsumerState<PostMedia> {
     if (post.isSensitive && !_revealed) {
       return AspectRatio(
         aspectRatio: 1,
-        child: _SensitiveCover(
+        child: SensitiveCover(
           reason: post.sensitiveReason,
           onReveal: () => setState(() => _revealed = true),
         ),
@@ -566,10 +566,12 @@ class _PostMediaState extends ConsumerState<PostMedia> {
   }
 }
 
-class _SensitiveCover extends StatelessWidget {
+/// Hides a post marked with a content warning (NIP-36) until the viewer
+/// chooses to see it.
+class SensitiveCover extends StatelessWidget {
   final String? reason;
   final VoidCallback onReveal;
-  const _SensitiveCover({this.reason, required this.onReveal});
+  const SensitiveCover({super.key, this.reason, required this.onReveal});
 
   @override
   Widget build(BuildContext context) {

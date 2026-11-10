@@ -11,6 +11,7 @@ import '../../core/nostr/models/media_event.dart';
 import '../../l10n/strings.dart';
 import '../comments/comments_sheet.dart';
 import '../feed/widgets/inline_video.dart';
+import '../feed/widgets/post_card.dart';
 import '../messages/send_to_sheet.dart';
 import '../profile/profile_widgets.dart';
 import '../settings/settings_controller.dart';
@@ -189,7 +190,14 @@ class _ReelPageState extends ConsumerState<_ReelPage>
   bool _expanded = false;
   bool _disposed = false;
 
+  /// A reel with a content warning stays covered, and is not downloaded,
+  /// until the viewer asks to see it.
+  bool _revealed = false;
+
+  bool get _covered => widget.reel.isSensitive && !_revealed;
+
   bool get _wantsPlayer {
+    if (_covered) return false;
     if (widget.active) return true;
     // Data-saver: off-screen reels are not downloaded at all; they start
     // loading only when the user swipes to them.
@@ -292,7 +300,15 @@ class _ReelPageState extends ConsumerState<_ReelPage>
     return Stack(
       fit: StackFit.expand,
       children: [
-        if (_failed)
+        if (_covered)
+          SensitiveCover(
+            reason: reel.sensitiveReason,
+            onReveal: () {
+              setState(() => _revealed = true);
+              if (_wantsPlayer) _init();
+            },
+          )
+        else if (_failed)
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,

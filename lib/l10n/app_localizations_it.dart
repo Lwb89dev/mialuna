@@ -1112,7 +1112,8 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile aggiornare i seguiti ora. Riprova.';
 
   @override
-  String get noReelsComeBack => 'Nessun reel trovato sui relay.\nTorna presto!';
+  String get noReelsComeBack =>
+      'Ancora nessun reel da chi segui o dalla tua rete di fiducia.\nTorna presto!';
 
   @override
   String get followUpdateFailedShort => 'Impossibile aggiornare i seguiti ora';
