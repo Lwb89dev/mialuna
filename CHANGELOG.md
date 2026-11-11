@@ -5,6 +5,20 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.23.1] — 2026-11-11 — A quicker feed
+
+### Fixed
+- **The feed refreshes much faster.** A single relay that never finishes
+  answering (down, overloaded, or silently dropping the request) kept every
+  load of the feed open for 14 seconds, and a pull-to-refresh made meanwhile
+  waited for it before asking for anything new. Once the first relays have
+  answered, the others now get at most 4 more seconds: a refresh takes about
+  4.5 seconds instead of 14 to 20, and new posts still appear as soon as a
+  relay sends them.
+- **The splash screen shows the rounded-square icon.** Android 12 and later
+  cropped it to a circle; the icon now sits whole inside the area the system
+  shows.
+
 ## [0.23.0] — 2026-11-10 — Reels from your own network
 
 ### Changed

@@ -155,4 +155,44 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     expect(emissions, before);
   });
+
+  test('a relay that never answers does not hold a refresh for long', () async {
+    final dead = FakeRelay()..silent = true;
+    await dead.start();
+    addTearDown(dead.stop);
+    final bob = newSigner();
+    relay.add(await photo(bob, 'prima'));
+    await follows([bob]);
+    final c = ProviderContainer(
+      overrides: [
+        authProvider.overrideWith(() => _FixedAuth(me)),
+        indexerRelaysProvider.overrideWithValue(const []),
+        localCacheProvider.overrideWithValue(LocalCache(directory: tmp)),
+        relayPoolProvider.overrideWith((ref) {
+          final pool = RelayPool([
+            RelayConfig(relay.url),
+            RelayConfig(dead.url),
+          ]);
+          ref.onDispose(pool.dispose);
+          return pool;
+        }),
+      ],
+    );
+    addTearDown(c.dispose);
+    c.listen(feedProvider(FeedMode.following), (_, _) {});
+    await eventually(
+      () => shown(c).contains('prima'),
+      timeout: const Duration(seconds: 20),
+    );
+    final feed = c.read(feedProvider(FeedMode.following).notifier);
+    await feed.whenIdle();
+
+    relay.add(await photo(bob, 'dopo'));
+    final watch = Stopwatch()..start();
+    await feed.refresh();
+    await feed.whenIdle();
+    expect(shown(c), contains('dopo'));
+    // The silent relay used to keep every load open for 14 seconds.
+    expect(watch.elapsed, lessThan(const Duration(seconds: 8)));
+  });
 }

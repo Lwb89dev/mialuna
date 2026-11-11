@@ -102,6 +102,12 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
   static const _loadTimeout = Duration(seconds: 14);
   static const _spinnerLimit = Duration(seconds: 4);
 
+  /// Once the first relays have answered, how long the others still get. A
+  /// relay that never sends EOSE (down, overloaded, or silently dropping the
+  /// request) otherwise kept every load open for the whole [_loadTimeout],
+  /// and a refresh asked meanwhile waited for it before asking anything.
+  static const _stragglerGrace = Duration(seconds: 4);
+
   final Map<String, MediaPost> _byId = {};
   final List<PoolSubscription> _open = [];
   Timer? _flushTimer;
@@ -372,7 +378,7 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
   }
 
   /// Streams one subscription into the list (throttled) until EOSE.
-  Future<_Page> _collect(PoolSubscription sub) async {
+  Future<_Page> _collect(PoolSubscription sub, {Future<void>? cutoff}) async {
     _open.add(sub);
     var added = 0;
     var raw = 0;
@@ -388,7 +394,7 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
         });
       }
     });
-    await sub.eose;
+    await Future.any([sub.eose, ?cutoff]);
     // Relays often deliver their last events right after EOSE.
     await Future<void>.delayed(const Duration(milliseconds: 350));
     await listener.cancel();
@@ -410,13 +416,17 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
     final pool = ref.read(relayPoolProvider);
     if (_mode == FeedMode.discover) {
       return _collect(
-        pool.subscribe([
-          NostrFilter(
-            kinds: NostrKinds.mediaKinds,
-            until: until,
-            limit: _pageSize,
-          ),
-        ], eoseTimeout: _loadTimeout),
+        pool.subscribe(
+          [
+            NostrFilter(
+              kinds: NostrKinds.mediaKinds,
+              until: until,
+              limit: _pageSize,
+            ),
+          ],
+          eoseTimeout: _loadTimeout,
+          straggler: _stragglerGrace,
+        ),
       );
     }
 
@@ -431,9 +441,32 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
         ),
     ];
 
+    // The first subscription to finish starts the countdown for the rest.
+    // One opened late (the outbox lookup can take seconds) still gets the
+    // whole grace from when it was opened.
+    final cutoff = Completer<void>();
+    Timer? grace;
+    Future<_Page> timed(PoolSubscription sub) {
+      final opened = DateTime.now();
+      sub.eose.then((_) {
+        grace ??= Timer(_stragglerGrace, () {
+          if (!cutoff.isCompleted) cutoff.complete();
+        });
+      });
+      final mine = cutoff.future.then((_) {
+        final left = opened.add(_stragglerGrace).difference(DateTime.now());
+        if (left > Duration.zero) return Future<void>.delayed(left);
+      });
+      return _collect(sub, cutoff: mine);
+    }
+
     // The user's own relays answer straight away…
-    final own = _collect(
-      pool.subscribe(filtersFor(authors), eoseTimeout: _loadTimeout),
+    final own = timed(
+      pool.subscribe(
+        filtersFor(authors),
+        eoseTimeout: _loadTimeout,
+        straggler: _stragglerGrace,
+      ),
     );
     // …while the relays each author publishes to are looked up and asked.
     final outbox = ref.read(outboxProvider);
@@ -449,18 +482,20 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
       final results = await Future.wait([
         for (final entry in plan.entries)
           if (!mine.contains(entry.key))
-            _collect(
+            timed(
               pool.subscribe(
                 filtersFor(entry.value),
                 extraRelays: [entry.key],
                 onlyExtra: true,
                 eoseTimeout: _loadTimeout,
+                straggler: _stragglerGrace,
               ),
             ),
       ]);
       return results.fold<_Page>(_noPage, _merge);
     }();
     final pages = await Future.wait([own, theirs]);
+    grace?.cancel();
     return _merge(pages[0], pages[1]);
   }
 

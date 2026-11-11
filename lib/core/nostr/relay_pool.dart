@@ -110,6 +110,10 @@ class _Sub {
   final eose = Completer<void>();
   Timer? eoseTimer;
 
+  /// See `straggler` in [RelayPool.subscribe].
+  Duration? straggler;
+  Timer? stragglerTimer;
+
   /// Events of this subscription still waiting for signature verification:
   /// EOSE must not be reported before they were delivered.
   int pending = 0;
@@ -311,16 +315,21 @@ class RelayPool {
   /// Subscribes on the configured read relays plus [extraRelays] (e.g. an
   /// author's own relays, NIP-65 outbox model). With [onlyExtra] the
   /// configured relays are skipped. [authRequired] makes the pool answer
-  /// NIP-42 AUTH challenges for this subscription.
+  /// NIP-42 AUTH challenges for this subscription. With [straggler], once one
+  /// relay has finished answering the others get at most that long before
+  /// EOSE is reported: a relay that never answers then costs seconds, not
+  /// the whole [eoseTimeout].
   PoolSubscription subscribe(
     List<NostrFilter> filters, {
     Iterable<String> extraRelays = const [],
     bool onlyExtra = false,
     bool authRequired = false,
     Duration? eoseTimeout,
+    Duration? straggler,
   }) {
     final id = 'ml${_counter++}';
-    final sub = _Sub(id, filters, authRequired, onlyExtra);
+    final sub = _Sub(id, filters, authRequired, onlyExtra)
+      ..straggler = straggler;
     _subs[id] = sub;
 
     final urls = <String>{if (!onlyExtra) ...readRelays};
@@ -359,6 +368,7 @@ class RelayPool {
   void _closeSub(_Sub sub) {
     if (_subs.remove(sub.id) == null) return;
     sub.eoseTimer?.cancel();
+    sub.stragglerTimer?.cancel();
     for (final url in sub.relays) {
       _entries[url]?.relay.unsubscribe(sub.id);
     }
@@ -447,6 +457,7 @@ class RelayPool {
     final sub = _subs[subId];
     if (sub == null) return;
     sub.eoseWaiting.remove(url);
+    _startStragglerGrace(sub);
     _checkEose(sub);
   }
 
@@ -454,7 +465,20 @@ class RelayPool {
     if (sub.eoseWaiting.isEmpty && sub.pending <= 0 && !sub.eose.isCompleted) {
       sub.eose.complete();
       sub.eoseTimer?.cancel();
+      sub.stragglerTimer?.cancel();
     }
+  }
+
+  void _startStragglerGrace(_Sub sub) {
+    final grace = sub.straggler;
+    if (grace == null || sub.stragglerTimer != null || sub.eose.isCompleted) {
+      return;
+    }
+    if (sub.eoseWaiting.isEmpty) return; // _checkEose decides
+    sub.stragglerTimer = Timer(grace, () {
+      if (!sub.eose.isCompleted) sub.eose.complete();
+      sub.eoseTimer?.cancel();
+    });
   }
 
   void _onClosed(String url, String subId, String message) {
@@ -467,6 +491,7 @@ class RelayPool {
       return;
     }
     sub.eoseWaiting.remove(url);
+    _startStragglerGrace(sub);
     _checkEose(sub);
   }
 
