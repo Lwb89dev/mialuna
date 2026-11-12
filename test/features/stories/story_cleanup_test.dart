@@ -52,7 +52,18 @@ void main() {
     harness = StoryHarness(relay);
     storage = Directory.systemTemp.createTempSync('mialuna_cleanup_');
     addTearDown(relay.stop);
-    addTearDown(() => storage.deleteSync(recursive: true));
+    addTearDown(() async {
+      // A write still in flight can recreate a file while the folder is
+      // being removed ("Directory not empty"): try again a few times.
+      for (var i = 0; i < 5; i++) {
+        try {
+          if (storage.existsSync()) storage.deleteSync(recursive: true);
+          return;
+        } on FileSystemException {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        }
+      }
+    });
   });
 
   ProviderContainer app(Signer signer, {Directory? dir}) => harness.app(
