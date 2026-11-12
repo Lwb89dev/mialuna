@@ -1750,4 +1750,117 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get storyCleanupPartly =>
       'Някои още не можаха да се изтрият; Mialuna ще опита пак.';
+
+  @override
+  String get editorPro => 'Про редактор';
+
+  @override
+  String get editorModeBasic => 'Основно';
+
+  @override
+  String get editorModePro => 'Pro';
+
+  @override
+  String get toolCrop => 'Изрязване';
+
+  @override
+  String get toolLight => 'Светлина';
+
+  @override
+  String get toolColor => 'Цвят';
+
+  @override
+  String get toolHsl => 'HSL';
+
+  @override
+  String get toolCurves => 'Криви';
+
+  @override
+  String get toolEffects => 'Ефекти';
+
+  @override
+  String get straighten => 'Изправяне';
+
+  @override
+  String get exposure => 'Експозиция';
+
+  @override
+  String get highlights => 'Светли тонове';
+
+  @override
+  String get shadows => 'Сенки';
+
+  @override
+  String get whites => 'Бели';
+
+  @override
+  String get blacks => 'Черни';
+
+  @override
+  String get temperature => 'Температура';
+
+  @override
+  String get tint => 'Нюанс';
+
+  @override
+  String get vibrance => 'Живост';
+
+  @override
+  String get hue => 'Цветови тон';
+
+  @override
+  String get luminance => 'Яркост';
+
+  @override
+  String get colorRed => 'Червено';
+
+  @override
+  String get colorOrange => 'Оранжево';
+
+  @override
+  String get colorYellow => 'Жълто';
+
+  @override
+  String get colorGreen => 'Зелено';
+
+  @override
+  String get colorAqua => 'Аквамарин';
+
+  @override
+  String get colorBlue => 'Синьо';
+
+  @override
+  String get colorPurple => 'Лилаво';
+
+  @override
+  String get colorMagenta => 'Пурпурно';
+
+  @override
+  String get curveHint =>
+      'Плъзнете точка, за да оформите кривата; докоснете, за да добавите; докоснете двукратно, за да премахнете.';
+
+  @override
+  String get sharpen => 'Острота';
+
+  @override
+  String get vignette => 'Винетка';
+
+  @override
+  String get grain => 'Зърно';
+
+  @override
+  String get holdForOriginal =>
+      'Задръжте снимката, за да я сравните с оригинала.';
+
+  @override
+  String get showingOriginal => 'Оригинал';
+
+  @override
+  String get applyLookToAll => 'Приложи този вид към всички снимки';
+
+  @override
+  String get applyingEdits => 'Обработване на снимките…';
+
+  @override
+  String get choosePhotoToEdit => 'Изберете снимка за редактиране';
 }

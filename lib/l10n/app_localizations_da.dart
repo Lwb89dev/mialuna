@@ -1744,4 +1744,117 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get storyCleanupPartly =>
       'Nogle kunne ikke slettes endnu; Mialuna prøver igen.';
+
+  @override
+  String get editorPro => 'Pro-editor';
+
+  @override
+  String get editorModeBasic => 'Basis';
+
+  @override
+  String get editorModePro => 'Pro';
+
+  @override
+  String get toolCrop => 'Beskær';
+
+  @override
+  String get toolLight => 'Lys';
+
+  @override
+  String get toolColor => 'Farve';
+
+  @override
+  String get toolHsl => 'HSL';
+
+  @override
+  String get toolCurves => 'Kurver';
+
+  @override
+  String get toolEffects => 'Effekter';
+
+  @override
+  String get straighten => 'Ret op';
+
+  @override
+  String get exposure => 'Eksponering';
+
+  @override
+  String get highlights => 'Højlys';
+
+  @override
+  String get shadows => 'Skygger';
+
+  @override
+  String get whites => 'Hvide';
+
+  @override
+  String get blacks => 'Sorte';
+
+  @override
+  String get temperature => 'Temperatur';
+
+  @override
+  String get tint => 'Toning';
+
+  @override
+  String get vibrance => 'Livlighed';
+
+  @override
+  String get hue => 'Farvetone';
+
+  @override
+  String get luminance => 'Luminans';
+
+  @override
+  String get colorRed => 'Rød';
+
+  @override
+  String get colorOrange => 'Orange';
+
+  @override
+  String get colorYellow => 'Gul';
+
+  @override
+  String get colorGreen => 'Grøn';
+
+  @override
+  String get colorAqua => 'Akva';
+
+  @override
+  String get colorBlue => 'Blå';
+
+  @override
+  String get colorPurple => 'Lilla';
+
+  @override
+  String get colorMagenta => 'Magenta';
+
+  @override
+  String get curveHint =>
+      'Træk et punkt for at forme kurven, tryk for at tilføje et, dobbelttryk for at fjerne det.';
+
+  @override
+  String get sharpen => 'Skarphed';
+
+  @override
+  String get vignette => 'Vignet';
+
+  @override
+  String get grain => 'Korn';
+
+  @override
+  String get holdForOriginal =>
+      'Hold på billedet for at sammenligne med originalen.';
+
+  @override
+  String get showingOriginal => 'Original';
+
+  @override
+  String get applyLookToAll => 'Brug dette look på alle billeder';
+
+  @override
+  String get applyingEdits => 'Behandler billeder…';
+
+  @override
+  String get choosePhotoToEdit => 'Vælg et billede at redigere';
 }

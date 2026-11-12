@@ -1674,4 +1674,115 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get storyCleanupPartly => '有些还删不掉；Mialuna 会再试。';
+
+  @override
+  String get editorPro => '专业编辑';
+
+  @override
+  String get editorModeBasic => '基础';
+
+  @override
+  String get editorModePro => '专业';
+
+  @override
+  String get toolCrop => '裁剪';
+
+  @override
+  String get toolLight => '光线';
+
+  @override
+  String get toolColor => '颜色';
+
+  @override
+  String get toolHsl => 'HSL';
+
+  @override
+  String get toolCurves => '曲线';
+
+  @override
+  String get toolEffects => '效果';
+
+  @override
+  String get straighten => '拉直';
+
+  @override
+  String get exposure => '曝光';
+
+  @override
+  String get highlights => '高光';
+
+  @override
+  String get shadows => '阴影';
+
+  @override
+  String get whites => '白色色阶';
+
+  @override
+  String get blacks => '黑色色阶';
+
+  @override
+  String get temperature => '色温';
+
+  @override
+  String get tint => '色调';
+
+  @override
+  String get vibrance => '自然饱和度';
+
+  @override
+  String get hue => '色相';
+
+  @override
+  String get luminance => '明亮度';
+
+  @override
+  String get colorRed => '红色';
+
+  @override
+  String get colorOrange => '橙色';
+
+  @override
+  String get colorYellow => '黄色';
+
+  @override
+  String get colorGreen => '绿色';
+
+  @override
+  String get colorAqua => '浅绿色';
+
+  @override
+  String get colorBlue => '蓝色';
+
+  @override
+  String get colorPurple => '紫色';
+
+  @override
+  String get colorMagenta => '洋红';
+
+  @override
+  String get curveHint => '拖动点来调整曲线，轻点添加点，双击删除点。';
+
+  @override
+  String get sharpen => '锐化';
+
+  @override
+  String get vignette => '暗角';
+
+  @override
+  String get grain => '颗粒';
+
+  @override
+  String get holdForOriginal => '按住照片可与原图对比。';
+
+  @override
+  String get showingOriginal => '原图';
+
+  @override
+  String get applyLookToAll => '将此效果应用到所有照片';
+
+  @override
+  String get applyingEdits => '正在处理照片…';
+
+  @override
+  String get choosePhotoToEdit => '选择要编辑的照片';
 }

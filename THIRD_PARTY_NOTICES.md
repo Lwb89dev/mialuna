@@ -33,6 +33,10 @@ Mialuna is made possible by these open-source projects.
 - [pablof7z/olas](https://github.com/pablof7z/olas-nmp) — NIP-68 reference
 - [Lwb89dev/eikon-gallery](https://github.com/Lwb89dev/eikon-gallery) — the
   composer photo editor's crop math is ported from its CropTool (MIT)
+- [Hash without Sine](https://www.shadertoy.com/view/4djSRW) by David
+  Hoskins — the `hash12` function behind the editor's film grain
+  (`shaders/photo_edit.frag`, `color_engine.dart`), MIT License,
+  Copyright (c) 2014 David Hoskins
 
 ## Icon
 

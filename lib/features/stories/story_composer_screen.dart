@@ -87,13 +87,13 @@ class _StoryComposerScreenState extends ConsumerState<StoryComposerScreen> {
   }
 
   Future<void> _editPhoto(PickedMedia media) async {
-    final edited = await ImageEditorScreen.show(
+    final result = await ImageEditorScreen.show(
       context,
-      bytes: media.bytes,
-      mimeType: media.mimeType,
+      bytes: media.originalBytes,
+      initial: media.edit,
     );
-    if (edited == null) return;
-    ref.read(composerProvider.notifier).replaceMediaBytes(0, edited);
+    if (result == null) return;
+    ref.read(composerProvider.notifier).applyEdit(0, result.edit, result.image);
   }
 
   Future<void> _editCaption() async {

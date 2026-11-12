@@ -1746,4 +1746,117 @@ class AppLocalizationsSl extends AppLocalizations {
   @override
   String get storyCleanupPartly =>
       'Nekaterih še ni bilo mogoče izbrisati; Mialuna bo poskusila znova.';
+
+  @override
+  String get editorPro => 'Pro urejevalnik';
+
+  @override
+  String get editorModeBasic => 'Osnovno';
+
+  @override
+  String get editorModePro => 'Pro';
+
+  @override
+  String get toolCrop => 'Obreži';
+
+  @override
+  String get toolLight => 'Svetloba';
+
+  @override
+  String get toolColor => 'Barva';
+
+  @override
+  String get toolHsl => 'HSL';
+
+  @override
+  String get toolCurves => 'Krivulje';
+
+  @override
+  String get toolEffects => 'Učinki';
+
+  @override
+  String get straighten => 'Poravnaj';
+
+  @override
+  String get exposure => 'Osvetlitev';
+
+  @override
+  String get highlights => 'Svetli deli';
+
+  @override
+  String get shadows => 'Sence';
+
+  @override
+  String get whites => 'Beline';
+
+  @override
+  String get blacks => 'Črnine';
+
+  @override
+  String get temperature => 'Temperatura';
+
+  @override
+  String get tint => 'Ton';
+
+  @override
+  String get vibrance => 'Živahnost';
+
+  @override
+  String get hue => 'Odtenek';
+
+  @override
+  String get luminance => 'Svetlost';
+
+  @override
+  String get colorRed => 'Rdeča';
+
+  @override
+  String get colorOrange => 'Oranžna';
+
+  @override
+  String get colorYellow => 'Rumena';
+
+  @override
+  String get colorGreen => 'Zelena';
+
+  @override
+  String get colorAqua => 'Akva';
+
+  @override
+  String get colorBlue => 'Modra';
+
+  @override
+  String get colorPurple => 'Vijolična';
+
+  @override
+  String get colorMagenta => 'Magenta';
+
+  @override
+  String get curveHint =>
+      'Povlecite točko za oblikovanje krivulje, tapnite za dodajanje, dvakrat tapnite za odstranitev.';
+
+  @override
+  String get sharpen => 'Ostrenje';
+
+  @override
+  String get vignette => 'Vinjeta';
+
+  @override
+  String get grain => 'Zrnatost';
+
+  @override
+  String get holdForOriginal =>
+      'Pridržite fotografijo, da jo primerjate z izvirnikom.';
+
+  @override
+  String get showingOriginal => 'Izvirnik';
+
+  @override
+  String get applyLookToAll => 'Uporabi ta videz za vse fotografije';
+
+  @override
+  String get applyingEdits => 'Obdelava fotografij…';
+
+  @override
+  String get choosePhotoToEdit => 'Izberite fotografijo za urejanje';
 }

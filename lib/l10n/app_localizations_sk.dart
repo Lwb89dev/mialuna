@@ -1751,4 +1751,116 @@ class AppLocalizationsSk extends AppLocalizations {
   @override
   String get storyCleanupPartly =>
       'Niektoré sa ešte nepodarilo zmazať; Mialuna to skúsi znova.';
+
+  @override
+  String get editorPro => 'Pro editor';
+
+  @override
+  String get editorModeBasic => 'Základný';
+
+  @override
+  String get editorModePro => 'Pro';
+
+  @override
+  String get toolCrop => 'Orezanie';
+
+  @override
+  String get toolLight => 'Svetlo';
+
+  @override
+  String get toolColor => 'Farba';
+
+  @override
+  String get toolHsl => 'HSL';
+
+  @override
+  String get toolCurves => 'Krivky';
+
+  @override
+  String get toolEffects => 'Efekty';
+
+  @override
+  String get straighten => 'Narovnať';
+
+  @override
+  String get exposure => 'Expozícia';
+
+  @override
+  String get highlights => 'Svetlá';
+
+  @override
+  String get shadows => 'Tiene';
+
+  @override
+  String get whites => 'Biele';
+
+  @override
+  String get blacks => 'Čierne';
+
+  @override
+  String get temperature => 'Teplota';
+
+  @override
+  String get tint => 'Nádych';
+
+  @override
+  String get vibrance => 'Živosť';
+
+  @override
+  String get hue => 'Odtieň';
+
+  @override
+  String get luminance => 'Svietivosť';
+
+  @override
+  String get colorRed => 'Červená';
+
+  @override
+  String get colorOrange => 'Oranžová';
+
+  @override
+  String get colorYellow => 'Žltá';
+
+  @override
+  String get colorGreen => 'Zelená';
+
+  @override
+  String get colorAqua => 'Azúrová';
+
+  @override
+  String get colorBlue => 'Modrá';
+
+  @override
+  String get colorPurple => 'Fialová';
+
+  @override
+  String get colorMagenta => 'Purpurová';
+
+  @override
+  String get curveHint =>
+      'Ťahaním bodu tvarujte krivku, ťuknutím bod pridáte, dvojitým ťuknutím ho odstránite.';
+
+  @override
+  String get sharpen => 'Doostrenie';
+
+  @override
+  String get vignette => 'Vinetácia';
+
+  @override
+  String get grain => 'Zrnitosť';
+
+  @override
+  String get holdForOriginal => 'Podržaním fotky ju porovnáte s originálom.';
+
+  @override
+  String get showingOriginal => 'Originál';
+
+  @override
+  String get applyLookToAll => 'Použiť tento vzhľad na všetky fotky';
+
+  @override
+  String get applyingEdits => 'Spracúvam fotky…';
+
+  @override
+  String get choosePhotoToEdit => 'Vyberte fotku na úpravu';
 }

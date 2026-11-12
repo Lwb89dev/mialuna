@@ -1755,4 +1755,117 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get storyCleanupPartly =>
       'Unele nu au putut fi șterse încă; Mialuna va încerca din nou.';
+
+  @override
+  String get editorPro => 'Editor Pro';
+
+  @override
+  String get editorModeBasic => 'De bază';
+
+  @override
+  String get editorModePro => 'Pro';
+
+  @override
+  String get toolCrop => 'Decupare';
+
+  @override
+  String get toolLight => 'Lumină';
+
+  @override
+  String get toolColor => 'Culoare';
+
+  @override
+  String get toolHsl => 'HSL';
+
+  @override
+  String get toolCurves => 'Curbe';
+
+  @override
+  String get toolEffects => 'Efecte';
+
+  @override
+  String get straighten => 'Îndreptare';
+
+  @override
+  String get exposure => 'Expunere';
+
+  @override
+  String get highlights => 'Lumini';
+
+  @override
+  String get shadows => 'Umbre';
+
+  @override
+  String get whites => 'Albe';
+
+  @override
+  String get blacks => 'Negre';
+
+  @override
+  String get temperature => 'Temperatură';
+
+  @override
+  String get tint => 'Tentă';
+
+  @override
+  String get vibrance => 'Vibranță';
+
+  @override
+  String get hue => 'Nuanță';
+
+  @override
+  String get luminance => 'Luminanță';
+
+  @override
+  String get colorRed => 'Roșu';
+
+  @override
+  String get colorOrange => 'Portocaliu';
+
+  @override
+  String get colorYellow => 'Galben';
+
+  @override
+  String get colorGreen => 'Verde';
+
+  @override
+  String get colorAqua => 'Turcoaz';
+
+  @override
+  String get colorBlue => 'Albastru';
+
+  @override
+  String get colorPurple => 'Mov';
+
+  @override
+  String get colorMagenta => 'Magenta';
+
+  @override
+  String get curveHint =>
+      'Trage un punct pentru a modela curba, atinge pentru a adăuga unul, atinge de două ori pentru a-l elimina.';
+
+  @override
+  String get sharpen => 'Claritate';
+
+  @override
+  String get vignette => 'Vignetare';
+
+  @override
+  String get grain => 'Granulație';
+
+  @override
+  String get holdForOriginal =>
+      'Ține apăsat pe fotografie pentru a o compara cu originalul.';
+
+  @override
+  String get showingOriginal => 'Original';
+
+  @override
+  String get applyLookToAll => 'Aplică acest aspect tuturor fotografiilor';
+
+  @override
+  String get applyingEdits => 'Se procesează fotografiile…';
+
+  @override
+  String get choosePhotoToEdit => 'Alege o fotografie de editat';
 }

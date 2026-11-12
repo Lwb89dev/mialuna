@@ -22,6 +22,7 @@ import '../private/close_friends.dart';
 import '../private/private_delivery.dart';
 import '../settings/settings_controller.dart';
 import '../stories/stories_controller.dart';
+import 'editor/image_edit_apply.dart';
 
 enum ComposerMode { photo, video, reel, story }
 
@@ -44,14 +45,39 @@ class PickedMedia {
   EncryptedBlob? encryptedCover;
   BlossomUploadResult? uploadedPrivateCover;
 
+  /// The file as picked, before any edit, and its type. The editor always
+  /// starts from it (with [edit] restored), so editing twice never
+  /// compresses the photo twice.
+  final Uint8List originalBytes;
+  final String originalMimeType;
+
+  /// The recipe that turned [originalBytes] into [bytes].
+  final ImageEdit edit;
+
   PickedMedia({
     required this.file,
     required this.bytes,
     required this.mimeType,
     this.alt = '',
-  });
+    Uint8List? originalBytes,
+    String? originalMimeType,
+    this.edit = const ImageEdit(),
+  }) : originalBytes = originalBytes ?? bytes,
+       originalMimeType = originalMimeType ?? mimeType;
 
   bool get isVideo => mimeType.startsWith('video/');
+
+  /// This photo with [edit] rendered as [image] (null: back to the
+  /// original). Alt text stays; the upload caches start over.
+  PickedMedia edited(ImageEdit edit, EditedImage? image) => PickedMedia(
+    file: file,
+    bytes: image?.bytes ?? originalBytes,
+    mimeType: image?.mimeType ?? originalMimeType,
+    alt: alt,
+    originalBytes: originalBytes,
+    originalMimeType: originalMimeType,
+    edit: image == null ? const ImageEdit() : edit,
+  );
 }
 
 class ComposerState {
@@ -287,15 +313,33 @@ class ComposerController extends Notifier<ComposerState> {
   }
 
   /// Replaces a photo's bytes with its edited version.
-  void replaceMediaBytes(int index, Uint8List bytes) {
+  /// Puts what the editor returned in place of photo [index].
+  void applyEdit(int index, ImageEdit edit, EditedImage? image) {
     final media = [...state.media];
-    media[index] = PickedMedia(
-      file: media[index].file,
-      bytes: bytes,
-      mimeType: media[index].mimeType,
-      alt: media[index].alt,
-    );
+    media[index] = media[index].edited(edit, image);
     state = state.copyWith(media: media);
+  }
+
+  /// Gives every other photo of the post the look ([Adjustments]) of photo
+  /// [index], keeping each one's own crop and rotation, and renders them
+  /// one at a time in the background. Photos removed meanwhile are skipped.
+  Future<void> applyLookToAll(int index) async {
+    final source = state.media[index];
+    final look = source.edit.adjust;
+    final targets = [
+      for (final m in state.media)
+        if (!identical(m, source) && !m.isVideo) m,
+    ];
+    for (final target in targets) {
+      final edit = target.edit.copyWith(adjust: look);
+      final image = edit.isIdentity
+          ? null
+          : await applyImageEditAsync(target.originalBytes, edit);
+      if (!edit.isIdentity && image == null) continue;
+      final at = state.media.indexWhere((m) => identical(m, target));
+      if (at < 0) continue;
+      applyEdit(at, edit, image);
+    }
   }
 
   void reorderMedia(int oldIndex, int newIndex) {

@@ -1750,4 +1750,117 @@ class AppLocalizationsFi extends AppLocalizations {
   @override
   String get storyCleanupPartly =>
       'Joitakin ei voitu vielä poistaa; Mialuna yrittää uudelleen.';
+
+  @override
+  String get editorPro => 'Pro-editori';
+
+  @override
+  String get editorModeBasic => 'Perus';
+
+  @override
+  String get editorModePro => 'Pro';
+
+  @override
+  String get toolCrop => 'Rajaus';
+
+  @override
+  String get toolLight => 'Valo';
+
+  @override
+  String get toolColor => 'Väri';
+
+  @override
+  String get toolHsl => 'HSL';
+
+  @override
+  String get toolCurves => 'Käyrät';
+
+  @override
+  String get toolEffects => 'Tehosteet';
+
+  @override
+  String get straighten => 'Suorista';
+
+  @override
+  String get exposure => 'Valotus';
+
+  @override
+  String get highlights => 'Valoalueet';
+
+  @override
+  String get shadows => 'Varjot';
+
+  @override
+  String get whites => 'Valkoiset';
+
+  @override
+  String get blacks => 'Mustat';
+
+  @override
+  String get temperature => 'Värilämpötila';
+
+  @override
+  String get tint => 'Vivahde';
+
+  @override
+  String get vibrance => 'Eloisuus';
+
+  @override
+  String get hue => 'Sävy';
+
+  @override
+  String get luminance => 'Luminanssi';
+
+  @override
+  String get colorRed => 'Punainen';
+
+  @override
+  String get colorOrange => 'Oranssi';
+
+  @override
+  String get colorYellow => 'Keltainen';
+
+  @override
+  String get colorGreen => 'Vihreä';
+
+  @override
+  String get colorAqua => 'Akvamariini';
+
+  @override
+  String get colorBlue => 'Sininen';
+
+  @override
+  String get colorPurple => 'Violetti';
+
+  @override
+  String get colorMagenta => 'Magenta';
+
+  @override
+  String get curveHint =>
+      'Muotoile käyrää vetämällä pistettä, lisää piste napauttamalla, poista kaksoisnapautuksella.';
+
+  @override
+  String get sharpen => 'Terävöinti';
+
+  @override
+  String get vignette => 'Vinjetointi';
+
+  @override
+  String get grain => 'Rakeisuus';
+
+  @override
+  String get holdForOriginal =>
+      'Vertaa alkuperäiseen pitämällä kuvaa painettuna.';
+
+  @override
+  String get showingOriginal => 'Alkuperäinen';
+
+  @override
+  String get applyLookToAll => 'Käytä tätä tyyliä kaikkiin kuviin';
+
+  @override
+  String get applyingEdits => 'Käsitellään kuvia…';
+
+  @override
+  String get choosePhotoToEdit => 'Valitse muokattava kuva';
 }

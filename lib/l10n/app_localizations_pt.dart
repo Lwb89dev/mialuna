@@ -1754,4 +1754,117 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get storyCleanupPartly =>
       'Algumas ainda não puderam ser eliminadas; Mialuna vai tentar de novo.';
+
+  @override
+  String get editorPro => 'Editor Pro';
+
+  @override
+  String get editorModeBasic => 'Básico';
+
+  @override
+  String get editorModePro => 'Pro';
+
+  @override
+  String get toolCrop => 'Cortar';
+
+  @override
+  String get toolLight => 'Luz';
+
+  @override
+  String get toolColor => 'Cor';
+
+  @override
+  String get toolHsl => 'HSL';
+
+  @override
+  String get toolCurves => 'Curvas';
+
+  @override
+  String get toolEffects => 'Efeitos';
+
+  @override
+  String get straighten => 'Endireitar';
+
+  @override
+  String get exposure => 'Exposição';
+
+  @override
+  String get highlights => 'Realces';
+
+  @override
+  String get shadows => 'Sombras';
+
+  @override
+  String get whites => 'Brancos';
+
+  @override
+  String get blacks => 'Pretos';
+
+  @override
+  String get temperature => 'Temperatura';
+
+  @override
+  String get tint => 'Tonalidade';
+
+  @override
+  String get vibrance => 'Vibração';
+
+  @override
+  String get hue => 'Matiz';
+
+  @override
+  String get luminance => 'Luminância';
+
+  @override
+  String get colorRed => 'Vermelho';
+
+  @override
+  String get colorOrange => 'Laranja';
+
+  @override
+  String get colorYellow => 'Amarelo';
+
+  @override
+  String get colorGreen => 'Verde';
+
+  @override
+  String get colorAqua => 'Água';
+
+  @override
+  String get colorBlue => 'Azul';
+
+  @override
+  String get colorPurple => 'Roxo';
+
+  @override
+  String get colorMagenta => 'Magenta';
+
+  @override
+  String get curveHint =>
+      'Arraste um ponto para moldar a curva, toque para adicionar um e toque duas vezes para remover.';
+
+  @override
+  String get sharpen => 'Nitidez';
+
+  @override
+  String get vignette => 'Vinheta';
+
+  @override
+  String get grain => 'Granulação';
+
+  @override
+  String get holdForOriginal =>
+      'Mantenha a foto pressionada para comparar com a original.';
+
+  @override
+  String get showingOriginal => 'Original';
+
+  @override
+  String get applyLookToAll => 'Aplicar este visual a todas as fotos';
+
+  @override
+  String get applyingEdits => 'Processando fotos…';
+
+  @override
+  String get choosePhotoToEdit => 'Escolha uma foto para editar';
 }

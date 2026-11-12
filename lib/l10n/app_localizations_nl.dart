@@ -1752,4 +1752,117 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get storyCleanupPartly =>
       'Sommige konden nog niet worden verwijderd; Mialuna probeert het opnieuw.';
+
+  @override
+  String get editorPro => 'Pro-editor';
+
+  @override
+  String get editorModeBasic => 'Basis';
+
+  @override
+  String get editorModePro => 'Pro';
+
+  @override
+  String get toolCrop => 'Bijsnijden';
+
+  @override
+  String get toolLight => 'Licht';
+
+  @override
+  String get toolColor => 'Kleur';
+
+  @override
+  String get toolHsl => 'HSL';
+
+  @override
+  String get toolCurves => 'Curven';
+
+  @override
+  String get toolEffects => 'Effecten';
+
+  @override
+  String get straighten => 'Rechtzetten';
+
+  @override
+  String get exposure => 'Belichting';
+
+  @override
+  String get highlights => 'Hoge lichten';
+
+  @override
+  String get shadows => 'Schaduwen';
+
+  @override
+  String get whites => 'Witten';
+
+  @override
+  String get blacks => 'Zwarten';
+
+  @override
+  String get temperature => 'Temperatuur';
+
+  @override
+  String get tint => 'Tint';
+
+  @override
+  String get vibrance => 'Levendigheid';
+
+  @override
+  String get hue => 'Kleurtoon';
+
+  @override
+  String get luminance => 'Luminantie';
+
+  @override
+  String get colorRed => 'Rood';
+
+  @override
+  String get colorOrange => 'Oranje';
+
+  @override
+  String get colorYellow => 'Geel';
+
+  @override
+  String get colorGreen => 'Groen';
+
+  @override
+  String get colorAqua => 'Aqua';
+
+  @override
+  String get colorBlue => 'Blauw';
+
+  @override
+  String get colorPurple => 'Paars';
+
+  @override
+  String get colorMagenta => 'Magenta';
+
+  @override
+  String get curveHint =>
+      'Sleep een punt om de curve te vormen, tik om er een toe te voegen, dubbeltik om het te verwijderen.';
+
+  @override
+  String get sharpen => 'Verscherpen';
+
+  @override
+  String get vignette => 'Vignet';
+
+  @override
+  String get grain => 'Korrel';
+
+  @override
+  String get holdForOriginal =>
+      'Houd de foto ingedrukt om te vergelijken met het origineel.';
+
+  @override
+  String get showingOriginal => 'Origineel';
+
+  @override
+  String get applyLookToAll => 'Deze look op alle foto\'s toepassen';
+
+  @override
+  String get applyingEdits => 'Foto\'s verwerken…';
+
+  @override
+  String get choosePhotoToEdit => 'Kies een foto om te bewerken';
 }

@@ -1761,4 +1761,118 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get storyCleanupPartly =>
       'Κάποιες δεν διαγράφηκαν ακόμα. Η Mialuna θα ξαναπροσπαθήσει.';
+
+  @override
+  String get editorPro => 'Pro επεξεργασία';
+
+  @override
+  String get editorModeBasic => 'Βασικό';
+
+  @override
+  String get editorModePro => 'Pro';
+
+  @override
+  String get toolCrop => 'Περικοπή';
+
+  @override
+  String get toolLight => 'Φως';
+
+  @override
+  String get toolColor => 'Χρώμα';
+
+  @override
+  String get toolHsl => 'HSL';
+
+  @override
+  String get toolCurves => 'Καμπύλες';
+
+  @override
+  String get toolEffects => 'Εφέ';
+
+  @override
+  String get straighten => 'Ευθυγράμμιση';
+
+  @override
+  String get exposure => 'Έκθεση';
+
+  @override
+  String get highlights => 'Φωτεινά σημεία';
+
+  @override
+  String get shadows => 'Σκιές';
+
+  @override
+  String get whites => 'Λευκά';
+
+  @override
+  String get blacks => 'Μαύρα';
+
+  @override
+  String get temperature => 'Θερμοκρασία';
+
+  @override
+  String get tint => 'Τόνος';
+
+  @override
+  String get vibrance => 'Ζωντάνια';
+
+  @override
+  String get hue => 'Απόχρωση';
+
+  @override
+  String get luminance => 'Φωτεινότητα';
+
+  @override
+  String get colorRed => 'Κόκκινο';
+
+  @override
+  String get colorOrange => 'Πορτοκαλί';
+
+  @override
+  String get colorYellow => 'Κίτρινο';
+
+  @override
+  String get colorGreen => 'Πράσινο';
+
+  @override
+  String get colorAqua => 'Γαλάζιο';
+
+  @override
+  String get colorBlue => 'Μπλε';
+
+  @override
+  String get colorPurple => 'Μωβ';
+
+  @override
+  String get colorMagenta => 'Ματζέντα';
+
+  @override
+  String get curveHint =>
+      'Σύρετε ένα σημείο για να διαμορφώσετε την καμπύλη, πατήστε για προσθήκη, πατήστε δύο φορές για αφαίρεση.';
+
+  @override
+  String get sharpen => 'Οξύτητα';
+
+  @override
+  String get vignette => 'Βινιέτα';
+
+  @override
+  String get grain => 'Κόκκος';
+
+  @override
+  String get holdForOriginal =>
+      'Κρατήστε πατημένη τη φωτογραφία για σύγκριση με το πρωτότυπο.';
+
+  @override
+  String get showingOriginal => 'Πρωτότυπο';
+
+  @override
+  String get applyLookToAll =>
+      'Εφαρμογή αυτής της εμφάνισης σε όλες τις φωτογραφίες';
+
+  @override
+  String get applyingEdits => 'Επεξεργασία φωτογραφιών…';
+
+  @override
+  String get choosePhotoToEdit => 'Επιλέξτε φωτογραφία για επεξεργασία';
 }

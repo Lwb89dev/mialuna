@@ -427,6 +427,40 @@ void main() {
             await expectClean(tester, where);
           });
 
+          testWidgets('create with photos · $where', (tester) async {
+            await pumpScreen(
+              tester,
+              const CreateScreen(),
+              size: entry.value,
+              textScale: scale,
+            );
+            final container = ProviderScope.containerOf(
+              tester.element(find.byType(CreateScreen)),
+            );
+            final photo = Uint8List.fromList(
+              img.encodeJpg(img.Image(width: 30, height: 20)),
+            );
+            for (var i = 0; i < 2; i++) {
+              container
+                  .read(composerProvider.notifier)
+                  .addPicked(
+                    PickedMedia(
+                      file: XFile.fromData(photo, name: 'p$i.jpg'),
+                      bytes: photo,
+                      mimeType: 'image/jpeg',
+                    ),
+                  );
+            }
+            await tester.pump();
+            await tester.scrollUntilVisible(
+              find.byIcon(Icons.tune),
+              200,
+              scrollable: find.byType(Scrollable).first,
+            );
+            expect(find.byIcon(Icons.tune), findsOneWidget);
+            await expectClean(tester, where);
+          });
+
           testWidgets('explore · $where', (tester) async {
             await pumpScreen(
               tester,

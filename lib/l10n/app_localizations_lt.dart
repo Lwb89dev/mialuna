@@ -1746,4 +1746,117 @@ class AppLocalizationsLt extends AppLocalizations {
   @override
   String get storyCleanupPartly =>
       'Kai kurių dar nepavyko ištrinti; Mialuna bandys dar.';
+
+  @override
+  String get editorPro => 'Pro redaktorius';
+
+  @override
+  String get editorModeBasic => 'Pagrindinis';
+
+  @override
+  String get editorModePro => 'Pro';
+
+  @override
+  String get toolCrop => 'Apkirpti';
+
+  @override
+  String get toolLight => 'Šviesa';
+
+  @override
+  String get toolColor => 'Spalva';
+
+  @override
+  String get toolHsl => 'HSL';
+
+  @override
+  String get toolCurves => 'Kreivės';
+
+  @override
+  String get toolEffects => 'Efektai';
+
+  @override
+  String get straighten => 'Ištiesinti';
+
+  @override
+  String get exposure => 'Ekspozicija';
+
+  @override
+  String get highlights => 'Šviesūs tonai';
+
+  @override
+  String get shadows => 'Šešėliai';
+
+  @override
+  String get whites => 'Baltos';
+
+  @override
+  String get blacks => 'Juodos';
+
+  @override
+  String get temperature => 'Temperatūra';
+
+  @override
+  String get tint => 'Tonas';
+
+  @override
+  String get vibrance => 'Gyvumas';
+
+  @override
+  String get hue => 'Atspalvis';
+
+  @override
+  String get luminance => 'Skaistis';
+
+  @override
+  String get colorRed => 'Raudona';
+
+  @override
+  String get colorOrange => 'Oranžinė';
+
+  @override
+  String get colorYellow => 'Geltona';
+
+  @override
+  String get colorGreen => 'Žalia';
+
+  @override
+  String get colorAqua => 'Žydra';
+
+  @override
+  String get colorBlue => 'Mėlyna';
+
+  @override
+  String get colorPurple => 'Violetinė';
+
+  @override
+  String get colorMagenta => 'Purpurinė';
+
+  @override
+  String get curveHint =>
+      'Vilkite tašką kreivei formuoti, bakstelėkite pridėti, dukart bakstelėkite pašalinti.';
+
+  @override
+  String get sharpen => 'Ryškumas';
+
+  @override
+  String get vignette => 'Vinjetė';
+
+  @override
+  String get grain => 'Grūdėtumas';
+
+  @override
+  String get holdForOriginal =>
+      'Palaikykite nuotrauką, kad palygintumėte su originalu.';
+
+  @override
+  String get showingOriginal => 'Originalas';
+
+  @override
+  String get applyLookToAll => 'Taikyti šią išvaizdą visoms nuotraukoms';
+
+  @override
+  String get applyingEdits => 'Apdorojamos nuotraukos…';
+
+  @override
+  String get choosePhotoToEdit => 'Pasirinkite nuotrauką redaguoti';
 }

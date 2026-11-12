@@ -1750,4 +1750,117 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get storyCleanupPartly =>
       'Néhányat még nem sikerült törölni; a Mialuna újra megpróbálja.';
+
+  @override
+  String get editorPro => 'Pro szerkesztő';
+
+  @override
+  String get editorModeBasic => 'Alap';
+
+  @override
+  String get editorModePro => 'Pro';
+
+  @override
+  String get toolCrop => 'Vágás';
+
+  @override
+  String get toolLight => 'Fény';
+
+  @override
+  String get toolColor => 'Szín';
+
+  @override
+  String get toolHsl => 'HSL';
+
+  @override
+  String get toolCurves => 'Görbék';
+
+  @override
+  String get toolEffects => 'Effektek';
+
+  @override
+  String get straighten => 'Kiegyenesítés';
+
+  @override
+  String get exposure => 'Expozíció';
+
+  @override
+  String get highlights => 'Csúcsfények';
+
+  @override
+  String get shadows => 'Árnyékok';
+
+  @override
+  String get whites => 'Fehérek';
+
+  @override
+  String get blacks => 'Feketék';
+
+  @override
+  String get temperature => 'Színhőmérséklet';
+
+  @override
+  String get tint => 'Árnyalat';
+
+  @override
+  String get vibrance => 'Élénkség';
+
+  @override
+  String get hue => 'Színezet';
+
+  @override
+  String get luminance => 'Fénysűrűség';
+
+  @override
+  String get colorRed => 'Piros';
+
+  @override
+  String get colorOrange => 'Narancs';
+
+  @override
+  String get colorYellow => 'Sárga';
+
+  @override
+  String get colorGreen => 'Zöld';
+
+  @override
+  String get colorAqua => 'Akvamarin';
+
+  @override
+  String get colorBlue => 'Kék';
+
+  @override
+  String get colorPurple => 'Lila';
+
+  @override
+  String get colorMagenta => 'Bíbor';
+
+  @override
+  String get curveHint =>
+      'Húzz egy pontot a görbe alakításához, koppints új pontért, dupla koppintással törölheted.';
+
+  @override
+  String get sharpen => 'Élesítés';
+
+  @override
+  String get vignette => 'Vignettálás';
+
+  @override
+  String get grain => 'Szemcse';
+
+  @override
+  String get holdForOriginal =>
+      'Tartsd lenyomva a fotót az eredetivel való összevetéshez.';
+
+  @override
+  String get showingOriginal => 'Eredeti';
+
+  @override
+  String get applyLookToAll => 'Ez a stílus minden fotóra';
+
+  @override
+  String get applyingEdits => 'Fotók feldolgozása…';
+
+  @override
+  String get choosePhotoToEdit => 'Válaszd ki a szerkesztendő fotót';
 }

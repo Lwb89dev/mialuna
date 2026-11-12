@@ -1745,4 +1745,117 @@ class AppLocalizationsLv extends AppLocalizations {
   @override
   String get storyCleanupPartly =>
       'Dažus vēl neizdevās dzēst; Mialuna mēģinās vēlreiz.';
+
+  @override
+  String get editorPro => 'Pro redaktors';
+
+  @override
+  String get editorModeBasic => 'Pamata';
+
+  @override
+  String get editorModePro => 'Pro';
+
+  @override
+  String get toolCrop => 'Apgriezt';
+
+  @override
+  String get toolLight => 'Gaisma';
+
+  @override
+  String get toolColor => 'Krāsa';
+
+  @override
+  String get toolHsl => 'HSL';
+
+  @override
+  String get toolCurves => 'Līknes';
+
+  @override
+  String get toolEffects => 'Efekti';
+
+  @override
+  String get straighten => 'Iztaisnot';
+
+  @override
+  String get exposure => 'Ekspozīcija';
+
+  @override
+  String get highlights => 'Gaišie toņi';
+
+  @override
+  String get shadows => 'Ēnas';
+
+  @override
+  String get whites => 'Baltie';
+
+  @override
+  String get blacks => 'Melnie';
+
+  @override
+  String get temperature => 'Temperatūra';
+
+  @override
+  String get tint => 'Tonis';
+
+  @override
+  String get vibrance => 'Dzīvīgums';
+
+  @override
+  String get hue => 'Nokrāsa';
+
+  @override
+  String get luminance => 'Spilgtums';
+
+  @override
+  String get colorRed => 'Sarkans';
+
+  @override
+  String get colorOrange => 'Oranžs';
+
+  @override
+  String get colorYellow => 'Dzeltens';
+
+  @override
+  String get colorGreen => 'Zaļš';
+
+  @override
+  String get colorAqua => 'Akvamarīns';
+
+  @override
+  String get colorBlue => 'Zils';
+
+  @override
+  String get colorPurple => 'Violets';
+
+  @override
+  String get colorMagenta => 'Fuksīns';
+
+  @override
+  String get curveHint =>
+      'Velciet punktu, lai veidotu līkni, pieskarieties, lai pievienotu, divreiz pieskarieties, lai noņemtu.';
+
+  @override
+  String get sharpen => 'Asums';
+
+  @override
+  String get vignette => 'Vinjete';
+
+  @override
+  String get grain => 'Graudainība';
+
+  @override
+  String get holdForOriginal =>
+      'Turiet fotoattēlu, lai salīdzinātu ar oriģinālu.';
+
+  @override
+  String get showingOriginal => 'Oriģināls';
+
+  @override
+  String get applyLookToAll => 'Lietot šo izskatu visiem fotoattēliem';
+
+  @override
+  String get applyingEdits => 'Apstrādā fotoattēlus…';
+
+  @override
+  String get choosePhotoToEdit => 'Izvēlieties fotoattēlu rediģēšanai';
 }

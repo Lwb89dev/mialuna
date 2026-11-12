@@ -67,6 +67,7 @@ enum CropShape {
   free(null),
   original(-1),
   square(1),
+  fourFive(4 / 5),
   fourThree(4 / 3),
   threeTwo(3 / 2),
   sixteenNine(16 / 9);

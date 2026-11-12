@@ -1753,4 +1753,117 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get storyCleanupPartly =>
       'Vissa kunde inte raderas än; Mialuna försöker igen.';
+
+  @override
+  String get editorPro => 'Proredigerare';
+
+  @override
+  String get editorModeBasic => 'Bas';
+
+  @override
+  String get editorModePro => 'Pro';
+
+  @override
+  String get toolCrop => 'Beskär';
+
+  @override
+  String get toolLight => 'Ljus';
+
+  @override
+  String get toolColor => 'Färg';
+
+  @override
+  String get toolHsl => 'HSL';
+
+  @override
+  String get toolCurves => 'Kurvor';
+
+  @override
+  String get toolEffects => 'Effekter';
+
+  @override
+  String get straighten => 'Räta upp';
+
+  @override
+  String get exposure => 'Exponering';
+
+  @override
+  String get highlights => 'Högdagrar';
+
+  @override
+  String get shadows => 'Skuggor';
+
+  @override
+  String get whites => 'Vita';
+
+  @override
+  String get blacks => 'Svärta';
+
+  @override
+  String get temperature => 'Temperatur';
+
+  @override
+  String get tint => 'Ton';
+
+  @override
+  String get vibrance => 'Lyster';
+
+  @override
+  String get hue => 'Nyans';
+
+  @override
+  String get luminance => 'Luminans';
+
+  @override
+  String get colorRed => 'Röd';
+
+  @override
+  String get colorOrange => 'Orange';
+
+  @override
+  String get colorYellow => 'Gul';
+
+  @override
+  String get colorGreen => 'Grön';
+
+  @override
+  String get colorAqua => 'Akva';
+
+  @override
+  String get colorBlue => 'Blå';
+
+  @override
+  String get colorPurple => 'Lila';
+
+  @override
+  String get colorMagenta => 'Magenta';
+
+  @override
+  String get curveHint =>
+      'Dra en punkt för att forma kurvan, tryck för att lägga till en, dubbeltryck för att ta bort den.';
+
+  @override
+  String get sharpen => 'Skärpa';
+
+  @override
+  String get vignette => 'Vinjett';
+
+  @override
+  String get grain => 'Korn';
+
+  @override
+  String get holdForOriginal =>
+      'Håll ned fotot för att jämföra med originalet.';
+
+  @override
+  String get showingOriginal => 'Original';
+
+  @override
+  String get applyLookToAll => 'Använd den här looken på alla foton';
+
+  @override
+  String get applyingEdits => 'Bearbetar foton…';
+
+  @override
+  String get choosePhotoToEdit => 'Välj ett foto att redigera';
 }

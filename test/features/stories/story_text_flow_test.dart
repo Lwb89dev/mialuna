@@ -16,6 +16,8 @@ import 'package:mialuna/core/nostr/relay_pool.dart';
 import 'package:mialuna/core/nostr/signer.dart';
 import 'package:mialuna/core/storage/local_cache.dart';
 import 'package:mialuna/features/create/create_controller.dart';
+import 'package:mialuna/features/create/editor/crop_tool.dart';
+import 'package:mialuna/features/create/editor/image_edit_apply.dart';
 import 'package:mialuna/features/messages/dm_controller.dart';
 import 'package:mialuna/features/private/close_friends.dart';
 import 'package:mialuna/features/private/private_posts.dart';
@@ -238,7 +240,11 @@ void main() {
       expect(state().overlays, [lakeText]);
 
       // Cropping the picture keeps them (they are placed in fractions)…
-      composer.replaceMediaBytes(0, jpegFixture());
+      final cropped = applyImageEdit(
+        jpegFixture(),
+        const ImageEdit(crop: Crop(right: 0.5)),
+      );
+      composer.applyEdit(0, const ImageEdit(crop: Crop(right: 0.5)), cropped);
       expect(state().overlays, [lakeText]);
 
       // …another picture, no picture, or another kind of post does not.

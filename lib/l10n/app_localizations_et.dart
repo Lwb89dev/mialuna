@@ -1748,4 +1748,117 @@ class AppLocalizationsEt extends AppLocalizations {
   @override
   String get storyCleanupPartly =>
       'Mõnda ei saanud veel kustutada; Mialuna proovib uuesti.';
+
+  @override
+  String get editorPro => 'Pro-redaktor';
+
+  @override
+  String get editorModeBasic => 'Põhi';
+
+  @override
+  String get editorModePro => 'Pro';
+
+  @override
+  String get toolCrop => 'Kärbi';
+
+  @override
+  String get toolLight => 'Valgus';
+
+  @override
+  String get toolColor => 'Värv';
+
+  @override
+  String get toolHsl => 'HSL';
+
+  @override
+  String get toolCurves => 'Kõverad';
+
+  @override
+  String get toolEffects => 'Efektid';
+
+  @override
+  String get straighten => 'Sirgesta';
+
+  @override
+  String get exposure => 'Säritus';
+
+  @override
+  String get highlights => 'Heledad';
+
+  @override
+  String get shadows => 'Varjud';
+
+  @override
+  String get whites => 'Valged';
+
+  @override
+  String get blacks => 'Mustad';
+
+  @override
+  String get temperature => 'Temperatuur';
+
+  @override
+  String get tint => 'Toon';
+
+  @override
+  String get vibrance => 'Erksus';
+
+  @override
+  String get hue => 'Värvitoon';
+
+  @override
+  String get luminance => 'Heledus';
+
+  @override
+  String get colorRed => 'Punane';
+
+  @override
+  String get colorOrange => 'Oranž';
+
+  @override
+  String get colorYellow => 'Kollane';
+
+  @override
+  String get colorGreen => 'Roheline';
+
+  @override
+  String get colorAqua => 'Akvamariin';
+
+  @override
+  String get colorBlue => 'Sinine';
+
+  @override
+  String get colorPurple => 'Lilla';
+
+  @override
+  String get colorMagenta => 'Magenta';
+
+  @override
+  String get curveHint =>
+      'Lohista punkti, et kõverat kujundada, puuduta lisamiseks, topeltpuuduta eemaldamiseks.';
+
+  @override
+  String get sharpen => 'Teravus';
+
+  @override
+  String get vignette => 'Vinjett';
+
+  @override
+  String get grain => 'Teralisus';
+
+  @override
+  String get holdForOriginal =>
+      'Hoia fotot all, et võrrelda seda originaaliga.';
+
+  @override
+  String get showingOriginal => 'Originaal';
+
+  @override
+  String get applyLookToAll => 'Rakenda see välimus kõigile fotodele';
+
+  @override
+  String get applyingEdits => 'Fotode töötlemine…';
+
+  @override
+  String get choosePhotoToEdit => 'Vali muudetav foto';
 }

@@ -1693,4 +1693,115 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get storyCleanupPartly => 'まだ削除できないものがあります。Mialuna が再試行します。';
+
+  @override
+  String get editorPro => 'プロ編集';
+
+  @override
+  String get editorModeBasic => 'ベーシック';
+
+  @override
+  String get editorModePro => 'プロ';
+
+  @override
+  String get toolCrop => '切り抜き';
+
+  @override
+  String get toolLight => 'ライト';
+
+  @override
+  String get toolColor => 'カラー';
+
+  @override
+  String get toolHsl => 'HSL';
+
+  @override
+  String get toolCurves => 'トーンカーブ';
+
+  @override
+  String get toolEffects => 'エフェクト';
+
+  @override
+  String get straighten => '傾き補正';
+
+  @override
+  String get exposure => '露光量';
+
+  @override
+  String get highlights => 'ハイライト';
+
+  @override
+  String get shadows => 'シャドウ';
+
+  @override
+  String get whites => '白レベル';
+
+  @override
+  String get blacks => '黒レベル';
+
+  @override
+  String get temperature => '色温度';
+
+  @override
+  String get tint => '色かぶり補正';
+
+  @override
+  String get vibrance => '自然な彩度';
+
+  @override
+  String get hue => '色相';
+
+  @override
+  String get luminance => '輝度';
+
+  @override
+  String get colorRed => 'レッド';
+
+  @override
+  String get colorOrange => 'オレンジ';
+
+  @override
+  String get colorYellow => 'イエロー';
+
+  @override
+  String get colorGreen => 'グリーン';
+
+  @override
+  String get colorAqua => 'アクア';
+
+  @override
+  String get colorBlue => 'ブルー';
+
+  @override
+  String get colorPurple => 'パープル';
+
+  @override
+  String get colorMagenta => 'マゼンタ';
+
+  @override
+  String get curveHint => '点をドラッグしてカーブを調整、タップで点を追加、ダブルタップで削除します。';
+
+  @override
+  String get sharpen => 'シャープ';
+
+  @override
+  String get vignette => '周辺光量';
+
+  @override
+  String get grain => '粒子';
+
+  @override
+  String get holdForOriginal => '写真を長押しすると元の写真と比較できます。';
+
+  @override
+  String get showingOriginal => 'オリジナル';
+
+  @override
+  String get applyLookToAll => 'この仕上がりをすべての写真に適用';
+
+  @override
+  String get applyingEdits => '写真を処理しています…';
+
+  @override
+  String get choosePhotoToEdit => '編集する写真を選択';
 }

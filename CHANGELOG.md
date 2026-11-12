@@ -5,6 +5,32 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.24.0] — 2026-11-12 — A pro editor for photographers
+
+### Added
+- **Pro photo editor.** A new "Pro editor" button next to the photo
+  thumbnails opens the full editor (the small crop button still opens the
+  quick one, and both can be switched from the top bar). It has light
+  (exposure, contrast, highlights, shadows, whites, blacks), colour (white
+  balance temperature and tint, vibrance, saturation), HSL for eight colour
+  ranges, RGB and per-channel tone curves, sharpening, vignette and grain,
+  free straightening, a 4:5 crop, a live histogram and before/after by
+  holding the photo. The preview runs on the GPU and uses the same colour
+  table as the export, so the published photo matches what was on screen.
+  A look can be copied onto every photo of a post in one go.
+
+### Changed
+- **Edited photos keep their quality.** Edits are now a recipe kept next to
+  the untouched original: reopening the editor brings every slider back
+  where it was and the photo is rendered once from the original instead of
+  being compressed again at each edit. A photo whose edits are all undone
+  is published as the original file. Edited photos are saved at JPEG
+  quality 95 (was 92) and keep their colour profile (Display P3, Adobe RGB).
+
+### Fixed
+- **Portrait phone photos no longer appear sideways in the editor.** The
+  orientation the camera records is now applied before editing.
+
 ## [0.23.1] — 2026-11-11 — A quicker feed
 
 ### Fixed

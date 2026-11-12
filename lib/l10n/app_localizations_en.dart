@@ -1744,4 +1744,116 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get storyCleanupPartly =>
       'Some could not be deleted yet; Mialuna will try again.';
+
+  @override
+  String get editorPro => 'Pro editor';
+
+  @override
+  String get editorModeBasic => 'Basic';
+
+  @override
+  String get editorModePro => 'Pro';
+
+  @override
+  String get toolCrop => 'Crop';
+
+  @override
+  String get toolLight => 'Light';
+
+  @override
+  String get toolColor => 'Color';
+
+  @override
+  String get toolHsl => 'HSL';
+
+  @override
+  String get toolCurves => 'Curves';
+
+  @override
+  String get toolEffects => 'Effects';
+
+  @override
+  String get straighten => 'Straighten';
+
+  @override
+  String get exposure => 'Exposure';
+
+  @override
+  String get highlights => 'Highlights';
+
+  @override
+  String get shadows => 'Shadows';
+
+  @override
+  String get whites => 'Whites';
+
+  @override
+  String get blacks => 'Blacks';
+
+  @override
+  String get temperature => 'Temperature';
+
+  @override
+  String get tint => 'Tint';
+
+  @override
+  String get vibrance => 'Vibrance';
+
+  @override
+  String get hue => 'Hue';
+
+  @override
+  String get luminance => 'Luminance';
+
+  @override
+  String get colorRed => 'Red';
+
+  @override
+  String get colorOrange => 'Orange';
+
+  @override
+  String get colorYellow => 'Yellow';
+
+  @override
+  String get colorGreen => 'Green';
+
+  @override
+  String get colorAqua => 'Aqua';
+
+  @override
+  String get colorBlue => 'Blue';
+
+  @override
+  String get colorPurple => 'Purple';
+
+  @override
+  String get colorMagenta => 'Magenta';
+
+  @override
+  String get curveHint =>
+      'Drag a point to shape the curve, tap to add one, double-tap to remove it.';
+
+  @override
+  String get sharpen => 'Sharpen';
+
+  @override
+  String get vignette => 'Vignette';
+
+  @override
+  String get grain => 'Grain';
+
+  @override
+  String get holdForOriginal => 'Hold the photo to compare with the original.';
+
+  @override
+  String get showingOriginal => 'Original';
+
+  @override
+  String get applyLookToAll => 'Apply this look to all photos';
+
+  @override
+  String get applyingEdits => 'Rendering photos…';
+
+  @override
+  String get choosePhotoToEdit => 'Choose a photo to edit';
 }

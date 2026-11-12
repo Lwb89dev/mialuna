@@ -3011,6 +3011,228 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Some could not be deleted yet; Mialuna will try again.'**
   String get storyCleanupPartly;
+
+  /// No description provided for @editorPro.
+  ///
+  /// In en, this message translates to:
+  /// **'Pro editor'**
+  String get editorPro;
+
+  /// No description provided for @editorModeBasic.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic'**
+  String get editorModeBasic;
+
+  /// No description provided for @editorModePro.
+  ///
+  /// In en, this message translates to:
+  /// **'Pro'**
+  String get editorModePro;
+
+  /// No description provided for @toolCrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop'**
+  String get toolCrop;
+
+  /// No description provided for @toolLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get toolLight;
+
+  /// No description provided for @toolColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Color'**
+  String get toolColor;
+
+  /// No description provided for @toolHsl.
+  ///
+  /// In en, this message translates to:
+  /// **'HSL'**
+  String get toolHsl;
+
+  /// No description provided for @toolCurves.
+  ///
+  /// In en, this message translates to:
+  /// **'Curves'**
+  String get toolCurves;
+
+  /// No description provided for @toolEffects.
+  ///
+  /// In en, this message translates to:
+  /// **'Effects'**
+  String get toolEffects;
+
+  /// No description provided for @straighten.
+  ///
+  /// In en, this message translates to:
+  /// **'Straighten'**
+  String get straighten;
+
+  /// No description provided for @exposure.
+  ///
+  /// In en, this message translates to:
+  /// **'Exposure'**
+  String get exposure;
+
+  /// No description provided for @highlights.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlights'**
+  String get highlights;
+
+  /// No description provided for @shadows.
+  ///
+  /// In en, this message translates to:
+  /// **'Shadows'**
+  String get shadows;
+
+  /// No description provided for @whites.
+  ///
+  /// In en, this message translates to:
+  /// **'Whites'**
+  String get whites;
+
+  /// No description provided for @blacks.
+  ///
+  /// In en, this message translates to:
+  /// **'Blacks'**
+  String get blacks;
+
+  /// No description provided for @temperature.
+  ///
+  /// In en, this message translates to:
+  /// **'Temperature'**
+  String get temperature;
+
+  /// No description provided for @tint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tint'**
+  String get tint;
+
+  /// No description provided for @vibrance.
+  ///
+  /// In en, this message translates to:
+  /// **'Vibrance'**
+  String get vibrance;
+
+  /// No description provided for @hue.
+  ///
+  /// In en, this message translates to:
+  /// **'Hue'**
+  String get hue;
+
+  /// No description provided for @luminance.
+  ///
+  /// In en, this message translates to:
+  /// **'Luminance'**
+  String get luminance;
+
+  /// No description provided for @colorRed.
+  ///
+  /// In en, this message translates to:
+  /// **'Red'**
+  String get colorRed;
+
+  /// No description provided for @colorOrange.
+  ///
+  /// In en, this message translates to:
+  /// **'Orange'**
+  String get colorOrange;
+
+  /// No description provided for @colorYellow.
+  ///
+  /// In en, this message translates to:
+  /// **'Yellow'**
+  String get colorYellow;
+
+  /// No description provided for @colorGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get colorGreen;
+
+  /// No description provided for @colorAqua.
+  ///
+  /// In en, this message translates to:
+  /// **'Aqua'**
+  String get colorAqua;
+
+  /// No description provided for @colorBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get colorBlue;
+
+  /// No description provided for @colorPurple.
+  ///
+  /// In en, this message translates to:
+  /// **'Purple'**
+  String get colorPurple;
+
+  /// No description provided for @colorMagenta.
+  ///
+  /// In en, this message translates to:
+  /// **'Magenta'**
+  String get colorMagenta;
+
+  /// No description provided for @curveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag a point to shape the curve, tap to add one, double-tap to remove it.'**
+  String get curveHint;
+
+  /// No description provided for @sharpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharpen'**
+  String get sharpen;
+
+  /// No description provided for @vignette.
+  ///
+  /// In en, this message translates to:
+  /// **'Vignette'**
+  String get vignette;
+
+  /// No description provided for @grain.
+  ///
+  /// In en, this message translates to:
+  /// **'Grain'**
+  String get grain;
+
+  /// No description provided for @holdForOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold the photo to compare with the original.'**
+  String get holdForOriginal;
+
+  /// No description provided for @showingOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Original'**
+  String get showingOriginal;
+
+  /// No description provided for @applyLookToAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply this look to all photos'**
+  String get applyLookToAll;
+
+  /// No description provided for @applyingEdits.
+  ///
+  /// In en, this message translates to:
+  /// **'Rendering photos…'**
+  String get applyingEdits;
+
+  /// No description provided for @choosePhotoToEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a photo to edit'**
+  String get choosePhotoToEdit;
 }
 
 class _AppLocalizationsDelegate

@@ -33,16 +33,104 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
     super.dispose();
   }
 
-  Future<void> _editPhoto(int index) async {
-    final media = ref.read(composerProvider).media[index];
-    final edited = await ImageEditorScreen.show(
+  Future<void> _editPhoto(int index, {bool pro = false}) async {
+    final composer = ref.read(composerProvider.notifier);
+    final all = ref.read(composerProvider).media;
+    final media = all[index];
+    final result = await ImageEditorScreen.show(
       context,
-      bytes: media.bytes,
-      mimeType: media.mimeType,
+      bytes: media.originalBytes,
+      initial: media.edit,
+      pro: pro,
+      otherPhotos: all.where((m) => !m.isVideo).length - 1,
     );
-    if (edited != null) {
-      ref.read(composerProvider.notifier).replaceMediaBytes(index, edited);
-    }
+    if (result == null || !mounted) return;
+    final at = ref
+        .read(composerProvider)
+        .media
+        .indexWhere((m) => identical(m, media));
+    if (at < 0) return;
+    composer.applyEdit(at, result.edit, result.image);
+    if (!result.lookToAll) return;
+    final done = composer.applyLookToAll(at);
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        done.whenComplete(() {
+          if (dialogContext.mounted) Navigator.pop(dialogContext);
+        });
+        return PopScope(
+          canPop: false,
+          child: AlertDialog(
+            content: Row(
+              children: [
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 3),
+                ),
+                const SizedBox(width: 16),
+                Expanded(child: Text(context.l10n.applyingEdits)),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// The Pro editor button: straight to the photo when there is one,
+  /// otherwise the photographer picks which.
+  Future<void> _openProEditor() async {
+    final media = ref.read(composerProvider).media;
+    final photos = [
+      for (var i = 0; i < media.length; i++)
+        if (!media[i].isVideo) i,
+    ];
+    if (photos.isEmpty) return;
+    if (photos.length == 1) return _editPhoto(photos.first, pro: true);
+    final chosen = await showModalBottomSheet<int>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                context.l10n.choosePhotoToEdit,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final i in photos)
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context, i),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.memory(
+                          media[i].bytes,
+                          width: 84,
+                          height: 84,
+                          fit: BoxFit.cover,
+                          cacheWidth: 252,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (chosen != null) await _editPhoto(chosen, pro: true);
   }
 
   Future<void> _editAlt(int index) async {
@@ -292,96 +380,111 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
           if (state.media.isNotEmpty)
             SizedBox(
               height: 110,
-              child: ReorderableListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: state.media.length,
-                onReorderItem: ref.read(composerProvider.notifier).reorderMedia,
-                itemBuilder: (context, i) {
-                  final m = state.media[i];
-                  return Padding(
-                    key: ObjectKey(m),
-                    padding: const EdgeInsets.only(right: 8),
-                    child: GestureDetector(
-                      onTap: () => _editAlt(i),
-                      child: Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: m.isVideo
-                                ? Container(
-                                    width: 100,
-                                    height: 100,
-                                    color: Colors.black,
-                                    child: const Icon(
-                                      Icons.play_circle_outline,
-                                      color: Colors.white70,
-                                      size: 40,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ReorderableListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: state.media.length,
+                      onReorderItem: ref
+                          .read(composerProvider.notifier)
+                          .reorderMedia,
+                      itemBuilder: (context, i) {
+                        final m = state.media[i];
+                        return Padding(
+                          key: ObjectKey(m),
+                          padding: const EdgeInsets.only(right: 8),
+                          child: GestureDetector(
+                            onTap: () => _editAlt(i),
+                            child: Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: m.isVideo
+                                      ? Container(
+                                          width: 100,
+                                          height: 100,
+                                          color: Colors.black,
+                                          child: const Icon(
+                                            Icons.play_circle_outline,
+                                            color: Colors.white70,
+                                            size: 40,
+                                          ),
+                                        )
+                                      : Image.memory(
+                                          m.bytes,
+                                          width: 100,
+                                          height: 100,
+                                          fit: BoxFit.cover,
+                                        ),
+                                ),
+                                if (m.alt.isNotEmpty)
+                                  const Positioned(
+                                    bottom: 2,
+                                    left: 2,
+                                    child: CircleAvatar(
+                                      radius: 10,
+                                      backgroundColor: Colors.black54,
+                                      child: Text(
+                                        'ALT',
+                                        style: TextStyle(
+                                          fontSize: 8,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
-                                  )
-                                : Image.memory(
-                                    m.bytes,
-                                    width: 100,
-                                    height: 100,
-                                    fit: BoxFit.cover,
                                   ),
-                          ),
-                          if (m.alt.isNotEmpty)
-                            const Positioned(
-                              bottom: 2,
-                              left: 2,
-                              child: CircleAvatar(
-                                radius: 10,
-                                backgroundColor: Colors.black54,
-                                child: Text(
-                                  'ALT',
-                                  style: TextStyle(
-                                    fontSize: 8,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
+                                if (!m.isVideo)
+                                  Positioned(
+                                    bottom: 2,
+                                    right: 2,
+                                    child: GestureDetector(
+                                      onTap: () => _editPhoto(i),
+                                      child: const CircleAvatar(
+                                        radius: 12,
+                                        backgroundColor: Colors.black54,
+                                        child: Icon(
+                                          Icons.crop,
+                                          size: 14,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
-                            ),
-                          if (!m.isVideo)
-                            Positioned(
-                              bottom: 2,
-                              right: 2,
-                              child: GestureDetector(
-                                onTap: () => _editPhoto(i),
-                                child: const CircleAvatar(
-                                  radius: 12,
-                                  backgroundColor: Colors.black54,
-                                  child: Icon(
-                                    Icons.crop,
-                                    size: 14,
-                                    color: Colors.white,
+                                Positioned(
+                                  top: 2,
+                                  right: 2,
+                                  child: GestureDetector(
+                                    onTap: () => ref
+                                        .read(composerProvider.notifier)
+                                        .removeMedia(i),
+                                    child: const CircleAvatar(
+                                      radius: 12,
+                                      backgroundColor: Colors.black54,
+                                      child: Icon(
+                                        Icons.close,
+                                        size: 14,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
-                          Positioned(
-                            top: 2,
-                            right: 2,
-                            child: GestureDetector(
-                              onTap: () => ref
-                                  .read(composerProvider.notifier)
-                                  .removeMedia(i),
-                              child: const CircleAvatar(
-                                radius: 12,
-                                backgroundColor: Colors.black54,
-                                child: Icon(
-                                  Icons.close,
-                                  size: 14,
-                                  color: Colors.white,
-                                ),
-                              ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
-                  );
-                },
+                  ),
+                  if (state.mode == ComposerMode.photo &&
+                      state.media.any((m) => !m.isVideo)) ...[
+                    const SizedBox(width: 4),
+                    _ProEditorTile(
+                      onTap: state.isPublishing ? null : _openProEditor,
+                    ),
+                  ],
+                ],
               ),
             ),
           if (state.mode == ComposerMode.story && state.media.isNotEmpty) ...[
@@ -504,6 +607,67 @@ class _StoryTextButton extends StatelessWidget {
 
 /// Big tappable tile to pick media. Grows with the text instead of
 /// overflowing a fixed height when the user enlarges the font.
+/// "Pro editor" next to the thumbnails: the full editor, for photographers.
+class _ProEditorTile extends StatelessWidget {
+  final VoidCallback? onTap;
+  const _ProEditorTile({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final label = context.l10n.editorPro;
+    return Semantics(
+      button: true,
+      label: label,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Ink(
+            width: 100,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              // Large text shrinks to fit the thumbnail-sized tile.
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 84),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.tune,
+                        size: 30,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _PickerTile extends StatelessWidget {
   final IconData icon;
   final String label;
