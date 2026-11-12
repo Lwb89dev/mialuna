@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart' show addTearDown;
 import 'package:mialuna/app/providers.dart';
 import 'package:mialuna/core/auth/auth_controller.dart';
@@ -129,6 +130,10 @@ class StoryHarness {
     Directory? dir,
     SwitchableAuth? auth,
     List<Override> overrides = const [],
+
+    /// Replaces the relays the pool talks to (a container can override a
+    /// provider only once, so this is how a test changes the pool).
+    List<RelayConfig>? relays,
   }) {
     final cache = dir ?? Directory.systemTemp.createTempSync('mialuna_story_');
     final c = ProviderContainer(
@@ -138,10 +143,13 @@ class StoryHarness {
         localCacheProvider.overrideWithValue(LocalCache(directory: cache)),
         unixClockProvider.overrideWithValue(clock.call),
         relayPoolProvider.overrideWith((ref) {
-          final pool = RelayPool([
-            RelayConfig(relay.url),
-            for (final r in more) RelayConfig(r.url),
-          ]);
+          final pool = RelayPool(
+            relays ??
+                [
+                  RelayConfig(relay.url),
+                  for (final r in more) RelayConfig(r.url),
+                ],
+          );
           ref.listen<AuthState>(authProvider, (_, a) {
             final s = a.signer;
             pool.authSigner = s.canSign

@@ -95,7 +95,12 @@ int? _older(int? a, int? b) => a == null
 /// The following feed asks for the followed accounts in chunks (relays refuse
 /// huge `authors` filters), on the user's own relays and — outbox model — on
 /// the relays each followed account publishes to (NIP-65).
-class FeedController extends FamilyNotifier<FeedState, FeedMode> {
+class FeedController extends Notifier<FeedState> {
+  FeedController(this.arg);
+
+  /// Which feed this controller serves.
+  final FeedMode arg;
+
   static const _pageSize = 30;
   static const _chunk = 80;
   static const _maxPosts = 400;
@@ -138,7 +143,7 @@ class FeedController extends FamilyNotifier<FeedState, FeedMode> {
   };
 
   @override
-  FeedState build(FeedMode arg) {
+  FeedState build() {
     _disposed = false;
     ref.onDispose(() {
       _disposed = true;

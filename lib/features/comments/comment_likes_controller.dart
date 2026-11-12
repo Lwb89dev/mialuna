@@ -20,10 +20,13 @@ class CommentLikes {
 
 typedef CommentLikeTarget = ({MediaPost post, Comment comment});
 
-class CommentLikesController
-    extends AutoDisposeFamilyNotifier<CommentLikes, CommentLikeTarget> {
+class CommentLikesController extends Notifier<CommentLikes> {
+  CommentLikesController(this.arg);
+
+  final CommentLikeTarget arg;
+
   @override
-  CommentLikes build(CommentLikeTarget arg) {
+  CommentLikes build() {
     final me = ref.watch(authProvider).publicKey;
     if (arg.post.isPrivate) {
       final likers = ref.watch(

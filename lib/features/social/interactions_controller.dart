@@ -217,10 +217,13 @@ final interactionsRepositoryProvider = Provider<InteractionsRepository>((ref) {
 });
 
 /// View of one post's reactions/comments plus the actions on them.
-class InteractionsController
-    extends AutoDisposeFamilyNotifier<PostInteractions, MediaPost> {
+class InteractionsController extends Notifier<PostInteractions> {
+  InteractionsController(this.arg);
+
+  final MediaPost arg;
+
   @override
-  PostInteractions build(MediaPost arg) {
+  PostInteractions build() {
     final me0 = ref.watch(authProvider).publicKey;
     if (arg.isPrivate) {
       // Close-friends post: likes and replies travel in gift wraps and are

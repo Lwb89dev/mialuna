@@ -15,7 +15,7 @@ val hasReleaseKey = keystoreProperties.getProperty("storeFile") != null
 
 android {
     namespace = "app.mialuna.social"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

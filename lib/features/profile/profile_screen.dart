@@ -275,7 +275,7 @@ class ProfileScreen extends ConsumerWidget {
                 pubkey: target,
                 isSelf: isSelf,
                 meta: meta,
-                postCount: posts.valueOrNull?.length,
+                postCount: posts.value?.length,
               ),
             ),
             SliverToBoxAdapter(
@@ -354,13 +354,13 @@ class _ProfileHeader extends ConsumerWidget {
     final following = follows.contains(pubkey);
     final followingCount = isSelf
         ? follows.length
-        : ref.watch(followingCountProvider(pubkey)).valueOrNull;
+        : ref.watch(followingCountProvider(pubkey)).value;
     final nip05 = meta?.nip05;
     final verified = nip05 == null
         ? false
         : ref
                   .watch(nip05VerifiedProvider((pubkey: pubkey, nip05: nip05)))
-                  .valueOrNull ??
+                  .value ??
               false;
     final npub = Nip19.encodeNpub(pubkey);
 

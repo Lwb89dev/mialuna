@@ -198,7 +198,7 @@ class _FriendTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final reachable = ref.watch(friendReachableProvider(pubkey)).valueOrNull;
+    final reachable = ref.watch(friendReachableProvider(pubkey)).value;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: ProfileAvatar(pubkey: pubkey, radius: 22),

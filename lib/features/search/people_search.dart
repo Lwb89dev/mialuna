@@ -124,7 +124,7 @@ class PeopleSearchState {
 /// they are loaded in the background), then adds what NIP-50 search relays
 /// know about strangers. `npub`, `nprofile` and `name@domain` also work, but
 /// are never required.
-class PeopleSearchController extends AutoDisposeNotifier<PeopleSearchState> {
+class PeopleSearchController extends Notifier<PeopleSearchState> {
   Timer? _debounce;
   Timer? _recompute;
   PoolSubscription? _remote;

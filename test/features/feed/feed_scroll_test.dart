@@ -38,10 +38,10 @@ class _FakeNotifications extends NotificationsController {
 /// A feed whose content the test decides.
 class _Feed extends FeedController {
   FeedState initial;
-  _Feed(this.initial);
+  _Feed(super.arg, this.initial);
 
   @override
-  FeedState build(FeedMode arg) => initial;
+  FeedState build() => initial;
 
   void show(FeedState next) => state = next;
 }
@@ -103,7 +103,9 @@ void main() {
           ),
           dmProvider.overrideWith(_FakeDm.new),
           notificationsProvider.overrideWith(_FakeNotifications.new),
-          feedProvider.overrideWith(() => feed = _Feed(_showing(posts))),
+          feedProvider.overrideWith2(
+            (mode) => feed = _Feed(mode, _showing(posts)),
+          ),
         ],
         child: MaterialApp(
           supportedLocales: AppLocalizations.supportedLocales,

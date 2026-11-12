@@ -196,14 +196,10 @@ void main() {
             profileMetadataProvider.overrideWith(
               (ref, pubkey) async => _noProfile,
             ),
-            relayPoolProvider.overrideWith((ref) {
-              final pool = RelayPool([
-                RelayConfig(relay.url),
-                RelayConfig(readOnly.url, write: false),
-              ]);
-              ref.onDispose(pool.dispose);
-              return pool;
-            }),
+          ],
+          relays: [
+            RelayConfig(relay.url),
+            RelayConfig(readOnly.url, write: false),
           ],
         );
         published(c, await story(alice, [h]));

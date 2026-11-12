@@ -29,15 +29,17 @@ class _FixedAuth extends AuthController {
 
 class _FakeInteractions extends InteractionsController {
   final PostInteractions fixed;
-  _FakeInteractions(this.fixed);
+  _FakeInteractions(super.arg, this.fixed);
 
   @override
-  PostInteractions build(MediaPost arg) => fixed;
+  PostInteractions build() => fixed;
 }
 
 class _FakeCommentLikes extends CommentLikesController {
+  _FakeCommentLikes(super.arg);
+
   @override
-  CommentLikes build(CommentLikeTarget arg) => const CommentLikes(count: 2);
+  CommentLikes build() => const CommentLikes(count: 2);
 
   @override
   Future<bool> like() async {
@@ -182,10 +184,11 @@ void main() {
             ref.onDispose(pool.dispose);
             return pool;
           }),
-          interactionsProvider.overrideWith(
-            () => _FakeInteractions(PostInteractions(comments: [comment])),
+          interactionsProvider.overrideWith2(
+            (post) =>
+                _FakeInteractions(post, PostInteractions(comments: [comment])),
           ),
-          commentLikesProvider.overrideWith(_FakeCommentLikes.new),
+          commentLikesProvider.overrideWith2(_FakeCommentLikes.new),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
