@@ -19,7 +19,7 @@ dependencies:
   bip340: ^0.3.1
   http: ^1.5.0
   image_picker: ^1.2.0
-  flutter_secure_storage: ^9.2.4
+  flutter_secure_storage: ^11.2.0
   shared_preferences: ^2.5.3
   path_provider: ^2.1.5
   cached_network_image: ^4.0.6
