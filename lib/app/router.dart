@@ -120,38 +120,46 @@ class _MialunaShellState extends ConsumerState<MialunaShell> {
   @override
   Widget build(BuildContext context) {
     final shell = widget.shell;
-    return Scaffold(
-      body: shell,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: shell.currentIndex,
-        onTap: _onTap,
-        items: [
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.home_outlined),
-            activeIcon: const Icon(Icons.home),
-            label: context.l10n.tabHome,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.explore_outlined),
-            activeIcon: const Icon(Icons.explore),
-            label: context.l10n.tabDiscover,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.add_circle_outline),
-            activeIcon: const Icon(Icons.add_circle),
-            label: context.l10n.tabCreate,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.play_circle_outline),
-            activeIcon: const Icon(Icons.play_circle),
-            label: context.l10n.tabReels,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.person_outline),
-            activeIcon: const Icon(Icons.person),
-            label: context.l10n.tabProfile,
-          ),
-        ],
+    // Back from any other tab goes to Home first; only from Home does it
+    // leave the app. Screens pushed on top of a tab pop before this applies.
+    return PopScope(
+      canPop: shell.currentIndex == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) shell.goBranch(0);
+      },
+      child: Scaffold(
+        body: shell,
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: shell.currentIndex,
+          onTap: _onTap,
+          items: [
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.home_outlined),
+              activeIcon: const Icon(Icons.home),
+              label: context.l10n.tabHome,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.explore_outlined),
+              activeIcon: const Icon(Icons.explore),
+              label: context.l10n.tabDiscover,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.add_circle_outline),
+              activeIcon: const Icon(Icons.add_circle),
+              label: context.l10n.tabCreate,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.play_circle_outline),
+              activeIcon: const Icon(Icons.play_circle),
+              label: context.l10n.tabReels,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.person_outline),
+              activeIcon: const Icon(Icons.person),
+              label: context.l10n.tabProfile,
+            ),
+          ],
+        ),
       ),
     );
   }

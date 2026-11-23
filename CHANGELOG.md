@@ -5,6 +5,24 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.25.0] — 2026-11-23 — Likes are a full moon
+
+### Changed
+- **The like is now a moon.** The heart is replaced by a realistic full moon
+  (taken from the app icon): dim and grey until liked, warm and glowing once
+  liked. It pulses twice at the moment you like, in the feed, in Reels and in
+  comments, and the double-tap moon now pops in with a bounce, hovers and
+  drifts up as it fades instead of flashing.
+
+### Fixed
+- **Back goes Home first.** The system back button or gesture on Discover,
+  Create, Reels or Profile used to close the app; it now returns to Home and
+  only closes the app from there.
+- **Double-tapping a reel no longer removes a like.** It toggled the like, so
+  a second double-tap took it back; like in the feed, it only ever adds one.
+- Reels redraw less: the video sits on its own layer and a page no longer
+  rebuilds on every change of the signed-in account.
+
 ## [0.24.0] — 2026-11-12 — A pro editor for photographers
 
 ### Added

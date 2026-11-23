@@ -23,6 +23,7 @@ import '../../social/moderation_controller.dart';
 import '../../social/zap_sheet.dart';
 import 'hashtag_text.dart';
 import 'inline_video.dart';
+import 'moon_like.dart';
 import 'nostr_image.dart';
 import 'pinch_zoom.dart';
 
@@ -164,14 +165,7 @@ class PostCard extends ConsumerWidget {
             child: Row(
               children: [
                 IconButton(
-                  icon: Icon(
-                    interactions.likedByMe
-                        ? Icons.favorite
-                        : Icons.favorite_border,
-                    color: interactions.likedByMe
-                        ? theme.colorScheme.secondary
-                        : null,
-                  ),
+                  icon: MoonLikeIcon(liked: interactions.likedByMe),
                   onPressed: isGuest ? null : () => _like(context, ref),
                   tooltip: context.l10n.like,
                 ),
@@ -408,7 +402,7 @@ class PostMedia extends ConsumerStatefulWidget {
 class _PostMediaState extends ConsumerState<PostMedia> {
   int _page = 0;
   bool _revealed = false;
-  bool _heart = false;
+  int _burst = 0;
   double? _discoveredAspect;
 
   double get _aspect {
@@ -436,10 +430,7 @@ class _PostMediaState extends ConsumerState<PostMedia> {
   Future<void> _doubleTapLike() async {
     final auth = ref.read(authProvider);
     if (auth.isGuest) return;
-    setState(() => _heart = true);
-    Future.delayed(const Duration(milliseconds: 650), () {
-      if (mounted) setState(() => _heart = false);
-    });
+    setState(() => _burst++);
     final interactions = ref.read(interactionsProvider(widget.post));
     // Double-tap only ever adds a like; taking it back is the heart button.
     if (!interactions.likedByMe) {
@@ -541,25 +532,7 @@ class _PostMediaState extends ConsumerState<PostMedia> {
                 ),
               ),
             ),
-          IgnorePointer(
-            child: Center(
-              child: AnimatedScale(
-                scale: _heart ? 1 : 0.4,
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutBack,
-                child: AnimatedOpacity(
-                  opacity: _heart ? 1 : 0,
-                  duration: const Duration(milliseconds: 200),
-                  child: const Icon(
-                    Icons.favorite,
-                    color: Colors.white,
-                    size: 96,
-                    shadows: [Shadow(blurRadius: 18, color: Colors.black45)],
-                  ),
-                ),
-              ),
-            ),
-          ),
+          MoonBurst(trigger: _burst),
         ],
       ),
     );

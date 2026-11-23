@@ -13,6 +13,7 @@ import 'package:mialuna/core/nostr/signer.dart';
 import 'package:mialuna/core/storage/local_cache.dart';
 import 'package:mialuna/features/comments/comment_likes_controller.dart';
 import 'package:mialuna/features/comments/comments_sheet.dart';
+import 'package:mialuna/features/feed/widgets/moon_like.dart';
 import 'package:mialuna/features/social/interactions_controller.dart';
 import 'package:mialuna/l10n/strings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -200,13 +201,15 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('2'), findsOneWidget);
-    expect(find.byIcon(Icons.favorite_border), findsOneWidget);
+    bool liked() =>
+        tester.widget<MoonLikeIcon>(find.byType(MoonLikeIcon)).liked;
+    expect(liked(), isFalse);
     expect(tester.takeException(), isNull);
 
-    await tester.tap(find.byIcon(Icons.favorite_border));
+    await tester.tap(find.byType(MoonLikeIcon));
     await tester.pump();
     expect(find.text('3'), findsOneWidget);
-    expect(find.byIcon(Icons.favorite), findsOneWidget);
+    expect(liked(), isTrue);
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 40));

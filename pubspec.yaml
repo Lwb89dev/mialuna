@@ -1,7 +1,7 @@
 name: mialuna
 description: "Mialuna — Your moments, under the same moon. A visual social network powered by Nostr."
 publish_to: 'none'
-version: 0.24.0+16
+version: 0.25.0+17
 
 environment:
   sdk: ^3.13.7
@@ -54,5 +54,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icons/
+    - assets/moon/
   shaders:
     - shaders/photo_edit.frag

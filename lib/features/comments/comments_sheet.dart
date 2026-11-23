@@ -7,6 +7,7 @@ import '../../core/nostr/models/media_event.dart';
 import '../../core/text/clip.dart';
 import '../../l10n/strings.dart';
 import '../profile/profile_widgets.dart';
+import '../feed/widgets/moon_like.dart';
 import '../social/interactions_controller.dart';
 import 'comment_likes_controller.dart';
 
@@ -176,10 +177,7 @@ class _CommentTile extends ConsumerWidget {
               iconSize: 18,
               tooltip: context.l10n.like,
               onPressed: isGuest ? null : () => _like(context, ref),
-              icon: Icon(
-                likes.likedByMe ? Icons.favorite : Icons.favorite_border,
-                color: likes.likedByMe ? theme.colorScheme.secondary : null,
-              ),
+              icon: MoonLikeIcon(liked: likes.likedByMe, size: 20),
             ),
           ),
           if (likes.count > 0)

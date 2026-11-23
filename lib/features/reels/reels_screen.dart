@@ -11,6 +11,7 @@ import '../../core/nostr/models/media_event.dart';
 import '../../l10n/strings.dart';
 import '../comments/comments_sheet.dart';
 import '../feed/widgets/inline_video.dart';
+import '../feed/widgets/moon_like.dart';
 import '../feed/widgets/post_card.dart';
 import '../messages/send_to_sheet.dart';
 import '../profile/profile_widgets.dart';
@@ -188,6 +189,7 @@ class _ReelPageState extends ConsumerState<_ReelPage>
   VideoPlayerController? _pending;
   bool _failed = false;
   bool _expanded = false;
+  int _burst = 0;
   bool _disposed = false;
 
   /// A reel with a content warning stays covered, and is not downloaded,
@@ -286,16 +288,26 @@ class _ReelPageState extends ConsumerState<_ReelPage>
     super.dispose();
   }
 
+  /// Double-tap only ever adds a like (the moon button takes it back), as in
+  /// the feed: it used to toggle, so a second double-tap removed it.
+  void _doubleTapLike() {
+    if (ref.read(authProvider).isGuest) return;
+    setState(() => _burst++);
+    final reel = widget.reel;
+    if (ref.read(interactionsProvider(reel)).likedByMe) return;
+    HapticFeedback.mediumImpact();
+    ref.read(interactionsProvider(reel).notifier).like(reel);
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = _controller;
     final reel = widget.reel;
     final interactions = ref.watch(interactionsProvider(reel));
     final following = ref.watch(followListProvider).contains(reel.author);
-    final isMine = ref.watch(
+    final isMe = ref.watch(
       authProvider.select((a) => a.publicKey == reel.author),
     );
-    final isMe = ref.watch(authProvider).publicKey == reel.author;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     return Stack(
       fit: StackFit.expand,
@@ -340,20 +352,22 @@ class _ReelPageState extends ConsumerState<_ReelPage>
         else
           GestureDetector(
             onTap: () => c.value.isPlaying ? c.pause() : c.play(),
-            onDoubleTap: () {
-              HapticFeedback.mediumImpact();
-              ref.read(interactionsProvider(reel).notifier).like(reel);
-            },
-            child: FittedBox(
-              fit: BoxFit.cover,
-              clipBehavior: Clip.hardEdge,
-              child: SizedBox(
-                width: c.value.size.width,
-                height: c.value.size.height,
-                child: VideoPlayer(c),
+            onDoubleTap: _doubleTapLike,
+            // Its own layer: the overlay and the counters change often and must
+            // not repaint the video with them.
+            child: RepaintBoundary(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                clipBehavior: Clip.hardEdge,
+                child: SizedBox(
+                  width: c.value.size.width,
+                  height: c.value.size.height,
+                  child: VideoPlayer(c),
+                ),
               ),
             ),
           ),
+        MoonBurst(trigger: _burst, size: 128),
         // Creator + caption overlay.
         Positioned(
           left: 16,
@@ -432,12 +446,10 @@ class _ReelPageState extends ConsumerState<_ReelPage>
           child: Column(
             children: [
               _RailButton(
-                icon: interactions.likedByMe
-                    ? Icons.favorite
-                    : Icons.favorite_border,
-                color: interactions.likedByMe
-                    ? Theme.of(context).colorScheme.secondary
-                    : Colors.white,
+                iconWidget: MoonLikeIcon(
+                  liked: interactions.likedByMe,
+                  size: 30,
+                ),
                 label: interactions.likeCount > 0
                     ? '${interactions.likeCount}'
                     : null,
@@ -455,7 +467,7 @@ class _ReelPageState extends ConsumerState<_ReelPage>
                 icon: Icons.send_outlined,
                 onPressed: () => SendToSheet.show(context, reel),
               ),
-              if (isMine)
+              if (isMe)
                 _RailButton(
                   icon: Icons.delete_outline,
                   onPressed: () => confirmAndDeletePost(context, ref, reel),
@@ -469,14 +481,16 @@ class _ReelPageState extends ConsumerState<_ReelPage>
 }
 
 class _RailButton extends StatelessWidget {
-  final IconData icon;
-  final Color color;
+  final IconData? icon;
+
+  /// Drawn instead of [icon] (the like moon).
+  final Widget? iconWidget;
   final String? label;
   final VoidCallback onPressed;
   const _RailButton({
-    required this.icon,
+    this.icon,
+    this.iconWidget,
     required this.onPressed,
-    this.color = Colors.white,
     this.label,
   });
 
@@ -485,7 +499,7 @@ class _RailButton extends StatelessWidget {
     return Column(
       children: [
         IconButton(
-          icon: Icon(icon, color: color, size: 30),
+          icon: iconWidget ?? Icon(icon, color: Colors.white, size: 30),
           onPressed: onPressed,
         ),
         if (label != null)
