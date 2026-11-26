@@ -46,9 +46,9 @@ class PrivatePostsState {
 }
 
 /// Store of everything that arrives through gift wraps and is a media post
-/// (kinds 20/21/22) or a reaction/comment on one (kinds 7/1111). The inbox
-/// pump ([DmController]) hands rumors over; they are kept on disk so a
-/// message is decrypted once, not at every start.
+/// (kinds 20/21/22, 1418 for a story) or a reaction/comment on one (kinds
+/// 7/1111). The inbox pump ([DmController]) hands rumors over; they are kept
+/// on disk so a message is decrypted once, not at every start.
 class PrivatePostsController extends Notifier<PrivatePostsState> {
   static const _maxStored = 600;
   static const _maxInteractions = 3000;
@@ -96,7 +96,10 @@ class PrivatePostsController extends Notifier<PrivatePostsState> {
   /// Offers a decrypted rumor; returns true when it belongs here.
   bool ingest(Rumor rumor) {
     switch (rumor.kind) {
-      case NostrKinds.picture || NostrKinds.video || NostrKinds.shortVideo:
+      case NostrKinds.picture ||
+          NostrKinds.video ||
+          NostrKinds.shortVideo ||
+          NostrKinds.story:
         final post = _toPost(rumor);
         if (post == null || post.isExpired()) return false;
         if (_deletions[rumor.id] == rumor.pubkey) return true; // taken back

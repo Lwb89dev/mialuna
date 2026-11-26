@@ -221,7 +221,7 @@ class StoryHarness {
     final at = createdAt ?? clock.now;
     final event = await signed(
       author,
-      kind: NostrKinds.picture,
+      kind: NostrKinds.story,
       content: text,
       createdAt: at,
       tags:

@@ -98,7 +98,7 @@ final savedPostsProvider = StreamProvider.autoDispose<List<MediaPost>>((ref) {
   final controller = StreamController<List<MediaPost>>();
   final posts = <String, MediaPost>{};
   final sub = ref.read(relayPoolProvider).subscribe([
-    NostrFilter(kinds: NostrKinds.mediaKinds, ids: ids.toList()),
+    NostrFilter(kinds: NostrKinds.postKinds, ids: ids.toList()),
   ], eoseTimeout: const Duration(seconds: 12));
   final listener = sub.events.listen((event) {
     final post = MediaPost.tryParse(event);

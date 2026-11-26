@@ -5,6 +5,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.26.0] — 2026-11-26 — Stories stay stories
+
+### Changed
+- **Stories no longer show up in other apps' feeds.** They were published as
+  ordinary photos and short videos (kind 20/22) with a label other clients
+  ignore, so those listed them among posts. They now have a kind of their own
+  (1418, see [docs/stories.md](docs/stories.md)). Stories published before the
+  update still show up here until they expire, and elsewhere until they are
+  deleted or expire. **Mialuna 0.25 and earlier cannot see the new stories**:
+  your friends have to update.
+
 ## [0.25.0] — 2026-11-23 — Likes are a full moon
 
 ### Changed

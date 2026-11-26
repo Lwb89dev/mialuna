@@ -360,7 +360,8 @@ class PostDeletion {
       if (blobHashOfUrl(url) case final hash?) used.add(hash);
     }
     final sub = _ref.read(relayPoolProvider).subscribe([
-      NostrFilter(kinds: NostrKinds.mediaKinds, authors: [me], limit: 300),
+      // Stories too: a live one may show the same file.
+      NostrFilter(kinds: NostrKinds.postKinds, authors: [me], limit: 300),
     ], eoseTimeout: const Duration(seconds: 8));
     final listener = sub.events.listen((event) {
       final other = MediaPost.tryParse(event);

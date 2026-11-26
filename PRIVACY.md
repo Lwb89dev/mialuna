@@ -17,6 +17,11 @@ standard stop distributing them after expiry, but **we cannot guarantee
 deletion** from relays, archives or media storage servers. Anyone can save
 or screenshot them.
 
+Stories are published with a kind of their own (1418, see
+[docs/stories.md](docs/stories.md)), so that other clients do not list them in
+their feeds among ordinary posts. That is not secrecy: a public story is still
+a public event that any client can read.
+
 What Mialuna does about it: once a story of yours has expired it asks your
 relays and your media servers to delete it, photos and videos included, by
 itself or when you press a button, as described in *Deleting your stories when

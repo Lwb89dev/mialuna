@@ -310,6 +310,7 @@ class DmController extends Notifier<DmState> {
     if (rumor.kind == NostrKinds.picture ||
         rumor.kind == NostrKinds.video ||
         rumor.kind == NostrKinds.shortVideo ||
+        rumor.kind == NostrKinds.story ||
         rumor.kind == NostrKinds.reaction ||
         rumor.kind == NostrKinds.comment ||
         rumor.kind == NostrKinds.deletion) {

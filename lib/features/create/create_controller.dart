@@ -384,8 +384,8 @@ class ComposerController extends Notifier<ComposerState> {
 
   /// Full publish flow: sanitize (remove EXIF/location) and upload every
   /// media item to Blossom, then build, sign and publish the media event
-  /// (kind 20/21/22 depending on mode). A failed upload aborts publishing —
-  /// no event ever references media that failed to upload.
+  /// (kind 20/21/22 depending on mode, 1418 for a story). A failed upload
+  /// aborts publishing — no event ever references media that failed to upload.
   Future<bool> publish() async {
     final auth = ref.read(authProvider);
     if (!auth.signer.canSign) {
@@ -502,10 +502,7 @@ class ComposerController extends Notifier<ComposerState> {
         ComposerMode.photo => NostrKinds.picture,
         ComposerMode.video => NostrKinds.video,
         ComposerMode.reel => NostrKinds.shortVideo,
-        ComposerMode.story =>
-          state.media.first.isVideo
-              ? NostrKinds.shortVideo
-              : NostrKinds.picture,
+        ComposerMode.story => NostrKinds.story,
       };
       final event = await auth.signer.signEvent(
         kind: kind,
@@ -689,8 +686,7 @@ class ComposerController extends Notifier<ComposerState> {
       ComposerMode.photo => NostrKinds.picture,
       ComposerMode.video => NostrKinds.video,
       ComposerMode.reel => NostrKinds.shortVideo,
-      ComposerMode.story =>
-        state.media.first.isVideo ? NostrKinds.shortVideo : NostrKinds.picture,
+      ComposerMode.story => NostrKinds.story,
     };
     final rumor = Rumor.create(
       pubkey: me,

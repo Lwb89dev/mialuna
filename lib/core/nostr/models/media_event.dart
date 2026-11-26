@@ -259,7 +259,8 @@ class MediaItem {
   }
 }
 
-/// A media post (kind 20/21/22/34235/34236) as rendered by Mialuna.
+/// A media post (kind 20/21/22/34235/34236) or a story (kind 1418) as
+/// rendered by Mialuna.
 class MediaPost {
   final NostrEvent event;
   final List<MediaItem> media;
@@ -312,7 +313,9 @@ class MediaPost {
       kind == NostrKinds.video ||
       kind == NostrKinds.shortVideo ||
       kind == NostrKinds.addressableVideo ||
-      kind == NostrKinds.addressableShortVideo;
+      kind == NostrKinds.addressableShortVideo ||
+      // A story's kind does not say what it holds: its file does.
+      (kind == NostrKinds.story && media.first.isVideo);
   bool get isReel =>
       kind == NostrKinds.shortVideo || kind == NostrKinds.addressableShortVideo;
 
@@ -345,7 +348,8 @@ class MediaPost {
   /// inside a gift wrap) sets. A *public* event claiming to be private is
   /// dropped, so a relay cannot make anything look like a private post.
   static MediaPost? tryParse(NostrEvent event, {bool allowPrivate = false}) {
-    if (!NostrKinds.mediaKinds.contains(event.kind)) return null;
+    if (!NostrKinds.postKinds.contains(event.kind)) return null;
+    final storyKind = event.kind == NostrKinds.story;
     final videoKind =
         event.kind == NostrKinds.video ||
         event.kind == NostrKinds.shortVideo ||
@@ -404,12 +408,14 @@ class MediaPost {
     ];
 
     // Keep only items that can be shown by this kind: photos for kind 20,
-    // videos for 21/22 (an undeclared type is accepted for either).
+    // videos for 21/22, either for a story (an undeclared type is accepted
+    // everywhere).
     media = [
       for (final item in media)
-        if (videoKind
-            ? item.type != MediaType.image
-            : item.type != MediaType.video)
+        if (storyKind ||
+            (videoKind
+                ? item.type != MediaType.image
+                : item.type != MediaType.video))
           item,
     ];
     if (media.isEmpty) return null;
@@ -422,6 +428,7 @@ class MediaPost {
 
     final contentWarning = event.firstTagValue('content-warning');
     final storyMarker =
+        storyKind ||
         event
             .tagsNamed('l')
             .any(

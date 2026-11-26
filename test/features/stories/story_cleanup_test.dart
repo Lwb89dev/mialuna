@@ -102,7 +102,7 @@ void main() {
     final at = harness.clock.now - ago;
     final event = await signed(
       author,
-      kind: NostrKinds.picture,
+      kind: NostrKinds.story,
       content: text,
       createdAt: at,
       tags: [
@@ -154,7 +154,7 @@ void main() {
       final request = requests().single;
       expect(request.pubkey, alice.publicKey);
       expect(request.tagsNamed('e').single[1], post.id);
-      expect(request.tagsNamed('k').single[1], '${NostrKinds.picture}');
+      expect(request.tagsNamed('k').single[1], '${NostrKinds.story}');
       expect(verifyEventSignature(request), true);
       expect(blossom.blobs, isEmpty);
       expect(c.read(storyCleanupProvider).due, 0);
@@ -382,7 +382,7 @@ void main() {
       // The private store hands it over when the story is published.
       final rumor = Rumor.create(
         pubkey: alice.publicKey!,
-        kind: NostrKinds.picture,
+        kind: NostrKinds.story,
         createdAt: harness.clock.now,
         content: 'a secret caption',
         tags: privateTags(h, harness.clock.now),
@@ -406,7 +406,7 @@ void main() {
         id: 'c' * 64,
         pubkey: alice.publicKey!,
         createdAt: at,
-        kind: NostrKinds.picture,
+        kind: NostrKinds.story,
         tags: privateTags(h, at),
         content: 'a secret caption',
         sig: '',

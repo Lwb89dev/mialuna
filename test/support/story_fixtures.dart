@@ -13,7 +13,7 @@ MediaPost story(String author, {bool private = false, int age = 600}) {
       id: id,
       pubkey: author,
       createdAt: now - age,
-      kind: NostrKinds.picture,
+      kind: NostrKinds.story,
       tags: [
         ['imeta', 'url https://cdn.example.com/$id.jpg', 'm image/jpeg'],
         ['L', 'mialuna.story'],

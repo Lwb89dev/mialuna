@@ -255,6 +255,18 @@ void main() {
     expect(blossom.blobs, isEmpty);
   });
 
+  test('a file a live story shows is left alone', () async {
+    final shared = await upload(1);
+    final p = await post(alice, [shared]);
+    await post(alice, [shared], kind: NostrKinds.story, caption: 'a story');
+    final c = app(alice);
+
+    final report = await c.read(postDeletionProvider).delete(p);
+
+    expect(report.mediaKept, 1);
+    expect(blossom.blobs, contains(shared));
+  });
+
   test('the profile picture counts as a use of its file', () async {
     final h = await upload(1);
     final p = await post(alice, [h]);

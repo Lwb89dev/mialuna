@@ -25,7 +25,9 @@ centralized platform.
   adjustments)
 - **Videos & Reels** — NIP-71 publishing (kind 21/22), full-screen vertical
   Reels viewer with autoplay and preloading
-- **Stories** — 24-hour visual moments via NIP-40 expiration. The story
+- **Stories** — 24-hour visual moments via NIP-40 expiration, with a
+  [kind of their own](docs/stories.md) so they stay out of other clients'
+  feeds. The story
   button (your picture with a plus) is always at the head of the rail; once you
   have published, a second circle shows your stories, and every ring is divided
   into one part per story of the last 24 hours. Texts are written right on the

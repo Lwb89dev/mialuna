@@ -131,7 +131,13 @@ void main() {
     final ok = await composer.publish();
     expect(ok, true, reason: a.read(composerProvider).error);
 
-    final event = relay.stored.singleWhere((e) => e.kind == NostrKinds.picture);
+    final event = relay.stored.singleWhere((e) => e.kind == NostrKinds.story);
+    expect(
+      relay.stored.where((e) => NostrKinds.mediaKinds.contains(e.kind)),
+      isEmpty,
+      reason: 'nothing that other clients would put in a feed',
+    );
+    expect(event.expiration, event.createdAt + 86400);
     final post = MediaPost.tryParse(event)!;
     expect(post.isStory, true);
     expect(post.overlays, [lakeText]);

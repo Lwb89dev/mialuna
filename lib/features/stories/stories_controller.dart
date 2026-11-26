@@ -36,10 +36,10 @@ class StoriesState {
   const StoriesState({this.groups = const [], this.isLoading = true});
 }
 
-/// Loads story-labeled media events (NIP-40 expiring kind 20/22) and groups
-/// them by creator. Stories that are over (their 24 hours, or an earlier
-/// NIP-40 expiration) never surface here, and vanish by themselves while the
-/// app stays open.
+/// Loads story-labeled media events (NIP-40 expiring kind 1418, and the kind
+/// 20/22 stories of older versions) and groups them by creator. Stories that
+/// are over (their 24 hours, or an earlier NIP-40 expiration) never surface
+/// here, and vanish by themselves while the app stays open.
 class StoriesController extends Notifier<StoriesState> {
   final Map<String, MediaPost> _byId = {};
   Timer? _flushTimer;
@@ -179,7 +179,7 @@ class StoriesController extends Notifier<StoriesState> {
       if (subset == null) {
         return [
           NostrFilter(
-            kinds: const [NostrKinds.picture, NostrKinds.shortVideo],
+            kinds: NostrKinds.storyKinds,
             tagFilters: const {
               '#L': ['mialuna.story'],
             },
@@ -192,7 +192,7 @@ class StoriesController extends Notifier<StoriesState> {
       return [
         for (var i = 0; i < list.length; i += 80)
           NostrFilter(
-            kinds: const [NostrKinds.picture, NostrKinds.shortVideo],
+            kinds: NostrKinds.storyKinds,
             authors: list.sublist(i, math.min(i + 80, list.length)),
             tagFilters: const {
               '#L': ['mialuna.story'],

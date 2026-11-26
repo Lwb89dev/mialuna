@@ -131,7 +131,7 @@ abstract final class NostrKinds {
   static const reaction = 7;
   static const picture = 20; // NIP-68
   static const video = 21; // NIP-71 normal
-  static const shortVideo = 22; // NIP-71 shorts / reels / stories
+  static const shortVideo = 22; // NIP-71 shorts / reels
   static const comment = 1111; // NIP-22
   static const zapRequest = 9734; // NIP-57
   static const zapReceipt = 9735; // NIP-57
@@ -149,12 +149,18 @@ abstract final class NostrKinds {
   /// Mialuna convention: "I watched these stories", a rumor gift-wrapped to
   /// the story's author only (see `features/stories/story_views.dart`).
   static const storyView = 1417;
+
+  /// Mialuna convention: a 24-hour story, photo or video. A kind of its own so
+  /// that clients showing kinds 20/22 in their feeds never pick a story up
+  /// (see `docs/stories.md`).
+  static const story = 1418;
   static const blossomServerList = 10063; // BUD-03
   static const followSet = 30000; // NIP-51 categorised people list
   static const addressableVideo = 34235;
   static const addressableShortVideo = 34236;
 
-  /// Kinds Mialuna renders as media posts. Kind 1 is deliberately absent.
+  /// What feeds and profiles ask for. Kind 1 is deliberately absent, and so is
+  /// [story]: a story only ever lives in the story rail.
   static const mediaKinds = [
     picture,
     video,
@@ -162,4 +168,12 @@ abstract final class NostrKinds {
     addressableVideo,
     addressableShortVideo,
   ];
+
+  /// Everything that can be read as a post: for looking one up by id, and for
+  /// finding which files are still in use.
+  static const postKinds = [...mediaKinds, story];
+
+  /// What the story rail asks for. Kinds 20 and 22 are the stories of Mialuna
+  /// 0.25 and earlier, told apart from posts by their label.
+  static const storyKinds = [story, picture, shortVideo];
 }

@@ -179,6 +179,35 @@ void main() {
       expect(authors(c), isEmpty);
     });
 
+    test('stories of Mialuna 0.25 and earlier are still shown', () async {
+      final dave = newSigner();
+      final me = newSigner();
+      final current = await h.story(dave, 'nuova');
+      final old = await signed(
+        dave,
+        kind: NostrKinds.picture,
+        content: 'vecchia',
+        createdAt: h.clock.now - 100,
+        tags: [
+          ['imeta', 'url https://cdn.example.com/old.jpg', 'm image/jpeg'],
+          ['L', 'mialuna.story'],
+          ['l', 'story', 'mialuna.story'],
+        ],
+      );
+      relay
+        ..add(current.event)
+        ..add(old);
+      await follows(me, [dave]);
+      final c = h.app(me);
+      await signIn(c);
+
+      Set<String> ids() => {
+        for (final g in c.read(storiesProvider).groups)
+          for (final s in g.stories) s.id,
+      };
+      await eventually(() => ids().containsAll([current.id, old.id]));
+    });
+
     test('a close-friends story goes at the same moment', () async {
       final me = newSigner();
       final c = h.app(me);

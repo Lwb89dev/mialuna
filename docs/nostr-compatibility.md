@@ -12,7 +12,7 @@ Mialuna implements and with which conventions.
 | NIP-25 | Reactions (kind 7) | ✅ | Likes with live count |
 | NIP-36/56 | Content warning, reports | ✅ | Sensitive-content overlay; kind 1984 reports |
 | NIP-40 | Expiration | ✅ | Expired events filtered everywhere; basis of Stories. Once an own story has expired, a NIP-09 request (up to 50 `e` tags in one signed event) goes to every relay the pool knows, read-only ones included, and the files are deleted with BUD-02 (one authorization for all of them) |
-| NIP-32 | Labels (Stories) | ✅ | `mialuna.story` to identify Stories |
+| NIP-32 | Labels (Stories) | ✅ | `mialuna.story` on every Story |
 | NIP-55 | Amber signer | ✅ | Android, `nostrsigner:` intents |
 | NIP-46 | Bunker | ✅ | Login + remote signing; NIP-44 preferred, NIP-04 fallback |
 | NIP-51 | Lists | ✅ | Bookmarks (10003) and mute list (10000), merged union on sign-in |
@@ -36,14 +36,16 @@ Mialuna implements and with which conventions.
 ## Mialuna conventions
 
 - **Media-first**: the feed requests only kinds 20/21/22/34235/34236.
-  Kind 1 events are never requested or rendered as posts.
+  Kind 1 events are never requested or rendered as posts, and stories (kind
+  1418) are only ever requested by the story rail.
 - **#mialuna**: media posts created in Mialuna carry `["t","mialuna"]` and
   the `#mialuna` suffix in the caption (never in comments or reactions).
   Posts from other clients without the hashtag remain visible.
-- **Stories**: kind 20/22 with NIP-40 24h expiration and NIP-32 label
-  `["L","mialuna.story"]` / `["l","story","mialuna.story"]`. Convention
-  documented here until broader standards emerge; clients that do not know
-  it see ordinary expiring media events.
+- **Stories**: kind `1418` with NIP-40 24h expiration and NIP-32 label
+  `["L","mialuna.story"]` / `["l","story","mialuna.story"]`, one photo or video
+  each; specified in [stories.md](stories.md). Convention documented until
+  broader standards emerge; clients that do not know the kind show nothing.
+  The kind 20/22 stories of 0.25 and earlier are still read.
 - **Texts over stories** (Instagram-style text stickers): a story may carry up
   to 8 tags `["story-text", "<json>"]`. They are *not* baked into the picture,
   so the `#hashtags` in them stay tappable. The JSON is
@@ -169,7 +171,8 @@ web pages (YouTube, Vimeo, …); `imeta` `image`/`thumb` give the poster,
 
 Built on NIP-17/NIP-59; not a standard other clients understand.
 
-- **Post**: an unsigned event (rumor) of kind 20/21/22 with the usual
+- **Post**: an unsigned event (rumor) of kind 20/21/22 (1418 for a story) with
+  the usual
   `imeta`/`title`/`published_at` tags plus `["audience","close-friends"]` and
   one `["p", <friend>]` per friend (the list is injected in the post). Stories
   add the usual `L`/`l` labels and `expiration`; the gift wrap also carries the
