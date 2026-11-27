@@ -23,6 +23,7 @@ import 'package:mialuna/features/feed/widgets/post_card.dart';
 import 'package:mialuna/features/messages/chat_screen.dart';
 import 'package:mialuna/features/messages/dm_controller.dart';
 import 'package:mialuna/features/messages/inbox_screen.dart';
+import 'package:mialuna/features/messages/send_to_sheet.dart';
 import 'package:mialuna/features/notifications/notifications_controller.dart';
 import 'package:mialuna/features/notifications/notifications_screen.dart';
 import 'package:mialuna/features/private/close_friends.dart';
@@ -31,7 +32,9 @@ import 'package:mialuna/features/profile/profile_screen.dart';
 import 'package:mialuna/features/settings/settings_screen.dart';
 import 'package:mialuna/features/stories/stories_controller.dart';
 import 'package:mialuna/features/stories/stories_rail.dart';
+import 'package:mialuna/features/stories/story_cleanup.dart';
 import 'package:mialuna/features/stories/story_composer_screen.dart';
+import 'package:mialuna/features/stories/story_history_screen.dart';
 import 'package:mialuna/features/stories/story_text_editor.dart';
 import 'package:mialuna/core/nostr/models/story_text.dart';
 import 'package:mialuna/l10n/strings.dart';
@@ -121,6 +124,42 @@ class _StoryComposer extends ComposerController {
   @override
   Future<({Uint8List? bytes, double? aspect})> storyBackdrop() async =>
       (bytes: _picture(), aspect: 40 / 30);
+}
+
+/// One story in every state the deletion screen can show.
+class _Cleanup extends StoryCleanup {
+  @override
+  StoryCleanupState build() => StoryCleanupState(
+    busy: true,
+    stories: [
+      for (final fate in StoryFate.values)
+        for (final automatic in [true, false])
+          TrackedStory(
+            post: MediaPost.tryParse(
+              NostrEvent(
+                id: '${fate.index}${automatic ? 1 : 0}'.padLeft(64, '0'),
+                pubkey: _me.publicKey,
+                createdAt: 1700000000,
+                kind: NostrKinds.story,
+                tags: const [
+                  ['imeta', 'url https://x.example/s.jpg', 'm image/jpeg'],
+                ],
+                content: _longText,
+                sig: '',
+              ),
+            )!,
+            fate: fate,
+            automatic: automatic,
+            relaysDone: false,
+            mediaLeft: const ['a-rather-long-media-server.example.com'],
+          ),
+    ],
+  );
+}
+
+class _StoryModeComposer extends ComposerController {
+  @override
+  ComposerState build() => const ComposerState(mode: ComposerMode.story);
 }
 
 class _Friends extends CloseFriendsController {
@@ -651,6 +690,49 @@ void main() {
             );
             await tester.tap(find.byTooltip(AppStrings.current.storyAddText));
             await tester.pump(const Duration(milliseconds: 300));
+            await expectClean(tester, where);
+          });
+
+          testWidgets('story deletion · $where', (tester) async {
+            await pumpScreen(
+              tester,
+              const StoryHistoryScreen(),
+              size: entry.value,
+              textScale: scale,
+              extra: [storyCleanupProvider.overrideWith(_Cleanup.new)],
+            );
+            // Every card is built, not only the ones first on screen.
+            for (var i = 0; i < 12; i++) {
+              await tester.drag(find.byType(ListView), const Offset(0, -600));
+              await tester.pump();
+            }
+            await expectClean(tester, where);
+          });
+
+          testWidgets('create a story · $where', (tester) async {
+            await pumpScreen(
+              tester,
+              const CreateScreen(),
+              size: entry.value,
+              textScale: scale,
+              extra: [composerProvider.overrideWith(_StoryModeComposer.new)],
+            );
+            await tester.scrollUntilVisible(
+              find.byIcon(Icons.auto_delete_outlined),
+              200,
+              scrollable: find.byType(Scrollable).first,
+            );
+            await expectClean(tester, where);
+          });
+
+          testWidgets('share sheet · $where', (tester) async {
+            await pumpScreen(
+              tester,
+              Scaffold(body: SendToSheet(post: post())),
+              size: entry.value,
+              textScale: scale,
+            );
+            expect(find.byIcon(Icons.add_circle_outline), findsOneWidget);
             await expectClean(tester, where);
           });
 

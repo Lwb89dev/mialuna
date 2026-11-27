@@ -5,25 +5,37 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/models/media_event.dart';
 import '../../l10n/strings.dart';
+import '../feed/widgets/inline_video.dart' show activeVideoProvider;
 import '../profile/profile_widgets.dart';
 import '../search/people_search.dart';
+import '../stories/story_composer_screen.dart';
 import 'dm_controller.dart';
 import 'share_utils.dart';
 
 /// "Send to…" sheet used to forward a post, reel or story as a private
 /// message (NIP-17) straight from the feed, the Reels viewer or the story
-/// viewer. Also offers copying the plain link.
+/// viewer. A public post or reel can also go into your story. Also offers
+/// copying the plain link.
 class SendToSheet extends ConsumerStatefulWidget {
   final MediaPost post;
-  const SendToSheet({super.key, required this.post});
 
-  static Future<void> show(BuildContext context, MediaPost post) {
+  /// Called before the story composer covers the screen (a video playing
+  /// underneath should stop).
+  final VoidCallback? onLeaving;
+
+  const SendToSheet({super.key, required this.post, this.onLeaving});
+
+  static Future<void> show(
+    BuildContext context,
+    MediaPost post, {
+    VoidCallback? onLeaving,
+  }) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
-      builder: (_) => SendToSheet(post: post),
+      builder: (_) => SendToSheet(post: post, onLeaving: onLeaving),
     );
   }
 
@@ -86,10 +98,53 @@ class _SendToSheetState extends ConsumerState<SendToSheet> {
     }
   }
 
+  Widget _sendButton() => FilledButton.icon(
+    onPressed: _selected.isEmpty || _sending ? null : _send,
+    icon: _sending
+        ? const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : const Icon(Icons.send, size: 18),
+    label: Text(
+      _selected.length > 1
+          ? context.l10n.sendWithCount(_selected.length)
+          : context.l10n.send,
+    ),
+  );
+
+  void _addToStory() {
+    widget.onLeaving?.call();
+    ref.read(activeVideoProvider.notifier).state = null;
+    final navigator = Navigator.of(context, rootNavigator: true);
+    Navigator.of(context).pop();
+    StoryComposerScreen.open(navigator, sharing: widget.post);
+  }
+
+  Widget _storyButton() => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+    child: SizedBox(
+      width: double.infinity,
+      child: FilledButton.tonalIcon(
+        onPressed: _addToStory,
+        icon: const Icon(Icons.add_circle_outline),
+        label: Text(
+          context.l10n.addToStory,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final auth = ref.watch(authProvider);
+    // Not a story, and nothing meant for close friends only.
+    final canShareToStory =
+        !widget.post.isStory && !widget.post.isPrivate && auth.signer.canSign;
     final dm = ref.watch(dmProvider);
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
 
@@ -107,6 +162,7 @@ class _SendToSheetState extends ConsumerState<SendToSheet> {
               style: theme.textTheme.bodyLarge,
             ),
             const SizedBox(height: 16),
+            if (canShareToStory) _storyButton(),
             _CopyLinkButton(post: widget.post),
           ],
         ),
@@ -121,6 +177,7 @@ class _SendToSheetState extends ConsumerState<SendToSheet> {
         height: MediaQuery.sizeOf(context).height * 0.78,
         child: Column(
           children: [
+            if (canShareToStory) _storyButton(),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: TextField(
@@ -201,19 +258,15 @@ class _SendToSheetState extends ConsumerState<SendToSheet> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  FilledButton.icon(
-                    onPressed: _selected.isEmpty || _sending ? null : _send,
-                    icon: _sending
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.send, size: 18),
-                    label: Text(
-                      _selected.length > 1
-                          ? context.l10n.sendWithCount(_selected.length)
-                          : context.l10n.send,
+                  // A long word at a large text size shrinks instead of
+                  // pushing past the edge of a narrow screen.
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.sizeOf(context).width * 0.5,
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: _sendButton(),
                     ),
                   ),
                 ],

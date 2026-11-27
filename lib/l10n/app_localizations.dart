@@ -3233,6 +3233,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose a photo to edit'**
   String get choosePhotoToEdit;
+
+  /// No description provided for @addToStory.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to your story'**
+  String get addToStory;
+
+  /// No description provided for @viewPost.
+  ///
+  /// In en, this message translates to:
+  /// **'View post'**
+  String get viewPost;
+
+  /// No description provided for @storyFromPostFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t make a preview of that post.'**
+  String get storyFromPostFailed;
+
+  /// No description provided for @storyDeleteAfterDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete after 24 h'**
+  String get storyDeleteAfterDay;
+
+  /// No description provided for @storyDeleteAfterDayNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Off: its photo or video stays on your media server after the story is gone.'**
+  String get storyDeleteAfterDayNote;
+
+  /// No description provided for @storyHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Story deletion'**
+  String get storyHistory;
+
+  /// No description provided for @storyHistoryNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose for each story when you share it, and see here what was deleted.'**
+  String get storyHistoryNote;
+
+  /// No description provided for @storyHistoryExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting is a request: relays and media servers can ignore it. “Check files” asks the media server whether it still serves them.'**
+  String get storyHistoryExplain;
+
+  /// No description provided for @storyHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Your stories will be listed here, with what happened to them.'**
+  String get storyHistoryEmpty;
+
+  /// No description provided for @storyStateLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Live · will be deleted when it expires'**
+  String get storyStateLive;
+
+  /// No description provided for @storyStateLiveManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Live · automatic deletion is off'**
+  String get storyStateLiveManual;
+
+  /// No description provided for @storyStateWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired · waiting to be deleted'**
+  String get storyStateWaiting;
+
+  /// No description provided for @storyStateExpiredManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired · automatic deletion is off'**
+  String get storyStateExpiredManual;
+
+  /// No description provided for @storyStateDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get storyStateDeleted;
+
+  /// No description provided for @storyStateKept.
+  ///
+  /// In en, this message translates to:
+  /// **'Kept · its files are not deleted'**
+  String get storyStateKept;
+
+  /// No description provided for @storyStateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not be deleted'**
+  String get storyStateFailed;
+
+  /// No description provided for @storyFilesNotConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Not confirmed by: {servers}'**
+  String storyFilesNotConfirmed(Object servers);
+
+  /// No description provided for @storyKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep'**
+  String get storyKeep;
+
+  /// No description provided for @storyDeleteWhenExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete when it expires'**
+  String get storyDeleteWhenExpired;
+
+  /// No description provided for @storyAskAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask again'**
+  String get storyAskAgain;
+
+  /// No description provided for @storyCheckFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Check files'**
+  String get storyCheckFiles;
+
+  /// No description provided for @storyCheckGone.
+  ///
+  /// In en, this message translates to:
+  /// **'The server no longer serves these files.'**
+  String get storyCheckGone;
+
+  /// No description provided for @storyCheckOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Still online at {servers}.'**
+  String storyCheckOnline(Object servers);
+
+  /// No description provided for @storyCheckUnclear.
+  ///
+  /// In en, this message translates to:
+  /// **'The server did not give a clear answer.'**
+  String get storyCheckUnclear;
 }
 
 class _AppLocalizationsDelegate

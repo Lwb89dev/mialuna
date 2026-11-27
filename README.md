@@ -32,8 +32,10 @@ centralized platform.
   have published, a second circle shows your stories, and every ring is divided
   into one part per story of the last 24 hours. Texts are written right on the
   photo, like Instagram (fonts, colours, pill backgrounds, drag / pinch /
-  rotate) and their `#hashtags` are tappable; public or close friends only;
-  see who watched your story, from the note
+  rotate, two fingers anywhere to resize) and their `#hashtags` are tappable;
+  public or close friends only; share a post or reel into your story, where it
+  opens when tapped; 9:16 crop; keep a story or delete it after 24 hours, and
+  see what happened to each; see who watched your story, from the note
 - **Home & Discover** — Home shows the people you follow; Discover shows
   only your web of trust (media grid, hashtag and words search inside that
   network, official `#mialuna` feed) and finds people you trust by name
@@ -55,7 +57,7 @@ centralized platform.
 - **Deleting your posts** — a NIP-09 deletion request to every relay and a
   Blossom `DELETE` of the photos and videos from the media servers, for posts,
   reels and stories, close-friends ones included; your stories are deleted the
-  same way once their 24 hours are over
+  same way once their 24 hours are over, unless you chose to keep them
 - **Relays** — multi-relay pool with reconnect/backoff, NIP-65 relay lists
   synced automatically (read/write roles, outbox model), NIP-42 AUTH,
   per-relay publication reports, offline cache
@@ -65,8 +67,8 @@ centralized platform.
 - **Hardened by default** — no backups, no cleartext, private screens blocked
   from screenshots, safe fetching of third-party servers, signing out wipes the
   account (see [SECURITY.md](SECURITY.md) and [PRIVACY.md](PRIVACY.md))
-- **Branding** — every post published from Mialuna carries `#mialuna`,
-  without rejecting external posts that lack it
+- **Branding** — posts published from Mialuna carry `#mialuna` unless you turn
+  it off (for all, or post by post), without rejecting posts that lack it
 
 ## Screenshots
 

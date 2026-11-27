@@ -5,6 +5,48 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.27.0] — 2026-11-27 — Share posts into your story
+
+### Added
+- **Share a post into your story.** The share button of a post or reel now has
+  "Add to your story": the story shows a card with the photo (or a still of the
+  video), the author and the caption. Tapping it, or "View post", opens the
+  post as from a profile. You can add text on it and send it to everyone or to
+  close friends. Posts behind a content warning show no picture on the card,
+  and close-friends posts cannot be shared this way.
+- **Choose #mialuna for each post and story**, in the Create tab and in the
+  story composer. Settings keeps the default.
+- **Choose for each public story whether it is deleted after 24 hours** or
+  kept (its photo or video stays on your media server).
+- **Story deletion**, from your profile or Settings: every story of yours with
+  what happened to it (live, waiting, deleted, kept, failed, which server did
+  not confirm), and buttons to delete now, ask again, keep, or check whether
+  the media server still serves the files.
+- **9:16 crop** in the photo editor. A portrait photo taken from Mialuna for a
+  story starts out cut to 9:16; the whole photo is kept, so the crop can be
+  changed or removed.
+
+### Changed
+- **Two fingers resize story texts from anywhere on the picture**, and also
+  while you are writing. Until now both fingers had to be on the words.
+- **Small animations and quieter surfaces.** Avatars, story circles and
+  thumbnails give way slightly when pressed; the tab and bookmark icons and the
+  carousel dots move between states; cards, sheets and bars are softer. With the
+  system's reduced-motion setting on, nothing of this moves, the like moon
+  included.
+- A story whose deletion keeps failing is no longer forgotten after eight
+  tries: it stays listed under "Story deletion" and can be asked again.
+- Deleting a post no longer removes a file that a story you chose to keep
+  also uses.
+
+### Fixed
+- The "Send" button of the share sheet no longer overflows a narrow screen at
+  large text sizes in some languages.
+
+**To keep a story, update every phone you use with this account**: older
+versions do not know the choice and delete the story when it expires. A choice
+changed *after* publishing is only known to the phone where you changed it.
+
 ## [0.26.0] — 2026-11-26 — Stories stay stories
 
 ### Changed

@@ -1875,4 +1875,87 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Wähle ein Foto zum Bearbeiten';
+
+  @override
+  String get addToStory => 'Zu deiner Story hinzufügen';
+
+  @override
+  String get viewPost => 'Beitrag ansehen';
+
+  @override
+  String get storyFromPostFailed =>
+      'Von diesem Beitrag konnte keine Vorschau erstellt werden.';
+
+  @override
+  String get storyDeleteAfterDay => 'Nach 24 Std. löschen';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Aus: Foto oder Video bleiben auf deinem Medienserver, auch wenn die Story weg ist.';
+
+  @override
+  String get storyHistory => 'Story-Löschung';
+
+  @override
+  String get storyHistoryNote =>
+      'Wähle beim Teilen für jede Story und sieh hier, was gelöscht wurde.';
+
+  @override
+  String get storyHistoryExplain =>
+      'Löschen ist eine Bitte: Relays und Medienserver können sie ignorieren. „Dateien prüfen“ fragt den Server, ob er sie noch ausliefert.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'Hier erscheinen deine Stories und was aus ihnen geworden ist.';
+
+  @override
+  String get storyStateLive => 'Aktiv · wird nach Ablauf gelöscht';
+
+  @override
+  String get storyStateLiveManual => 'Aktiv · automatisches Löschen ist aus';
+
+  @override
+  String get storyStateWaiting => 'Abgelaufen · wartet auf Löschung';
+
+  @override
+  String get storyStateExpiredManual =>
+      'Abgelaufen · automatisches Löschen ist aus';
+
+  @override
+  String get storyStateDeleted => 'Gelöscht';
+
+  @override
+  String get storyStateKept => 'Behalten · Dateien werden nicht gelöscht';
+
+  @override
+  String get storyStateFailed => 'Konnte nicht gelöscht werden';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Nicht bestätigt von: $servers';
+  }
+
+  @override
+  String get storyKeep => 'Behalten';
+
+  @override
+  String get storyDeleteWhenExpired => 'Nach Ablauf löschen';
+
+  @override
+  String get storyAskAgain => 'Erneut anfragen';
+
+  @override
+  String get storyCheckFiles => 'Dateien prüfen';
+
+  @override
+  String get storyCheckGone =>
+      'Der Server liefert diese Dateien nicht mehr aus.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Noch online auf $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear => 'Der Server hat nicht eindeutig geantwortet.';
 }

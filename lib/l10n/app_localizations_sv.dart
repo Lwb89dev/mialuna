@@ -1866,4 +1866,85 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Välj ett foto att redigera';
+
+  @override
+  String get addToStory => 'Lägg till i din story';
+
+  @override
+  String get viewPost => 'Visa inlägget';
+
+  @override
+  String get storyFromPostFailed =>
+      'Det gick inte att skapa en förhandsvisning av inlägget.';
+
+  @override
+  String get storyDeleteAfterDay => 'Radera efter 24 h';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Av: fotot eller videon ligger kvar på din medieserver när storyn är borta.';
+
+  @override
+  String get storyHistory => 'Radering av stories';
+
+  @override
+  String get storyHistoryNote =>
+      'Välj för varje story när du delar den och se här vad som raderats.';
+
+  @override
+  String get storyHistoryExplain =>
+      'Radering är en begäran: reläer och medieservrar kan strunta i den. ”Kontrollera filer” frågar servern om den fortfarande levererar dem.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'Dina stories visas här, med vad som hänt med dem.';
+
+  @override
+  String get storyStateLive => 'Aktiv · raderas när den går ut';
+
+  @override
+  String get storyStateLiveManual => 'Aktiv · automatisk radering är av';
+
+  @override
+  String get storyStateWaiting => 'Utgången · väntar på radering';
+
+  @override
+  String get storyStateExpiredManual => 'Utgången · automatisk radering är av';
+
+  @override
+  String get storyStateDeleted => 'Raderad';
+
+  @override
+  String get storyStateKept => 'Behållen · filerna raderas inte';
+
+  @override
+  String get storyStateFailed => 'Kunde inte raderas';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Inte bekräftat av: $servers';
+  }
+
+  @override
+  String get storyKeep => 'Behåll';
+
+  @override
+  String get storyDeleteWhenExpired => 'Radera när den går ut';
+
+  @override
+  String get storyAskAgain => 'Fråga igen';
+
+  @override
+  String get storyCheckFiles => 'Kontrollera filer';
+
+  @override
+  String get storyCheckGone => 'Servern levererar inte längre filerna.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Finns fortfarande på $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear => 'Servern gav inget tydligt svar.';
 }

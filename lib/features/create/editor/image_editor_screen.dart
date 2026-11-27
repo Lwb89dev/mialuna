@@ -121,6 +121,7 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
     setState(() {
       _preview = preview;
       _image = image;
+      _shape = CropTool.shapeOf(_edit.crop, _canvasAspect);
     });
     _scheduleHistogram();
   }
@@ -503,6 +504,7 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
             ('4:3', CropShape.fourThree),
             ('3:2', CropShape.threeTwo),
             ('16:9', CropShape.sixteenNine),
+            ('9:16', CropShape.nineSixteen),
           ])
             Padding(
               padding: const EdgeInsets.only(right: 8),

@@ -122,6 +122,10 @@ img.Image? decodeUpright(Uint8List bytes) {
 EditedImage? applyImageEdit(Uint8List bytes, ImageEdit edit) {
   final decoded = decodeUpright(bytes);
   if (decoded == null) return null;
+  return _render(bytes, decoded, edit);
+}
+
+EditedImage _render(Uint8List bytes, img.Image decoded, ImageEdit edit) {
   final png = img.findFormatForData(bytes) == img.ImageFormat.png;
   if (edit.isIdentity) {
     return EditedImage(
@@ -148,6 +152,28 @@ EditedImage? applyImageEdit(Uint8List bytes, ImageEdit edit) {
 /// freeze the screen.
 Future<EditedImage?> applyImageEditAsync(Uint8List bytes, ImageEdit edit) =>
     Isolate.run(() => applyImageEdit(bytes, edit));
+
+/// A portrait photo cut to [ratio] (width over height) around its centre,
+/// as a recipe the editor can undo, with the rendered result. Null when
+/// there is nothing to cut: a landscape or square picture (somebody framed it
+/// that way), one that already has the shape, or one that cannot be decoded.
+({ImageEdit edit, EditedImage image})? cropPortrait(
+  Uint8List bytes,
+  double ratio,
+) {
+  final decoded = decodeUpright(bytes);
+  if (decoded == null || decoded.height <= decoded.width) return null;
+  final aspect = decoded.width / decoded.height;
+  if ((aspect - ratio).abs() < 0.005) return null;
+  final edit = ImageEdit(crop: CropTool.fit(Crop.full, ratio, aspect));
+  return (edit: edit, image: _render(bytes, decoded, edit));
+}
+
+/// [cropPortrait] in a background isolate.
+Future<({ImageEdit edit, EditedImage image})?> cropPortraitAsync(
+  Uint8List bytes,
+  double ratio,
+) => Isolate.run(() => cropPortrait(bytes, ratio));
 
 /// The geometry, colour and effects of [edit] applied to an already
 /// decoded, upright [source]. Also used for previews when the GPU shader is

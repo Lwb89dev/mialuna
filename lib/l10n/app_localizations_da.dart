@@ -1857,4 +1857,86 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Vælg et billede at redigere';
+
+  @override
+  String get addToStory => 'Føj til din story';
+
+  @override
+  String get viewPost => 'Se opslag';
+
+  @override
+  String get storyFromPostFailed =>
+      'Der kunne ikke laves en forhåndsvisning af opslaget.';
+
+  @override
+  String get storyDeleteAfterDay => 'Slet efter 24 t';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Fra: foto eller video bliver på din medieserver, når storyen er væk.';
+
+  @override
+  String get storyHistory => 'Sletning af stories';
+
+  @override
+  String get storyHistoryNote =>
+      'Vælg for hver story, når du deler den, og se her, hvad der er slettet.';
+
+  @override
+  String get storyHistoryExplain =>
+      'Sletning er en anmodning: relays og medieservere kan ignorere den. “Tjek filer” spørger serveren, om den stadig udleverer dem.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'Dine stories vises her, med hvad der er sket med dem.';
+
+  @override
+  String get storyStateLive => 'Aktiv · slettes, når den udløber';
+
+  @override
+  String get storyStateLiveManual => 'Aktiv · automatisk sletning er slået fra';
+
+  @override
+  String get storyStateWaiting => 'Udløbet · venter på sletning';
+
+  @override
+  String get storyStateExpiredManual =>
+      'Udløbet · automatisk sletning er slået fra';
+
+  @override
+  String get storyStateDeleted => 'Slettet';
+
+  @override
+  String get storyStateKept => 'Beholdt · filerne slettes ikke';
+
+  @override
+  String get storyStateFailed => 'Kunne ikke slettes';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Ikke bekræftet af: $servers';
+  }
+
+  @override
+  String get storyKeep => 'Behold';
+
+  @override
+  String get storyDeleteWhenExpired => 'Slet, når den udløber';
+
+  @override
+  String get storyAskAgain => 'Spørg igen';
+
+  @override
+  String get storyCheckFiles => 'Tjek filer';
+
+  @override
+  String get storyCheckGone => 'Serveren udleverer ikke længere filerne.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Stadig online på $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear => 'Serveren gav ikke et klart svar.';
 }

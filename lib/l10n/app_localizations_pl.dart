@@ -1867,4 +1867,87 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Wybierz zdjęcie do edycji';
+
+  @override
+  String get addToStory => 'Dodaj do swojej relacji';
+
+  @override
+  String get viewPost => 'Zobacz post';
+
+  @override
+  String get storyFromPostFailed =>
+      'Nie udało się przygotować podglądu tego posta.';
+
+  @override
+  String get storyDeleteAfterDay => 'Usuń po 24 h';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Wyłączone: zdjęcie lub wideo zostaje na twoim serwerze mediów po zniknięciu relacji.';
+
+  @override
+  String get storyHistory => 'Usuwanie relacji';
+
+  @override
+  String get storyHistoryNote =>
+      'Wybierz dla każdej relacji przy udostępnianiu i sprawdź tu, co usunięto.';
+
+  @override
+  String get storyHistoryExplain =>
+      'Usunięcie to prośba: przekaźniki i serwery mediów mogą ją zignorować. „Sprawdź pliki” pyta serwer, czy nadal je udostępnia.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'Tu pojawią się twoje relacje i to, co się z nimi stało.';
+
+  @override
+  String get storyStateLive => 'Aktywna · zostanie usunięta po wygaśnięciu';
+
+  @override
+  String get storyStateLiveManual =>
+      'Aktywna · automatyczne usuwanie wyłączone';
+
+  @override
+  String get storyStateWaiting => 'Wygasła · czeka na usunięcie';
+
+  @override
+  String get storyStateExpiredManual =>
+      'Wygasła · automatyczne usuwanie wyłączone';
+
+  @override
+  String get storyStateDeleted => 'Usunięta';
+
+  @override
+  String get storyStateKept => 'Zachowana · pliki nie są usuwane';
+
+  @override
+  String get storyStateFailed => 'Nie udało się usunąć';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Brak potwierdzenia od: $servers';
+  }
+
+  @override
+  String get storyKeep => 'Zachowaj';
+
+  @override
+  String get storyDeleteWhenExpired => 'Usuń po wygaśnięciu';
+
+  @override
+  String get storyAskAgain => 'Poproś ponownie';
+
+  @override
+  String get storyCheckFiles => 'Sprawdź pliki';
+
+  @override
+  String get storyCheckGone => 'Serwer już nie udostępnia tych plików.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Nadal dostępne na $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear => 'Serwer nie dał jasnej odpowiedzi.';
 }

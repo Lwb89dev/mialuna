@@ -1860,4 +1860,87 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Scegli la foto da modificare';
+
+  @override
+  String get addToStory => 'Aggiungi alla tua storia';
+
+  @override
+  String get viewPost => 'Vedi il post';
+
+  @override
+  String get storyFromPostFailed =>
+      'Non è stato possibile creare l\'anteprima di quel post.';
+
+  @override
+  String get storyDeleteAfterDay => 'Elimina dopo 24 h';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Se disattivato, la foto o il video restano sul tuo server multimediale anche quando la storia sparisce.';
+
+  @override
+  String get storyHistory => 'Cancellazione delle storie';
+
+  @override
+  String get storyHistoryNote =>
+      'Scegli per ogni storia quando la condividi, e qui vedi cosa è stato eliminato.';
+
+  @override
+  String get storyHistoryExplain =>
+      'L\'eliminazione è una richiesta: relay e server multimediali possono ignorarla. «Controlla i file» chiede al server se li distribuisce ancora.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'Qui compariranno le tue storie, con che fine hanno fatto.';
+
+  @override
+  String get storyStateLive => 'Attiva · sarà eliminata alla scadenza';
+
+  @override
+  String get storyStateLiveManual =>
+      'Attiva · eliminazione automatica disattivata';
+
+  @override
+  String get storyStateWaiting => 'Scaduta · in attesa di eliminazione';
+
+  @override
+  String get storyStateExpiredManual =>
+      'Scaduta · eliminazione automatica disattivata';
+
+  @override
+  String get storyStateDeleted => 'Eliminata';
+
+  @override
+  String get storyStateKept => 'Conservata · i file non vengono eliminati';
+
+  @override
+  String get storyStateFailed => 'Non è stato possibile eliminarla';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Senza conferma da: $servers';
+  }
+
+  @override
+  String get storyKeep => 'Conserva';
+
+  @override
+  String get storyDeleteWhenExpired => 'Elimina alla scadenza';
+
+  @override
+  String get storyAskAgain => 'Richiedi di nuovo';
+
+  @override
+  String get storyCheckFiles => 'Controlla i file';
+
+  @override
+  String get storyCheckGone => 'Il server non distribuisce più questi file.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Ancora online su $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear => 'Il server non ha dato una risposta chiara.';
 }

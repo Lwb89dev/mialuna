@@ -8,19 +8,24 @@ import '../../core/nostr/filter.dart';
 import '../../core/nostr/models/media_event.dart';
 import '../../core/nostr/nip19.dart';
 
+/// Up to two secure relays where a post is likely to be found: the author's
+/// first, then the ones this account writes to.
+List<String> relayHints(
+  Iterable<String> authorRelays,
+  Iterable<String> ownRelays,
+) => <String>{
+  for (final h in [...authorRelays, ...ownRelays])
+    if (h.startsWith('wss://')) h,
+}.take(2).toList();
+
 /// `nostr:nevent1…` reference to [post] with relay hints, so the recipient's
 /// app can find it (NIP-19/NIP-21). Works for photos, videos, reels and
 /// stories alike: they are all events.
 String shareReference(ProviderContainer ref, MediaPost post) {
-  final outbox = ref.read(outboxProvider);
-  final hints = <String>[
-    ...outbox.writeRelays(post.author, max: 2),
-    ...ref.read(relayPoolProvider).writeRelays,
-  ];
-  final unique = <String>{
-    for (final h in hints)
-      if (h.startsWith('wss://')) h,
-  }.take(2).toList();
+  final unique = relayHints(
+    ref.read(outboxProvider).writeRelays(post.author, max: 2),
+    ref.read(relayPoolProvider).writeRelays,
+  );
   return 'nostr:${Nip19.encodeNevent(post.id, relays: unique, author: post.author, kind: post.kind)}';
 }
 

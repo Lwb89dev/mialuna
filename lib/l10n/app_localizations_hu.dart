@@ -1863,4 +1863,88 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Válaszd ki a szerkesztendő fotót';
+
+  @override
+  String get addToStory => 'Hozzáadás a történetedhez';
+
+  @override
+  String get viewPost => 'Bejegyzés megnyitása';
+
+  @override
+  String get storyFromPostFailed =>
+      'Nem sikerült előnézetet készíteni a bejegyzésről.';
+
+  @override
+  String get storyDeleteAfterDay => 'Törlés 24 óra után';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Kikapcsolva: a fotó vagy videó a médiaszervereden marad a történet eltűnése után is.';
+
+  @override
+  String get storyHistory => 'Történetek törlése';
+
+  @override
+  String get storyHistoryNote =>
+      'Válassz minden történetnél megosztáskor, és itt nézd meg, mi törlődött.';
+
+  @override
+  String get storyHistoryExplain =>
+      'A törlés kérés: a relék és médiaszerverek figyelmen kívül hagyhatják. A „Fájlok ellenőrzése” megkérdezi a szervert, kiszolgálja-e még őket.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'Itt jelennek meg a történeteid, és hogy mi lett velük.';
+
+  @override
+  String get storyStateLive => 'Látható · lejáratkor törlődik';
+
+  @override
+  String get storyStateLiveManual =>
+      'Látható · az automatikus törlés ki van kapcsolva';
+
+  @override
+  String get storyStateWaiting => 'Lejárt · törlésre vár';
+
+  @override
+  String get storyStateExpiredManual =>
+      'Lejárt · az automatikus törlés ki van kapcsolva';
+
+  @override
+  String get storyStateDeleted => 'Törölve';
+
+  @override
+  String get storyStateKept => 'Megtartva · a fájlok nem törlődnek';
+
+  @override
+  String get storyStateFailed => 'Nem sikerült törölni';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Nem erősítette meg: $servers';
+  }
+
+  @override
+  String get storyKeep => 'Megtartás';
+
+  @override
+  String get storyDeleteWhenExpired => 'Törlés lejáratkor';
+
+  @override
+  String get storyAskAgain => 'Kérés újra';
+
+  @override
+  String get storyCheckFiles => 'Fájlok ellenőrzése';
+
+  @override
+  String get storyCheckGone =>
+      'A szerver már nem szolgálja ki ezeket a fájlokat.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Még elérhető itt: $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear => 'A szerver nem adott egyértelmű választ.';
 }

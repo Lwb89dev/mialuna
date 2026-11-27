@@ -1865,4 +1865,88 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Choisissez une photo à modifier';
+
+  @override
+  String get addToStory => 'Ajouter à ta story';
+
+  @override
+  String get viewPost => 'Voir la publication';
+
+  @override
+  String get storyFromPostFailed =>
+      'Impossible de créer l\'aperçu de cette publication.';
+
+  @override
+  String get storyDeleteAfterDay => 'Supprimer après 24 h';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Désactivé : sa photo ou sa vidéo reste sur ton serveur média après la disparition de la story.';
+
+  @override
+  String get storyHistory => 'Suppression des stories';
+
+  @override
+  String get storyHistoryNote =>
+      'Choisis pour chaque story au moment du partage, et vois ici ce qui a été supprimé.';
+
+  @override
+  String get storyHistoryExplain =>
+      'Supprimer est une demande : les relais et serveurs média peuvent l\'ignorer. « Vérifier les fichiers » demande au serveur s\'il les sert encore.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'Tes stories apparaîtront ici, avec ce qu\'elles sont devenues.';
+
+  @override
+  String get storyStateLive => 'En ligne · sera supprimée à expiration';
+
+  @override
+  String get storyStateLiveManual =>
+      'En ligne · suppression automatique désactivée';
+
+  @override
+  String get storyStateWaiting => 'Expirée · en attente de suppression';
+
+  @override
+  String get storyStateExpiredManual =>
+      'Expirée · suppression automatique désactivée';
+
+  @override
+  String get storyStateDeleted => 'Supprimée';
+
+  @override
+  String get storyStateKept => 'Conservée · ses fichiers ne sont pas supprimés';
+
+  @override
+  String get storyStateFailed => 'Impossible de la supprimer';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Non confirmé par : $servers';
+  }
+
+  @override
+  String get storyKeep => 'Conserver';
+
+  @override
+  String get storyDeleteWhenExpired => 'Supprimer à expiration';
+
+  @override
+  String get storyAskAgain => 'Redemander';
+
+  @override
+  String get storyCheckFiles => 'Vérifier les fichiers';
+
+  @override
+  String get storyCheckGone => 'Le serveur ne sert plus ces fichiers.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Toujours en ligne sur $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear =>
+      'Le serveur n\'a pas donné de réponse claire.';
 }

@@ -1861,4 +1861,86 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Vyberte fotku k úpravě';
+
+  @override
+  String get addToStory => 'Přidat do příběhu';
+
+  @override
+  String get viewPost => 'Zobrazit příspěvek';
+
+  @override
+  String get storyFromPostFailed =>
+      'Náhled tohoto příspěvku se nepodařilo vytvořit.';
+
+  @override
+  String get storyDeleteAfterDay => 'Smazat po 24 h';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Vypnuto: fotka nebo video zůstane na tvém mediálním serveru i po zmizení příběhu.';
+
+  @override
+  String get storyHistory => 'Mazání příběhů';
+
+  @override
+  String get storyHistoryNote =>
+      'Zvol u každého příběhu při sdílení a tady uvidíš, co bylo smazáno.';
+
+  @override
+  String get storyHistoryExplain =>
+      'Smazání je žádost: relaye a mediální servery ji mohou ignorovat. „Zkontrolovat soubory“ se serveru zeptá, zda je stále poskytuje.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'Tady budou tvé příběhy a co se s nimi stalo.';
+
+  @override
+  String get storyStateLive => 'Aktivní · po vypršení se smaže';
+
+  @override
+  String get storyStateLiveManual => 'Aktivní · automatické mazání je vypnuté';
+
+  @override
+  String get storyStateWaiting => 'Vypršel · čeká na smazání';
+
+  @override
+  String get storyStateExpiredManual =>
+      'Vypršel · automatické mazání je vypnuté';
+
+  @override
+  String get storyStateDeleted => 'Smazáno';
+
+  @override
+  String get storyStateKept => 'Ponecháno · soubory se nemažou';
+
+  @override
+  String get storyStateFailed => 'Nepodařilo se smazat';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Nepotvrdil: $servers';
+  }
+
+  @override
+  String get storyKeep => 'Ponechat';
+
+  @override
+  String get storyDeleteWhenExpired => 'Smazat po vypršení';
+
+  @override
+  String get storyAskAgain => 'Požádat znovu';
+
+  @override
+  String get storyCheckFiles => 'Zkontrolovat soubory';
+
+  @override
+  String get storyCheckGone => 'Server už tyto soubory neposkytuje.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Stále online na $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear => 'Server nedal jasnou odpověď.';
 }

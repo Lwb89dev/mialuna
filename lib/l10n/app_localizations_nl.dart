@@ -1865,4 +1865,87 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Kies een foto om te bewerken';
+
+  @override
+  String get addToStory => 'Aan je story toevoegen';
+
+  @override
+  String get viewPost => 'Bericht bekijken';
+
+  @override
+  String get storyFromPostFailed =>
+      'Van dat bericht kon geen voorbeeld worden gemaakt.';
+
+  @override
+  String get storyDeleteAfterDay => 'Na 24 u verwijderen';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Uit: de foto of video blijft op je mediaserver nadat de story verdwenen is.';
+
+  @override
+  String get storyHistory => 'Story\'s verwijderen';
+
+  @override
+  String get storyHistoryNote =>
+      'Kies per story bij het delen en zie hier wat verwijderd is.';
+
+  @override
+  String get storyHistoryExplain =>
+      'Verwijderen is een verzoek: relays en mediaservers kunnen het negeren. “Bestanden controleren” vraagt de server of hij ze nog aanbiedt.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'Hier komen je story\'s te staan, met wat ermee gebeurd is.';
+
+  @override
+  String get storyStateLive => 'Actief · wordt verwijderd als hij verloopt';
+
+  @override
+  String get storyStateLiveManual =>
+      'Actief · automatisch verwijderen staat uit';
+
+  @override
+  String get storyStateWaiting => 'Verlopen · wacht op verwijdering';
+
+  @override
+  String get storyStateExpiredManual =>
+      'Verlopen · automatisch verwijderen staat uit';
+
+  @override
+  String get storyStateDeleted => 'Verwijderd';
+
+  @override
+  String get storyStateKept => 'Bewaard · bestanden worden niet verwijderd';
+
+  @override
+  String get storyStateFailed => 'Kon niet worden verwijderd';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Niet bevestigd door: $servers';
+  }
+
+  @override
+  String get storyKeep => 'Bewaren';
+
+  @override
+  String get storyDeleteWhenExpired => 'Verwijderen bij verlopen';
+
+  @override
+  String get storyAskAgain => 'Opnieuw vragen';
+
+  @override
+  String get storyCheckFiles => 'Bestanden controleren';
+
+  @override
+  String get storyCheckGone => 'De server biedt deze bestanden niet meer aan.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Nog online op $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear => 'De server gaf geen duidelijk antwoord.';
 }

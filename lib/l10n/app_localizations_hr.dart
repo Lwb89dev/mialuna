@@ -1860,4 +1860,86 @@ class AppLocalizationsHr extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Odaberite fotografiju za uređivanje';
+
+  @override
+  String get addToStory => 'Dodaj u svoju priču';
+
+  @override
+  String get viewPost => 'Pogledaj objavu';
+
+  @override
+  String get storyFromPostFailed => 'Nije moguće izraditi pregled te objave.';
+
+  @override
+  String get storyDeleteAfterDay => 'Izbriši nakon 24 h';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Isključeno: fotografija ili video ostaju na tvom medijskom poslužitelju i nakon što priča nestane.';
+
+  @override
+  String get storyHistory => 'Brisanje priča';
+
+  @override
+  String get storyHistoryNote =>
+      'Odaberi za svaku priču pri dijeljenju, a ovdje vidi što je izbrisano.';
+
+  @override
+  String get storyHistoryExplain =>
+      'Brisanje je zahtjev: releji i medijski poslužitelji mogu ga zanemariti. „Provjeri datoteke“ pita poslužitelj poslužuje li ih još.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'Ovdje će biti tvoje priče i što se s njima dogodilo.';
+
+  @override
+  String get storyStateLive => 'Aktivna · bit će izbrisana kad istekne';
+
+  @override
+  String get storyStateLiveManual =>
+      'Aktivna · automatsko brisanje je isključeno';
+
+  @override
+  String get storyStateWaiting => 'Istekla · čeka brisanje';
+
+  @override
+  String get storyStateExpiredManual =>
+      'Istekla · automatsko brisanje je isključeno';
+
+  @override
+  String get storyStateDeleted => 'Izbrisana';
+
+  @override
+  String get storyStateKept => 'Zadržana · datoteke se ne brišu';
+
+  @override
+  String get storyStateFailed => 'Nije ju bilo moguće izbrisati';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Bez potvrde od: $servers';
+  }
+
+  @override
+  String get storyKeep => 'Zadrži';
+
+  @override
+  String get storyDeleteWhenExpired => 'Izbriši kad istekne';
+
+  @override
+  String get storyAskAgain => 'Zatraži ponovno';
+
+  @override
+  String get storyCheckFiles => 'Provjeri datoteke';
+
+  @override
+  String get storyCheckGone => 'Poslužitelj više ne poslužuje te datoteke.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Još je na mreži: $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear => 'Poslužitelj nije dao jasan odgovor.';
 }

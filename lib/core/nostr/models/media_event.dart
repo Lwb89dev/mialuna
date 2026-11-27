@@ -1,6 +1,7 @@
 import '../../text/hashtags.dart';
 import '../event.dart';
 import '../relay.dart' show isPublicHost;
+import 'story_link.dart';
 import 'story_text.dart';
 
 /// Hosts whose URLs are web pages, not media files. Posts pointing at them
@@ -275,6 +276,9 @@ class MediaPost {
   /// Texts laid over a story (see [StoryText]); always empty for other posts.
   final List<StoryText> overlays;
 
+  /// The post a story shows a preview of (see [StoryPostLink]), if any.
+  final StoryPostLink? link;
+
   /// Close-friends post: it reached this device inside a gift wrap, its media
   /// is encrypted, and [recipients] is the audience the author injected.
   final bool isPrivate;
@@ -291,12 +295,18 @@ class MediaPost {
     required this.isStory,
     this.expiresAt,
     this.overlays = const [],
+    this.link,
     this.isPrivate = false,
     this.recipients = const [],
   });
 
   String get id => event.id;
   String get author => event.pubkey;
+
+  /// The author asked for this story's files to stay after it expires (see
+  /// [keepTag]).
+  bool get asksToBeKept =>
+      event.tags.any((t) => t.length > 1 && t[0] == keepTag && t[1] == 'true');
   int get createdAt => event.createdAt;
   int get kind => event.kind;
 
@@ -453,6 +463,7 @@ class MediaPost {
       isStory: storyMarker,
       expiresAt: event.expiration,
       overlays: storyMarker ? StoryText.fromTags(event.tags) : const [],
+      link: storyMarker ? StoryPostLink.fromTags(event.tags) : null,
       isPrivate: event.tags.any(
         (t) =>
             t.length > 1 && t[0] == audienceTag && t[1] == closeFriendsAudience,
@@ -463,6 +474,10 @@ class MediaPost {
       ],
     );
   }
+
+  /// On a story: its author does not mean to delete it when it expires, so
+  /// their other devices must not take it down either. Readers ignore it.
+  static const keepTag = 'story-keep';
 
   /// Marks a post addressed to the close-friends list.
   static const audienceTag = 'audience';
@@ -498,6 +513,12 @@ class MediaPost {
 
     /// Texts laid over a story. Their hashtags become `t` tags too.
     List<StoryText> overlays = const [],
+
+    /// The post a story shows a preview of.
+    StoryPostLink? link,
+
+    /// A story whose files are to stay once it has expired.
+    bool keepStory = false,
   }) {
     final tags = <List<String>>[
       for (final item in media) item.toImetaTag(),
@@ -521,6 +542,8 @@ class MediaPost {
       ],
       if (isStory)
         for (final text in overlays.take(StoryText.maxTexts)) text.toTag(),
+      if (isStory && link != null) ...link.toTags(),
+      if (isStory && keepStory) [keepTag, 'true'],
       if (expiresAt != null) ['expiration', expiresAt.toString()],
     ];
     // Inline hashtags mentioned in the caption.

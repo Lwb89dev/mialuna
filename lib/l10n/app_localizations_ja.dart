@@ -1804,4 +1804,81 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => '編集する写真を選択';
+
+  @override
+  String get addToStory => 'ストーリーに追加';
+
+  @override
+  String get viewPost => '投稿を見る';
+
+  @override
+  String get storyFromPostFailed => 'この投稿のプレビューを作成できませんでした。';
+
+  @override
+  String get storyDeleteAfterDay => '24時間後に削除';
+
+  @override
+  String get storyDeleteAfterDayNote => 'オフ：ストーリーが消えても、写真や動画はメディアサーバーに残ります。';
+
+  @override
+  String get storyHistory => 'ストーリーの削除';
+
+  @override
+  String get storyHistoryNote => 'シェアするときにストーリーごとに選べます。何が削除されたかはここで確認できます。';
+
+  @override
+  String get storyHistoryExplain =>
+      '削除はあくまでリクエストで、リレーやメディアサーバーは無視することがあります。「ファイルを確認」は、まだ配信されているかをサーバーに問い合わせます。';
+
+  @override
+  String get storyHistoryEmpty => 'あなたのストーリーとその後の状態がここに表示されます。';
+
+  @override
+  String get storyStateLive => '公開中・期限が切れたら削除';
+
+  @override
+  String get storyStateLiveManual => '公開中・自動削除はオフ';
+
+  @override
+  String get storyStateWaiting => '期限切れ・削除待ち';
+
+  @override
+  String get storyStateExpiredManual => '期限切れ・自動削除はオフ';
+
+  @override
+  String get storyStateDeleted => '削除済み';
+
+  @override
+  String get storyStateKept => '保持中・ファイルは削除しません';
+
+  @override
+  String get storyStateFailed => '削除できませんでした';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return '確認がないサーバー：$servers';
+  }
+
+  @override
+  String get storyKeep => '保持する';
+
+  @override
+  String get storyDeleteWhenExpired => '期限が切れたら削除';
+
+  @override
+  String get storyAskAgain => 'もう一度リクエスト';
+
+  @override
+  String get storyCheckFiles => 'ファイルを確認';
+
+  @override
+  String get storyCheckGone => 'サーバーはこれらのファイルを配信していません。';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return '$servers でまだ公開されています。';
+  }
+
+  @override
+  String get storyCheckUnclear => 'サーバーから明確な応答がありませんでした。';
 }

@@ -7,6 +7,8 @@ import 'package:video_player/video_player.dart';
 import '../../app/providers.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/models/media_event.dart';
+import '../../core/nostr/models/story_link.dart';
+import '../../core/nostr/nip19.dart';
 import '../../core/platform/secure_window.dart';
 import '../../core/text/clip.dart';
 import '../../l10n/strings.dart';
@@ -14,10 +16,12 @@ import '../explore/hashtag_link.dart';
 import '../feed/widgets/hashtag_text.dart';
 import '../feed/widgets/inline_video.dart';
 import '../feed/widgets/nostr_image.dart';
-import '../feed/widgets/post_card.dart' show closeFriendsGreen;
+import '../feed/widgets/post_card.dart' show PostScreen, closeFriendsGreen;
 import '../messages/send_to_sheet.dart';
+import '../messages/share_utils.dart';
 import '../profile/profile_widgets.dart';
 import '../social/delete_post_flow.dart';
+import '../social/moderation_controller.dart';
 import 'stories_controller.dart';
 import 'story_playback.dart';
 import 'story_receipts.dart';
@@ -60,6 +64,9 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
   Timer? _timer;
   VideoPlayerController? _video;
   int _generation = 0; // invalidates in-flight video initialisations
+
+  /// The post a story shows is being looked up.
+  bool _opening = false;
 
   /// Kept for [dispose]: a widget's `ref` is gone by then, and the receipts
   /// still have to leave.
@@ -274,6 +281,46 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
     }
   }
 
+  /// The post this story shows a preview of: opened as from a profile, while
+  /// the story waits.
+  Future<void> _openLinkedPost() async {
+    final link = _story.link;
+    if (link == null || _opening) return;
+    _setPaused(true);
+    setState(() => _opening = true);
+    final reference =
+        'nostr:${Nip19.encodeNevent(link.eventId, relays: [?link.relay], author: link.author)}';
+    final provider = sharedPostProvider(reference);
+    final listening = ref.listenManual(provider, (_, _) {});
+    MediaPost? post;
+    try {
+      post = await ref
+          .read(provider.future)
+          .timeout(const Duration(seconds: 20));
+    } catch (_) {
+      // Said below.
+    }
+    listening.close();
+    if (!mounted) return;
+    setState(() => _opening = false);
+    // The viewer moved on while it was looked up: nobody is waiting for it.
+    if (_story.link?.eventId != link.eventId) return;
+    final shown =
+        post != null &&
+        !post.isStory &&
+        !post.isExpired() &&
+        !ref.read(blockProvider).contains(post.author) &&
+        !ref.read(muteProvider).contains(post.author);
+    if (shown) {
+      await PostScreen.open(context, post);
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.contentUnavailable)));
+    }
+    if (mounted) _setPaused(false);
+  }
+
   Future<void> _sendToFriends() async {
     _setPaused(true);
     await SendToSheet.show(context, _story);
@@ -324,15 +371,67 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
     );
   }
 
-  Widget _buildActive(BuildContext context) {
+  /// Where the preview of a post sits on screen, for a story that has one.
+  Rect? _cardRect(StoryPostLink? link, MediaItem item, Size size) {
+    final area = link?.area;
+    if (area == null) return null;
+    final media = storyMediaRect(size, item.aspectRatio ?? 9 / 16);
+    return Rect.fromLTWH(
+      media.left + area.left * media.width,
+      media.top + area.top * media.height,
+      area.width * media.width,
+      area.height * media.height,
+    );
+  }
+
+  /// "View post", astride the bottom edge of the preview.
+  Widget _viewPost(Rect? card) => Positioned(
+    left: 16,
+    right: 16,
+    top: card == null ? null : card.bottom - 20,
+    bottom: card == null ? MediaQuery.paddingOf(context).bottom + 96 : null,
+    child: Center(
+      child: FilledButton.icon(
+        onPressed: _openLinkedPost,
+        style: FilledButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+        ),
+        icon: _opening
+            ? const SizedBox.square(
+                dimension: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.open_in_new, size: 16),
+        label: Text(
+          context.l10n.viewPost,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    ),
+  );
+
+  Widget _buildActive(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) =>
+        _buildStory(context, constraints.biggest),
+  );
+
+  Widget _buildStory(BuildContext context, Size size) {
     final story = _story;
     final item = story.media.first;
     final top = MediaQuery.paddingOf(context).top;
+    final card = _cardRect(story.link, item, size);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTapUp: (d) {
         final width = MediaQuery.sizeOf(context).width;
-        if (d.globalPosition.dx < width / 3) {
+        // The preview opens its post; the left edge still goes back.
+        if (card != null &&
+            card.contains(d.localPosition) &&
+            d.localPosition.dx > width * 0.18) {
+          _openLinkedPost();
+        } else if (d.globalPosition.dx < width / 3) {
           _previous();
         } else {
           _next();
@@ -534,6 +633,7 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+          if (story.link != null) _viewPost(card),
         ],
       ),
     );

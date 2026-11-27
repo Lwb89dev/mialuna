@@ -1867,4 +1867,87 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Escolha uma foto para editar';
+
+  @override
+  String get addToStory => 'Adicionar à tua história';
+
+  @override
+  String get viewPost => 'Ver publicação';
+
+  @override
+  String get storyFromPostFailed =>
+      'Não foi possível criar a pré-visualização dessa publicação.';
+
+  @override
+  String get storyDeleteAfterDay => 'Eliminar após 24 h';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Desligado: a foto ou o vídeo ficam no teu servidor multimédia depois de a história desaparecer.';
+
+  @override
+  String get storyHistory => 'Eliminação de histórias';
+
+  @override
+  String get storyHistoryNote =>
+      'Escolhe em cada história ao partilhar e vê aqui o que foi eliminado.';
+
+  @override
+  String get storyHistoryExplain =>
+      'Eliminar é um pedido: relays e servidores multimédia podem ignorá-lo. «Verificar ficheiros» pergunta ao servidor se ainda os disponibiliza.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'As tuas histórias aparecerão aqui, com o que lhes aconteceu.';
+
+  @override
+  String get storyStateLive => 'Ativa · será eliminada ao expirar';
+
+  @override
+  String get storyStateLiveManual => 'Ativa · eliminação automática desligada';
+
+  @override
+  String get storyStateWaiting => 'Expirada · a aguardar eliminação';
+
+  @override
+  String get storyStateExpiredManual =>
+      'Expirada · eliminação automática desligada';
+
+  @override
+  String get storyStateDeleted => 'Eliminada';
+
+  @override
+  String get storyStateKept => 'Guardada · os ficheiros não são eliminados';
+
+  @override
+  String get storyStateFailed => 'Não foi possível eliminar';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Sem confirmação de: $servers';
+  }
+
+  @override
+  String get storyKeep => 'Guardar';
+
+  @override
+  String get storyDeleteWhenExpired => 'Eliminar ao expirar';
+
+  @override
+  String get storyAskAgain => 'Pedir de novo';
+
+  @override
+  String get storyCheckFiles => 'Verificar ficheiros';
+
+  @override
+  String get storyCheckGone =>
+      'O servidor já não disponibiliza estes ficheiros.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Ainda online em $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear => 'O servidor não deu uma resposta clara.';
 }

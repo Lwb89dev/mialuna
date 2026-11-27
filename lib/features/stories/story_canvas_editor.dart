@@ -29,6 +29,9 @@ const _sliderMax = 3.0;
 /// A story text being edited. The value changes while it is dragged.
 class _Entry {
   final Key key = UniqueKey();
+
+  /// Finds where the words are on screen, however they are turned.
+  final box = GlobalKey();
   StoryText value;
   _Entry(this.value);
 }
@@ -36,8 +39,12 @@ class _Entry {
 /// The picture of a story with its texts, edited in place, like Instagram:
 /// tap the picture to write — the words appear right on it, over the dimmed
 /// photo, with the fonts and colours above the keyboard — then drag a text to
-/// move it, pinch to resize and turn it, tap it to edit it again, or drop it
-/// on the bin to delete it.
+/// move it, tap it to edit it again, or drop it on the bin to delete it.
+///
+/// Two fingers resize and turn a text from anywhere on the picture, as when
+/// zooming: a short word is far too small to put both fingers on. They act on
+/// the text under the first finger, else on the one between them, else on the
+/// last one touched. The same pinch works while a text is being written.
 ///
 /// It fills the whole screen; the screen around it contributes its own bars
 /// as [top] and [bottom], which fade out while a text is written or dragged.
@@ -96,6 +103,12 @@ class StoryCanvasEditorState extends State<StoryCanvasEditor> {
   double _startScale = 1;
   double _startRotation = 0;
 
+  /// Fingers on the picture, the text the first of them landed on, and the
+  /// text touched last (what a pinch elsewhere acts on).
+  final Set<int> _fingers = {};
+  _Entry? _grabbed;
+  _Entry? _selected;
+
   List<StoryText> get texts => [for (final e in _entries) e.value];
   bool get isEditingText => _editing != null;
 
@@ -103,13 +116,57 @@ class StoryCanvasEditorState extends State<StoryCanvasEditor> {
 
   // ── gestures ────────────────────────────────────────────────────────
 
-  void _onScaleStart(_Entry e) {
+  void _onFingerDown(PointerDownEvent event) {
+    if (_fingers.isEmpty) _grabbed = _textAt(event.position);
+    _fingers.add(event.pointer);
+  }
+
+  void _onFingerGone(PointerEvent event) => _fingers.remove(event.pointer);
+
+  /// The topmost text at [global], with some room around small ones.
+  _Entry? _textAt(Offset global) {
+    for (final e in _entries.reversed) {
+      final box = e.box.currentContext?.findRenderObject() as RenderBox?;
+      if (box == null || !box.hasSize) continue;
+      final area = (Offset.zero & box.size).inflate(12);
+      if (area.contains(box.globalToLocal(global))) return e;
+    }
+    return null;
+  }
+
+  void _onTap(TapUpDetails details, Rect media) {
+    final text = _textAt(details.globalPosition);
+    if (text != null) {
+      _selected = text;
+      _edit(text);
+    } else if (media.contains(details.localPosition)) {
+      addText();
+    }
+  }
+
+  /// What a gesture acts on: one finger moves only the text it landed on.
+  _Entry? _target(ScaleStartDetails details) {
+    final grabbed = _entries.contains(_grabbed) ? _grabbed : null;
+    if (details.pointerCount < 2) return grabbed;
+    final selected = _entries.contains(_selected) ? _selected : null;
+    return grabbed ??
+        _textAt(details.focalPoint) ??
+        selected ??
+        _entries.lastOrNull;
+  }
+
+  void _onScaleStart(ScaleStartDetails details) {
+    final e = _target(details);
+    if (e == null) return;
     _startScale = e.value.scale;
     _startRotation = e.value.rotation;
+    _selected = e;
     setState(() => _dragging = e);
   }
 
-  void _onScaleUpdate(_Entry e, ScaleUpdateDetails d, Rect media) {
+  void _onScaleUpdate(ScaleUpdateDetails d, Rect media) {
+    final e = _dragging;
+    if (e == null) return;
     final v = e.value;
     setState(() {
       e.value = v.copyWith(
@@ -121,13 +178,17 @@ class StoryCanvasEditorState extends State<StoryCanvasEditor> {
         ),
         rotation: _startRotation + d.rotation,
       );
-      _overBin = _isOverBin(d.focalPoint);
+      // Only a drag throws a text away, never a pinch that ends low down.
+      _overBin = d.pointerCount < 2 && _isOverBin(d.focalPoint);
     });
   }
 
-  void _onScaleEnd(_Entry e) {
+  void _onScaleEnd(ScaleEndDetails details) {
+    final e = _dragging;
+    if (e == null) return;
     setState(() {
-      if (_overBin) _entries.remove(e);
+      // With fingers still down the gesture is only changing shape.
+      if (_overBin && details.pointerCount == 0) _entries.remove(e);
       _dragging = null;
       _overBin = false;
     });
@@ -258,26 +319,34 @@ class StoryCanvasEditorState extends State<StoryCanvasEditor> {
     );
   }
 
+  /// One detector for the whole picture: the texts are found by position, so
+  /// that fingers anywhere can act on them.
   Widget _canvas(Rect media) {
     final hidden = _editing;
-    return Stack(
-      key: _canvasKey,
-      clipBehavior: Clip.hardEdge,
-      children: [
-        const Positioned.fill(child: ColoredBox(color: Colors.black)),
-        Positioned.fromRect(
-          rect: media,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: addText,
-            child: _backdrop(),
-          ),
+    return Listener(
+      onPointerDown: _onFingerDown,
+      onPointerUp: _onFingerGone,
+      onPointerCancel: _onFingerGone,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapUp: (d) => _onTap(d, media),
+        onScaleStart: _onScaleStart,
+        onScaleUpdate: (d) => _onScaleUpdate(d, media),
+        onScaleEnd: _onScaleEnd,
+        child: Stack(
+          key: _canvasKey,
+          fit: StackFit.expand,
+          clipBehavior: Clip.hardEdge,
+          children: [
+            const Positioned.fill(child: ColoredBox(color: Colors.black)),
+            Positioned.fromRect(rect: media, child: _backdrop()),
+            for (final e in _entries)
+              if (!identical(e, hidden))
+                placeStoryText(e.value, media, _words(e, media), key: e.key),
+            if (_dragging != null) _bin(),
+          ],
         ),
-        for (final e in _entries)
-          if (!identical(e, hidden))
-            placeStoryText(e.value, media, _draggable(e, media), key: e.key),
-        if (_dragging != null) _bin(),
-      ],
+      ),
     );
   }
 
@@ -298,12 +367,8 @@ class StoryCanvasEditorState extends State<StoryCanvasEditor> {
     return Image.memory(bytes, fit: BoxFit.fill, cacheWidth: 1080);
   }
 
-  Widget _draggable(_Entry e, Rect media) => GestureDetector(
-    behavior: HitTestBehavior.opaque,
-    onTap: () => _edit(e),
-    onScaleStart: (_) => _onScaleStart(e),
-    onScaleUpdate: (d) => _onScaleUpdate(e, d, media),
-    onScaleEnd: (_) => _onScaleEnd(e),
+  Widget _words(_Entry e, Rect media) => KeyedSubtree(
+    key: e.box,
     child: StoryTextView(text: e.value, mediaWidth: media.width),
   );
 
@@ -384,6 +449,13 @@ class _InlineTextWriterState extends State<_InlineTextWriter> {
   late StoryText _value = widget.initial;
   bool _finished = false;
 
+  /// Fingers down while writing, to resize with two of them. Read straight
+  /// from the pointers: the field and the lists keep their own gestures.
+  final Map<int, Offset> _fingers = {};
+  double? _spread;
+  double _spreadScale = 1;
+  bool _pinched = false;
+
   @override
   void dispose() {
     _controller.dispose();
@@ -398,6 +470,43 @@ class _InlineTextWriterState extends State<_InlineTextWriter> {
     widget.onDone(_value.copyWith(text: _controller.text));
   }
 
+  double get _distance {
+    final points = _fingers.values.take(2).toList();
+    return (points[0] - points[1]).distance;
+  }
+
+  void _onFingerDown(PointerDownEvent event) {
+    if (_fingers.isEmpty) _pinched = false;
+    _fingers[event.pointer] = event.position;
+    if (_fingers.length == 2) {
+      _spread = _distance;
+      _spreadScale = _value.scale;
+      _pinched = true;
+    }
+  }
+
+  void _onFingerMove(PointerMoveEvent event) {
+    if (!_fingers.containsKey(event.pointer)) return;
+    _fingers[event.pointer] = event.position;
+    final spread = _spread;
+    if (spread == null || spread <= 0 || _fingers.length < 2) return;
+    final scale = (_spreadScale * _distance / spread).clamp(
+      StoryText.minScale,
+      StoryText.maxScale,
+    );
+    setState(() => _value = _value.copyWith(scale: scale));
+  }
+
+  void _onFingerGone(PointerEvent event) {
+    _fingers.remove(event.pointer);
+    if (_fingers.length < 2) _spread = null;
+  }
+
+  /// A tap outside the words ends the writing; the end of a pinch does not.
+  void _onTapOutside() {
+    if (!_pinched) finish();
+  }
+
   void _cycleBackground() {
     const order = StoryTextBackground.values;
     final next = order[(order.indexOf(_value.background) + 1) % order.length];
@@ -408,23 +517,29 @@ class _InlineTextWriterState extends State<_InlineTextWriter> {
   Widget build(BuildContext context) {
     final inset = MediaQuery.viewInsetsOf(context).bottom;
     final navigation = MediaQuery.paddingOf(context).bottom;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: finish,
-      child: ColoredBox(
-        color: Colors.black.withValues(alpha: 0.62),
-        child: Padding(
-          padding: EdgeInsets.only(bottom: math.max(inset, navigation)),
-          child: SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                _topRow(context.l10n),
-                Expanded(child: _middle(context.l10n)),
-                _fonts(context.l10n),
-                _colors(context.l10n.storyTextColor),
-                const SizedBox(height: 8),
-              ],
+    return Listener(
+      onPointerDown: _onFingerDown,
+      onPointerMove: _onFingerMove,
+      onPointerUp: _onFingerGone,
+      onPointerCancel: _onFingerGone,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _onTapOutside,
+        child: ColoredBox(
+          color: Colors.black.withValues(alpha: 0.62),
+          child: Padding(
+            padding: EdgeInsets.only(bottom: math.max(inset, navigation)),
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  _topRow(context.l10n),
+                  Expanded(child: _middle(context.l10n)),
+                  _fonts(context.l10n),
+                  _colors(context.l10n.storyTextColor),
+                  const SizedBox(height: 8),
+                ],
+              ),
             ),
           ),
         ),

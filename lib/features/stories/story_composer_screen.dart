@@ -4,13 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/branding/mialuna_tag.dart';
+import '../../core/nostr/models/media_event.dart';
 import '../../core/theme/mialuna_theme.dart';
 import '../../l10n/strings.dart';
 import '../create/create_controller.dart';
 import '../create/editor/image_editor_screen.dart';
 import '../private/close_friends.dart';
 import '../private/close_friends_screen.dart';
+import '../settings/settings_controller.dart';
 import 'story_canvas_editor.dart';
+import 'story_cleanup.dart';
 
 /// Where "your story" is made, like Instagram's: choose a picture or a video,
 /// write on it right there, choose who sees it, share. Opened by the plus
@@ -24,13 +28,21 @@ class StoryComposerScreen extends ConsumerStatefulWidget {
   /// hand in a picture of their own.
   final bool fresh;
 
-  const StoryComposerScreen({super.key, this.fresh = true});
+  /// A post to share: the story starts from a picture of it instead of from
+  /// the gallery.
+  final MediaPost? sharing;
 
-  static Future<void> show(BuildContext context) =>
-      Navigator.of(context, rootNavigator: true).push<void>(
+  const StoryComposerScreen({super.key, this.fresh = true, this.sharing});
+
+  static Future<void> show(BuildContext context, {MediaPost? sharing}) =>
+      open(Navigator.of(context, rootNavigator: true), sharing: sharing);
+
+  /// [show] for a caller whose own context is about to go (a sheet closing).
+  static Future<void> open(NavigatorState navigator, {MediaPost? sharing}) =>
+      navigator.push<void>(
         MaterialPageRoute(
           fullscreenDialog: true,
-          builder: (_) => const StoryComposerScreen(),
+          builder: (_) => StoryComposerScreen(sharing: sharing),
         ),
       );
 
@@ -60,6 +72,8 @@ class _StoryComposerScreenState extends ConsumerState<StoryComposerScreen> {
   Future<void> _begin() async {
     if (!mounted) return;
     final composer = ref.read(composerProvider.notifier);
+    final sharing = widget.sharing;
+    if (sharing != null) return composer.startPostStory(sharing);
     if (!widget.fresh) {
       composer.setMode(ComposerMode.story);
       return;
@@ -152,15 +166,33 @@ class _StoryComposerScreenState extends ConsumerState<StoryComposerScreen> {
       resizeToAvoidBottomInset: false,
       body: _leaving
           ? const SizedBox.expand()
+          : state.isPreparing
+          ? _preparing()
           : state.media.isEmpty
-          ? _empty()
+          ? _empty(state)
           : _editor(state),
     );
   }
 
   // ── nothing chosen yet ──────────────────────────────────────────────
 
-  Widget _empty() {
+  /// The picture is being cut or drawn: only the way out meanwhile, which
+  /// gives the story up so that it does not turn up elsewhere later.
+  Widget _preparing() => PopScope(
+    onPopInvokedWithResult: (didPop, _) {
+      if (didPop) ref.read(composerProvider.notifier).startStory();
+    },
+    child: const SafeArea(
+      child: Stack(
+        children: [
+          Positioned(left: 4, top: 4, child: CloseButton(color: Colors.white)),
+          Center(child: CircularProgressIndicator()),
+        ],
+      ),
+    ),
+  );
+
+  Widget _empty(ComposerState state) {
     final l10n = context.l10n;
     final composer = ref.read(composerProvider.notifier);
     return SafeArea(
@@ -188,6 +220,14 @@ class _StoryComposerScreenState extends ConsumerState<StoryComposerScreen> {
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white, fontSize: 18),
                   ),
+                  if (state.error != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      state.error!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.redAccent),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   Wrap(
                     spacing: 12,
@@ -268,7 +308,9 @@ class _StoryComposerScreenState extends ConsumerState<StoryComposerScreen> {
             onPressed: busy ? null : _confirmLeave,
           ),
           const Spacer(),
-          if (!media.isVideo)
+          // The picture of a shared post is drawn by the app: cutting it
+          // would move the part that opens the post.
+          if (!media.isVideo && state.sharedPost == null)
             IconButton(
               tooltip: l10n.storyEditPhoto,
               color: Colors.white,
@@ -330,6 +372,9 @@ class _StoryComposerScreenState extends ConsumerState<StoryComposerScreen> {
                 context.l10n.closeFriends,
                 state,
               ),
+              // Neither means anything for close friends: their story is
+              // never tagged, and its files cannot be kept for later.
+              if (!closeOnly) ...[_tagChip(state), _deleteChip(state)],
             ],
           ),
           const SizedBox(height: 8),
@@ -339,6 +384,36 @@ class _StoryComposerScreenState extends ConsumerState<StoryComposerScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// #mialuna for this story, starting from what Settings says.
+  Widget _tagChip(ComposerState state) {
+    final byDefault = ref.watch(
+      settingsProvider.select((s) => s.addMialunaHashtag),
+    );
+    final add = state.mialunaTag ?? byDefault;
+    return StoryPill(
+      icon: add ? Icons.check : Icons.add,
+      label: const Text('#${MialunaTag.hashtag}'),
+      selected: add,
+      onTap: state.isPublishing
+          ? null
+          : () => ref.read(composerProvider.notifier).setMialunaTag(!add),
+    );
+  }
+
+  /// Whether this story is deleted once its 24 hours are over.
+  Widget _deleteChip(ComposerState state) {
+    final byDefault = ref.watch(deleteExpiredStoriesProvider);
+    final delete = !(state.keepStory ?? !byDefault);
+    return StoryPill(
+      icon: delete ? Icons.auto_delete : Icons.auto_delete_outlined,
+      label: Text(context.l10n.storyDeleteAfterDay),
+      selected: delete,
+      onTap: state.isPublishing
+          ? null
+          : () => ref.read(composerProvider.notifier).setKeepStory(delete),
     );
   }
 

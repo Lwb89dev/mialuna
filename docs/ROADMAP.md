@@ -99,6 +99,11 @@ encrypted in memory, limited to 120 MB).
 - [x] Hardening pass: network policy, safe fetching of third-party servers, `FLAG_SECURE` on
   private screens, no backups, R8, sign-out wipes the account, pinned CI actions
 - [x] Who watched your stories, from the note (gift-wrapped receipts to the author)
+- [x] Keep or delete each story, with a record of what happened to every deletion
+- [x] Share a post or reel into a story, where it opens when tapped
+- [ ] Highlights: show kept stories on the profile. Needs a published list (so it
+  survives sign-out and a new phone) and a decision on stories whose relays have
+  dropped them under NIP-40
 - [ ] Resumable / chunked uploads and a foreground service for big videos
 - [ ] Drift/SQLite instead of the JSON cache
 - [ ] Notifications while the process is dead (needs a relay-side push or a foreground service)

@@ -14,14 +14,19 @@ import '../../core/media/private_media.dart';
 import '../../core/media/video_frames.dart';
 import '../../core/nostr/event.dart';
 import '../../core/nostr/models/media_event.dart';
+import '../../core/nostr/models/story_link.dart';
 import '../../core/nostr/models/story_text.dart';
 import '../../core/nostr/nip59.dart';
 import '../../core/nostr/signer.dart';
 import '../../l10n/strings.dart';
+import '../messages/share_utils.dart';
 import '../private/close_friends.dart';
 import '../private/private_delivery.dart';
 import '../settings/settings_controller.dart';
+import '../stories/post_story.dart';
 import '../stories/stories_controller.dart';
+import '../stories/story_cleanup.dart';
+import 'editor/crop_tool.dart';
 import 'editor/image_edit_apply.dart';
 
 enum ComposerMode { photo, video, reel, story }
@@ -102,6 +107,20 @@ class ComposerState {
   /// Texts laid over the picture of a story (see [StoryText]).
   final List<StoryText> overlays;
 
+  /// The choice made for this post about #mialuna; null follows Settings.
+  final bool? mialunaTag;
+
+  /// The choice made for this story about keeping its files after it expires;
+  /// null follows Settings.
+  final bool? keepStory;
+
+  /// The post this story shows a preview of (its picture is then made by the
+  /// app, and tapping it opens that post).
+  final StoryPostLink? sharedPost;
+
+  /// The picture is being made ready (cut to 9:16, or drawn from a post).
+  final bool isPreparing;
+
   const ComposerState({
     this.media = const [],
     this.caption = '',
@@ -115,6 +134,10 @@ class ComposerState {
     this.audience = Audience.public,
     this.notice,
     this.overlays = const [],
+    this.mialunaTag,
+    this.keepStory,
+    this.sharedPost,
+    this.isPreparing = false,
   });
 
   /// The caption exactly as it will be published. Close-friends posts are not
@@ -143,6 +166,11 @@ class ComposerState {
     Audience? audience,
     String? notice,
     List<StoryText>? overlays,
+    bool? mialunaTag,
+    bool? keepStory,
+    StoryPostLink? sharedPost,
+    bool clearSharedPost = false,
+    bool? isPreparing,
   }) => ComposerState(
     media: media ?? this.media,
     caption: caption ?? this.caption,
@@ -156,11 +184,19 @@ class ComposerState {
     audience: audience ?? this.audience,
     notice: notice,
     overlays: overlays ?? this.overlays,
+    mialunaTag: mialunaTag ?? this.mialunaTag,
+    keepStory: keepStory ?? this.keepStory,
+    sharedPost: clearSharedPost ? null : (sharedPost ?? this.sharedPost),
+    isPreparing: isPreparing ?? this.isPreparing,
   );
 }
 
 class ComposerController extends Notifier<ComposerState> {
   static const _draftKey = 'composer_draft';
+
+  /// Bumped when what is being composed is thrown away: a picture still being
+  /// made ready for it must not turn up in the next one.
+  int _session = 0;
 
   @override
   ComposerState build() {
@@ -179,6 +215,16 @@ class ComposerController extends Notifier<ComposerState> {
     ref.read(audiencePreferenceProvider.notifier).set(audience);
   }
 
+  /// #mialuna for this post only; Settings stays the default.
+  void setMialunaTag(bool add) {
+    state = state.copyWith(mialunaTag: add);
+  }
+
+  /// Whether this story's files stay after it expires; this story only.
+  void setKeepStory(bool keep) {
+    state = state.copyWith(keepStory: keep);
+  }
+
   Future<void> _restoreDraft() async {
     final drafts = await ref.read(localCacheProvider).loadDrafts();
     final draft = drafts[_draftKey];
@@ -193,9 +239,16 @@ class ComposerController extends Notifier<ComposerState> {
 
   void setMode(ComposerMode mode) {
     if (mode == state.mode) return;
+    _session++;
     // Switching mode clears picked media: photo carousels and videos are
     // different event kinds.
-    state = state.copyWith(mode: mode, media: const [], overlays: const []);
+    state = state.copyWith(
+      mode: mode,
+      media: const [],
+      overlays: const [],
+      clearSharedPost: true,
+      isPreparing: false,
+    );
   }
 
   /// Begins a new story from nothing: no picture, no texts, no caption, no
@@ -204,7 +257,47 @@ class ComposerController extends Notifier<ComposerState> {
   /// screen). (A publish in progress is left alone.)
   void startStory() {
     if (state.isPublishing) return;
+    _session++;
     state = ComposerState(mode: ComposerMode.story, audience: state.audience);
+  }
+
+  /// Begins a story that shows [post], a public one: its picture is a preview
+  /// of the post, which opens when tapped.
+  Future<void> startPostStory(MediaPost post) async {
+    if (state.isPublishing) return;
+    startStory();
+    final session = _session;
+    state = state.copyWith(isPreparing: true);
+    try {
+      final card = await ref.read(postCardRendererProvider)(post);
+      if (session != _session) return;
+      final hints = relayHints(
+        ref.read(outboxProvider).writeRelays(post.author, max: 2),
+        ref.read(relayPoolProvider).writeRelays,
+      );
+      state = state.copyWith(
+        isPreparing: false,
+        media: [
+          PickedMedia(
+            file: XFile.fromData(card.bytes, name: 'post.jpg'),
+            bytes: card.bytes,
+            mimeType: 'image/jpeg',
+          ),
+        ],
+        sharedPost: StoryPostLink(
+          eventId: post.id,
+          author: post.author,
+          relay: hints.firstOrNull,
+          area: card.area,
+        ),
+      );
+    } catch (_) {
+      if (session != _session) return;
+      state = state.copyWith(
+        isPreparing: false,
+        error: AppStrings.current.storyFromPostFailed,
+      );
+    }
   }
 
   Future<void> pickVideo() async {
@@ -222,6 +315,7 @@ class ComposerController extends Notifier<ComposerState> {
         ),
       ],
       overlays: const [],
+      clearSharedPost: true,
     );
   }
 
@@ -232,17 +326,37 @@ class ComposerController extends Notifier<ComposerState> {
     if (file == null) return;
     final bytes = await file.readAsBytes();
     if (bytes.isEmpty) return;
-    final media = state.mode == ComposerMode.story
-        ? <PickedMedia>[]
-        : [...state.media];
-    media.add(
-      PickedMedia(
-        file: file,
-        bytes: bytes,
-        mimeType: _mimeOf(bytes, file.name),
-      ),
+    final picked = PickedMedia(
+      file: file,
+      bytes: bytes,
+      mimeType: _mimeOf(bytes, file.name),
     );
-    state = state.copyWith(media: media, overlays: const []);
+    if (state.mode == ComposerMode.story) return addCameraStory(picked);
+    state = state.copyWith(media: [...state.media, picked], overlays: const []);
+  }
+
+  /// A photo just taken for a story starts out as 9:16, which fills the
+  /// screen. It is only the editor's crop: the whole photo is kept and the
+  /// crop can be changed or removed.
+  Future<void> addCameraStory(PickedMedia photo) async {
+    final session = ++_session;
+    state = state.copyWith(
+      media: const [],
+      overlays: const [],
+      clearSharedPost: true,
+      isPreparing: true,
+    );
+    ({ImageEdit edit, EditedImage image})? cut;
+    try {
+      cut = await cropPortraitAsync(photo.bytes, CropShape.nineSixteen.ratio!);
+    } catch (_) {
+      // The photo as it is, then.
+    }
+    if (session != _session) return;
+    state = state.copyWith(
+      media: [cut == null ? photo : photo.edited(cut.edit, cut.image)],
+      isPreparing: false,
+    );
   }
 
   Future<void> pickImages() async {
@@ -267,7 +381,11 @@ class ComposerController extends Notifier<ComposerState> {
         PickedMedia(file: f, bytes: bytes, mimeType: _mimeOf(bytes, f.name)),
       );
     }
-    state = state.copyWith(media: media, overlays: const []);
+    state = state.copyWith(
+      media: media,
+      overlays: const [],
+      clearSharedPost: true,
+    );
   }
 
   /// Adds an already-read file to the post (used by the pickers and tests).
@@ -276,7 +394,11 @@ class ComposerController extends Notifier<ComposerState> {
         ? <PickedMedia>[]
         : [...state.media];
     list.add(media);
-    state = state.copyWith(media: list, overlays: const []);
+    state = state.copyWith(
+      media: list,
+      overlays: const [],
+      clearSharedPost: true,
+    );
   }
 
   void removeMedia(int index) {
@@ -285,6 +407,7 @@ class ComposerController extends Notifier<ComposerState> {
       media: media,
       // Texts belong to the picture they were laid on.
       overlays: media.isEmpty ? const [] : state.overlays,
+      clearSharedPost: media.isEmpty,
     );
   }
 
@@ -379,7 +502,21 @@ class ComposerController extends Notifier<ComposerState> {
       sensitive: state.sensitive,
       audience: state.audience,
       overlays: state.overlays,
+      mialunaTag: state.mialunaTag,
+      keepStory: state.keepStory,
+      sharedPost: state.sharedPost,
     );
+  }
+
+  /// What is written down about keeping the story being published. One shown
+  /// as kept stays kept, whatever Settings becomes; one left to the default
+  /// "delete" records nothing, so that turning the Settings switch off still
+  /// stops it.
+  Future<bool?> _keepChoice() async {
+    ref.read(deleteExpiredStoriesProvider);
+    await ref.read(deleteExpiredStoriesProvider.notifier).ready;
+    return state.keepStory ??
+        (ref.read(deleteExpiredStoriesProvider) ? null : true);
   }
 
   /// Full publish flow: sanitize (remove EXIF/location) and upload every
@@ -479,9 +616,11 @@ class ComposerController extends Notifier<ComposerState> {
     }
 
     _progress(0.95, AppStrings.current.publishing);
-    final addMialunaTag = ref.read(settingsProvider).addMialunaHashtag;
+    final addMialunaTag =
+        state.mialunaTag ?? ref.read(settingsProvider).addMialunaHashtag;
     final caption = state.finalCaption(addMialunaTag: addMialunaTag);
     final isStory = state.mode == ComposerMode.story;
+    final keep = isStory ? await _keepChoice() : null;
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final builtTags = MediaPost.buildTags(
       media: mediaItems,
@@ -494,6 +633,8 @@ class ComposerController extends Notifier<ComposerState> {
       isStory: isStory,
       expiresAt: isStory ? now + 86400 : null,
       overlays: state.overlays,
+      link: state.sharedPost,
+      keepStory: keep == true,
     );
     final tags = addMialunaTag ? MialunaTag.applyToTags(builtTags) : builtTags;
 
@@ -522,7 +663,15 @@ class ComposerController extends Notifier<ComposerState> {
       }
       // A story never used the post draft; leave the post's draft alone.
       if (!isStory) await ref.read(localCacheProvider).deleteDraft(_draftKey);
-      if (isStory) ref.read(storiesProvider.notifier).addPublished(event);
+      if (isStory) {
+        // What was chosen here is written down before anything else can note
+        // the story without it.
+        final story = MediaPost.tryParse(event);
+        if (story != null) {
+          ref.read(storyCleanupProvider.notifier).track(story, keep: keep);
+        }
+        ref.read(storiesProvider.notifier).addPublished(event);
+      }
       state = ComposerState(published: true, audience: state.audience);
       return true;
     } on SignerException catch (e) {
@@ -705,6 +854,7 @@ class ComposerController extends Notifier<ComposerState> {
         // The friends list is injected into the post itself.
         closeFriends: friends,
         overlays: state.overlays,
+        link: state.sharedPost,
       ),
     );
 

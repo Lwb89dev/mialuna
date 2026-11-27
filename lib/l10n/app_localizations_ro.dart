@@ -1868,4 +1868,85 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Alege o fotografie de editat';
+
+  @override
+  String get addToStory => 'Adaugă la story-ul tău';
+
+  @override
+  String get viewPost => 'Vezi postarea';
+
+  @override
+  String get storyFromPostFailed =>
+      'Nu s-a putut crea previzualizarea acelei postări.';
+
+  @override
+  String get storyDeleteAfterDay => 'Șterge după 24 h';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Dezactivat: fotografia sau videoclipul rămân pe serverul tău media după ce story-ul dispare.';
+
+  @override
+  String get storyHistory => 'Ștergerea story-urilor';
+
+  @override
+  String get storyHistoryNote =>
+      'Alege pentru fiecare story când îl distribui și vezi aici ce s-a șters.';
+
+  @override
+  String get storyHistoryExplain =>
+      'Ștergerea e o cerere: releele și serverele media o pot ignora. „Verifică fișierele” întreabă serverul dacă încă le oferă.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'Aici vor apărea story-urile tale și ce s-a întâmplat cu ele.';
+
+  @override
+  String get storyStateLive => 'Activ · va fi șters când expiră';
+
+  @override
+  String get storyStateLiveManual => 'Activ · ștergerea automată e oprită';
+
+  @override
+  String get storyStateWaiting => 'Expirat · așteaptă ștergerea';
+
+  @override
+  String get storyStateExpiredManual => 'Expirat · ștergerea automată e oprită';
+
+  @override
+  String get storyStateDeleted => 'Șters';
+
+  @override
+  String get storyStateKept => 'Păstrat · fișierele nu se șterg';
+
+  @override
+  String get storyStateFailed => 'Nu s-a putut șterge';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Neconfirmat de: $servers';
+  }
+
+  @override
+  String get storyKeep => 'Păstrează';
+
+  @override
+  String get storyDeleteWhenExpired => 'Șterge când expiră';
+
+  @override
+  String get storyAskAgain => 'Cere din nou';
+
+  @override
+  String get storyCheckFiles => 'Verifică fișierele';
+
+  @override
+  String get storyCheckGone => 'Serverul nu mai oferă aceste fișiere.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Încă online pe $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear => 'Serverul nu a dat un răspuns clar.';
 }

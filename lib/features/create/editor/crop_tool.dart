@@ -70,7 +70,10 @@ enum CropShape {
   fourFive(4 / 5),
   fourThree(4 / 3),
   threeTwo(3 / 2),
-  sixteenNine(16 / 9);
+  sixteenNine(16 / 9),
+
+  /// Upright full screen, the shape of a story.
+  nineSixteen(9 / 16);
 
   final double? ratio;
   const CropShape(this.ratio);
@@ -170,6 +173,17 @@ abstract final class CropTool {
       right: left + width,
       bottom: top + height,
     ).clamped();
+  }
+
+  /// The locked shape a [crop] of a picture of [canvasAspect] already has,
+  /// or [CropShape.free]: reopening the editor keeps the shape selected.
+  static CropShape shapeOf(Crop crop, double canvasAspect) {
+    if (crop.isFull) return CropShape.free;
+    final ratio = crop.width / crop.height * canvasAspect;
+    return CropShape.values.firstWhere(
+      (s) => (s.ratio ?? -1) > 0 && (s.ratio! - ratio).abs() < 0.005,
+      orElse: () => CropShape.free,
+    );
   }
 
   /// The whole picture, or for [CropShape.original] the picture's own shape.

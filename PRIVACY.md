@@ -140,7 +140,8 @@ deleted disappears for you when your relays stop serving it.
 
 A story is shown for 24 hours. Until Mialuna 0.19 that was all: the story was
 hidden, while its photo or video stayed on the media server and a relay that
-ignores NIP-40 kept serving it. Now, once a story of yours has expired:
+ignores NIP-40 kept serving it. Now, once a story of yours has expired, unless
+you chose to keep it (see *Keeping a story* below):
 
 * **What is asked.** The same as when you delete a post, in one batch for all
   the stories that are due: one deletion request to every relay Mialuna knows
@@ -159,20 +160,55 @@ ignores NIP-40 kept serving it. Now, once a story of yours has expired:
   asked only then. Close-friends stories need no signature at all (see below).
 * **If it fails.** A relay or a server that does not answer is asked again 15
   minutes later, then after longer and longer pauses (up to 6 hours), eight
-  tries in all; then Mialuna gives up on that story. The relays and the media
-  servers are retried separately, so a failing server does not make the relays
-  be asked twice.
+  tries in all; then Mialuna stops by itself, and the story stays listed under
+  *Story deletion*, where you can ask again. The relays and the media servers
+  are retried separately, so a failing server does not make the relays be asked
+  twice. A story you deleted by hand whose files a server kept is retried the
+  same way.
 * **Turning it off.** The switch is on by default. Off, nothing is done by
-  itself; the list below keeps filling, so turning it on again takes down what
-  expired meanwhile. *Delete now* still works.
+  itself for stories you did not choose for one by one; the list below keeps
+  filling, so turning it on again takes down what expired meanwhile, except the
+  stories that were shown as kept when you published them. A story you set to
+  *Delete after 24 h* yourself is deleted whatever the switch says. *Delete
+  now* still works.
 
-To do this the phone keeps a list of your own stories waiting to be taken down:
-for each, its signed event (public anyway) or, for a close-friends story, only
-the addresses of its files, never its text, its audience or its keys. A story
-is on the list if Mialuna saw it while it was live: one you publish here, or
-one published from another phone that this one loaded. Stories that expired
-before this existed are not on it. Signing out deletes the list, and what was
-not taken down by then stays where it is.
+**Keeping a story.** When you share a public story you can switch off *Delete
+after 24 h*. Mialuna then never asks to delete it or its files by itself, and
+does not take those files down when you delete another post that uses the same
+photo. It still disappears from the stories after 24 hours, and relays that
+honour NIP-40 drop it; a media server may also delete old files by its own
+rules, so keeping is not a backup. A story kept at publication carries a public
+tag saying so (`story-keep`), so that your other devices leave it alone. A
+choice you change afterwards stays on the phone where you changed it, and a
+version of Mialuna older than this feature deletes kept stories. Close-friends
+stories cannot be kept: nothing could open their files later.
+
+**Seeing what happened.** *Story deletion* (in your profile and in Settings)
+shows each story the phone remembers: whether a relay accepted the request,
+which servers did not confirm, and buttons to delete, ask again or keep.
+*Check files* sends one request (HTTP `HEAD`) for each file to its media server
+and says whether it is still served; that server sees your IP address and the
+file asked for. It is only sent when you press the button. Relays are not
+checked. A story deleted more than 30 days ago leaves the list.
+
+To do this the phone keeps a list of your own stories: for each, its signed
+event (public anyway) or, for a close-friends story, only the addresses of its
+files, never its text, its audience or its keys, together with your choice and
+how the deletion went. A story is on the list if Mialuna saw it while it was
+live: one you publish here, or one published from another phone that this one
+loaded. Stories that expired before this existed are not on it. Signing out
+deletes the list, kept stories included: what was not taken down by then stays
+where it is.
+
+## Sharing a post into your story
+
+*Add to your story* draws a new picture on your phone (the post's photo, or a
+still of its video, with the author's name, avatar and caption) and uploads it
+to **your** media servers like any story photo; the story also names the post
+publicly (a NIP-18 `q` tag), so it can be opened. This is a copy: if the author
+deletes their post, your story still shows the picture until the story is
+deleted. Nothing of a post behind a content warning is drawn, and close-friends
+posts cannot be shared this way.
 
 As with a deleted post, the relays and the media servers learn what is
 described above, and the same limits hold: a request can be ignored, and a copy

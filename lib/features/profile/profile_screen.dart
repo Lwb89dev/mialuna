@@ -25,6 +25,7 @@ import '../settings/settings_screen.dart';
 import '../social/deleted_posts.dart';
 import '../social/follow_controller.dart';
 import '../social/moderation_controller.dart';
+import '../stories/story_history_screen.dart';
 import 'edit_profile_screen.dart';
 import 'profile_widgets.dart';
 
@@ -211,6 +212,12 @@ class ProfileScreen extends ConsumerWidget {
         title: Text(meta?.label ?? ProfileMetadata.shortNpub(target)),
         actions: [
           if (isSelf) ...[
+            if (auth.signer.canSign)
+              IconButton(
+                icon: const Icon(Icons.history),
+                tooltip: context.l10n.storyHistory,
+                onPressed: () => StoryHistoryScreen.open(context),
+              ),
             IconButton(
               icon: const Icon(Icons.settings_outlined),
               tooltip: context.l10n.settings,

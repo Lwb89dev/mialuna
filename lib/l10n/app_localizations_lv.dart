@@ -1858,4 +1858,86 @@ class AppLocalizationsLv extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Izvēlieties fotoattēlu rediģēšanai';
+
+  @override
+  String get addToStory => 'Pievienot savam stāstam';
+
+  @override
+  String get viewPost => 'Skatīt ierakstu';
+
+  @override
+  String get storyFromPostFailed =>
+      'Neizdevās izveidot šī ieraksta priekšskatījumu.';
+
+  @override
+  String get storyDeleteAfterDay => 'Dzēst pēc 24 h';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Izslēgts: foto vai video paliek tavā multivides serverī arī pēc stāsta pazušanas.';
+
+  @override
+  String get storyHistory => 'Stāstu dzēšana';
+
+  @override
+  String get storyHistoryNote =>
+      'Izvēlies katram stāstam, kad to kopīgo, un šeit redzi, kas ir izdzēsts.';
+
+  @override
+  String get storyHistoryExplain =>
+      'Dzēšana ir lūgums: releji un multivides serveri var to ignorēt. “Pārbaudīt failus” jautā serverim, vai tas tos vēl izsniedz.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'Šeit būs tavi stāsti un tas, kas ar tiem noticis.';
+
+  @override
+  String get storyStateLive => 'Aktīvs · tiks dzēsts, kad beigsies';
+
+  @override
+  String get storyStateLiveManual => 'Aktīvs · automātiskā dzēšana izslēgta';
+
+  @override
+  String get storyStateWaiting => 'Beidzies · gaida dzēšanu';
+
+  @override
+  String get storyStateExpiredManual =>
+      'Beidzies · automātiskā dzēšana izslēgta';
+
+  @override
+  String get storyStateDeleted => 'Izdzēsts';
+
+  @override
+  String get storyStateKept => 'Saglabāts · faili netiek dzēsti';
+
+  @override
+  String get storyStateFailed => 'Neizdevās izdzēst';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Nav apstiprinājis: $servers';
+  }
+
+  @override
+  String get storyKeep => 'Saglabāt';
+
+  @override
+  String get storyDeleteWhenExpired => 'Dzēst, kad beidzas';
+
+  @override
+  String get storyAskAgain => 'Pieprasīt vēlreiz';
+
+  @override
+  String get storyCheckFiles => 'Pārbaudīt failus';
+
+  @override
+  String get storyCheckGone => 'Serveris šos failus vairs neizsniedz.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Joprojām tiešsaistē: $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear => 'Serveris nesniedza skaidru atbildi.';
 }

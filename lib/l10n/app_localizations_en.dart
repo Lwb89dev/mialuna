@@ -1856,4 +1856,84 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Choose a photo to edit';
+
+  @override
+  String get addToStory => 'Add to your story';
+
+  @override
+  String get viewPost => 'View post';
+
+  @override
+  String get storyFromPostFailed => 'Couldn\'t make a preview of that post.';
+
+  @override
+  String get storyDeleteAfterDay => 'Delete after 24 h';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Off: its photo or video stays on your media server after the story is gone.';
+
+  @override
+  String get storyHistory => 'Story deletion';
+
+  @override
+  String get storyHistoryNote =>
+      'Choose for each story when you share it, and see here what was deleted.';
+
+  @override
+  String get storyHistoryExplain =>
+      'Deleting is a request: relays and media servers can ignore it. “Check files” asks the media server whether it still serves them.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'Your stories will be listed here, with what happened to them.';
+
+  @override
+  String get storyStateLive => 'Live · will be deleted when it expires';
+
+  @override
+  String get storyStateLiveManual => 'Live · automatic deletion is off';
+
+  @override
+  String get storyStateWaiting => 'Expired · waiting to be deleted';
+
+  @override
+  String get storyStateExpiredManual => 'Expired · automatic deletion is off';
+
+  @override
+  String get storyStateDeleted => 'Deleted';
+
+  @override
+  String get storyStateKept => 'Kept · its files are not deleted';
+
+  @override
+  String get storyStateFailed => 'Could not be deleted';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Not confirmed by: $servers';
+  }
+
+  @override
+  String get storyKeep => 'Keep';
+
+  @override
+  String get storyDeleteWhenExpired => 'Delete when it expires';
+
+  @override
+  String get storyAskAgain => 'Ask again';
+
+  @override
+  String get storyCheckFiles => 'Check files';
+
+  @override
+  String get storyCheckGone => 'The server no longer serves these files.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Still online at $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear => 'The server did not give a clear answer.';
 }

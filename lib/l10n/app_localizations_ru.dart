@@ -1861,4 +1861,84 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Выберите фото для редактирования';
+
+  @override
+  String get addToStory => 'Добавить в свою историю';
+
+  @override
+  String get viewPost => 'Открыть пост';
+
+  @override
+  String get storyFromPostFailed => 'Не удалось сделать превью этого поста.';
+
+  @override
+  String get storyDeleteAfterDay => 'Удалить через 24 ч';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Выкл.: фото или видео останутся на твоём медиасервере после исчезновения истории.';
+
+  @override
+  String get storyHistory => 'Удаление историй';
+
+  @override
+  String get storyHistoryNote =>
+      'Выбирай для каждой истории при публикации и смотри здесь, что удалено.';
+
+  @override
+  String get storyHistoryExplain =>
+      'Удаление — это просьба: реле и медиасерверы могут её проигнорировать. «Проверить файлы» спрашивает сервер, отдаёт ли он их ещё.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'Здесь появятся твои истории и что с ними стало.';
+
+  @override
+  String get storyStateLive => 'Активна · будет удалена по истечении';
+
+  @override
+  String get storyStateLiveManual => 'Активна · автоудаление выключено';
+
+  @override
+  String get storyStateWaiting => 'Истекла · ждёт удаления';
+
+  @override
+  String get storyStateExpiredManual => 'Истекла · автоудаление выключено';
+
+  @override
+  String get storyStateDeleted => 'Удалена';
+
+  @override
+  String get storyStateKept => 'Сохранена · файлы не удаляются';
+
+  @override
+  String get storyStateFailed => 'Не удалось удалить';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Без подтверждения от: $servers';
+  }
+
+  @override
+  String get storyKeep => 'Сохранить';
+
+  @override
+  String get storyDeleteWhenExpired => 'Удалить по истечении';
+
+  @override
+  String get storyAskAgain => 'Запросить снова';
+
+  @override
+  String get storyCheckFiles => 'Проверить файлы';
+
+  @override
+  String get storyCheckGone => 'Сервер больше не отдаёт эти файлы.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Всё ещё доступно на $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear => 'Сервер не дал ясного ответа.';
 }

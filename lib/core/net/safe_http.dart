@@ -18,9 +18,9 @@ class SafeHttpException implements Exception {
 /// How a name is turned into addresses (tests replace it: no DNS in CI).
 typedef HostResolver = Future<List<InternetAddress>> Function(String host);
 
-/// GETs of JSON from a host somebody else chose: the domain of a NIP-05 name,
-/// a Lightning address, an LNURL callback. All of those can be made to point
-/// at the user's own network (`http://192.168.1.1/…`, a name that resolves to
+/// GETs of JSON (and a HEAD) from a host somebody else chose: the domain of a
+/// NIP-05 name, a Lightning address, an LNURL callback, a media server. All of
+/// those can be made to point at the user's own network (`http://192.168.1.1/…`, a name that resolves to
 /// 127.0.0.1, a redirect to a router's admin page), so before anything is
 /// sent:
 ///
@@ -117,6 +117,35 @@ abstract final class SafeHttp {
       return jsonDecode(text);
     } on FormatException {
       throw const SafeHttpException('not JSON');
+    } finally {
+      if (client == null) http0.close();
+    }
+  }
+
+  /// Whether a file is still served at [uri], asked with a HEAD: true when it
+  /// is, false when the server says it is not there, null when the answer
+  /// says neither (or the address is not one that may be asked).
+  static Future<bool?> isOnline(
+    Uri uri, {
+    http.Client? client,
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    if (uri.scheme != 'https' || uri.host.isEmpty || uri.userInfo.isNotEmpty) {
+      return null;
+    }
+    if (!await isPublicHostname(uri.host)) return null;
+    final http0 = client ?? http.Client();
+    try {
+      final request = http.Request('HEAD', uri)..followRedirects = false;
+      final response = await http0.send(request).timeout(timeout);
+      unawaited(response.stream.drain<void>().catchError((_) {}));
+      return switch (response.statusCode) {
+        200 || 206 => true,
+        404 || 410 => false,
+        _ => null,
+      };
+    } catch (_) {
+      return null;
     } finally {
       if (client == null) http0.close();
     }

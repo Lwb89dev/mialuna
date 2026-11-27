@@ -1863,4 +1863,85 @@ class AppLocalizationsFi extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Valitse muokattava kuva';
+
+  @override
+  String get addToStory => 'Lisää tarinaasi';
+
+  @override
+  String get viewPost => 'Näytä julkaisu';
+
+  @override
+  String get storyFromPostFailed => 'Julkaisusta ei voitu tehdä esikatselua.';
+
+  @override
+  String get storyDeleteAfterDay => 'Poista 24 h kuluttua';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Pois: kuva tai video jää mediapalvelimellesi, kun tarina on kadonnut.';
+
+  @override
+  String get storyHistory => 'Tarinoiden poistaminen';
+
+  @override
+  String get storyHistoryNote =>
+      'Valitse jokaiselle tarinalle jakaessasi ja katso täältä, mitä on poistettu.';
+
+  @override
+  String get storyHistoryExplain =>
+      'Poistaminen on pyyntö: releet ja mediapalvelimet voivat jättää sen huomiotta. ”Tarkista tiedostot” kysyy palvelimelta, jakaako se niitä yhä.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'Tarinasi näkyvät tässä sekä se, mitä niille tapahtui.';
+
+  @override
+  String get storyStateLive => 'Näkyvillä · poistetaan vanhentuessa';
+
+  @override
+  String get storyStateLiveManual => 'Näkyvillä · automaattinen poisto pois';
+
+  @override
+  String get storyStateWaiting => 'Vanhentunut · odottaa poistoa';
+
+  @override
+  String get storyStateExpiredManual =>
+      'Vanhentunut · automaattinen poisto pois';
+
+  @override
+  String get storyStateDeleted => 'Poistettu';
+
+  @override
+  String get storyStateKept => 'Säilytetty · tiedostoja ei poisteta';
+
+  @override
+  String get storyStateFailed => 'Ei voitu poistaa';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Ei vahvistusta: $servers';
+  }
+
+  @override
+  String get storyKeep => 'Säilytä';
+
+  @override
+  String get storyDeleteWhenExpired => 'Poista vanhentuessa';
+
+  @override
+  String get storyAskAgain => 'Pyydä uudelleen';
+
+  @override
+  String get storyCheckFiles => 'Tarkista tiedostot';
+
+  @override
+  String get storyCheckGone => 'Palvelin ei enää jaa näitä tiedostoja.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Yhä verkossa: $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear => 'Palvelin ei antanut selvää vastausta.';
 }

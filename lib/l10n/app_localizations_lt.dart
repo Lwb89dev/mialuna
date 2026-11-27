@@ -1859,4 +1859,85 @@ class AppLocalizationsLt extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Pasirinkite nuotrauką redaguoti';
+
+  @override
+  String get addToStory => 'Pridėti prie istorijos';
+
+  @override
+  String get viewPost => 'Žiūrėti įrašą';
+
+  @override
+  String get storyFromPostFailed => 'Nepavyko sukurti šio įrašo peržiūros.';
+
+  @override
+  String get storyDeleteAfterDay => 'Ištrinti po 24 val.';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Išjungta: nuotrauka ar video lieka tavo medijos serveryje ir istorijai dingus.';
+
+  @override
+  String get storyHistory => 'Istorijų trynimas';
+
+  @override
+  String get storyHistoryNote =>
+      'Pasirink kiekvienai istorijai dalindamasis ir čia matyk, kas ištrinta.';
+
+  @override
+  String get storyHistoryExplain =>
+      'Trynimas yra prašymas: relės ir medijos serveriai gali jo nepaisyti. „Tikrinti failus“ klausia serverio, ar jis juos dar teikia.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'Čia matysi savo istorijas ir kas joms nutiko.';
+
+  @override
+  String get storyStateLive => 'Rodoma · bus ištrinta pasibaigus';
+
+  @override
+  String get storyStateLiveManual => 'Rodoma · automatinis trynimas išjungtas';
+
+  @override
+  String get storyStateWaiting => 'Pasibaigė · laukia ištrynimo';
+
+  @override
+  String get storyStateExpiredManual =>
+      'Pasibaigė · automatinis trynimas išjungtas';
+
+  @override
+  String get storyStateDeleted => 'Ištrinta';
+
+  @override
+  String get storyStateKept => 'Palikta · failai netrinami';
+
+  @override
+  String get storyStateFailed => 'Nepavyko ištrinti';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Nepatvirtino: $servers';
+  }
+
+  @override
+  String get storyKeep => 'Palikti';
+
+  @override
+  String get storyDeleteWhenExpired => 'Ištrinti pasibaigus';
+
+  @override
+  String get storyAskAgain => 'Prašyti dar kartą';
+
+  @override
+  String get storyCheckFiles => 'Tikrinti failus';
+
+  @override
+  String get storyCheckGone => 'Serveris šių failų nebeteikia.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Vis dar pasiekiama: $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear => 'Serveris nepateikė aiškaus atsakymo.';
 }

@@ -1785,4 +1785,81 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => '选择要编辑的照片';
+
+  @override
+  String get addToStory => '添加到你的快拍';
+
+  @override
+  String get viewPost => '查看帖子';
+
+  @override
+  String get storyFromPostFailed => '无法生成该帖子的预览。';
+
+  @override
+  String get storyDeleteAfterDay => '24 小时后删除';
+
+  @override
+  String get storyDeleteAfterDayNote => '关闭后：快拍消失后，照片或视频仍保留在你的媒体服务器上。';
+
+  @override
+  String get storyHistory => '快拍删除';
+
+  @override
+  String get storyHistoryNote => '分享时为每条快拍单独选择，并在这里查看哪些已删除。';
+
+  @override
+  String get storyHistoryExplain =>
+      '删除只是一个请求：中继和媒体服务器可以忽略它。“检查文件”会询问服务器是否仍在提供这些文件。';
+
+  @override
+  String get storyHistoryEmpty => '你的快拍及其处理结果会显示在这里。';
+
+  @override
+  String get storyStateLive => '展示中 · 过期后删除';
+
+  @override
+  String get storyStateLiveManual => '展示中 · 自动删除已关闭';
+
+  @override
+  String get storyStateWaiting => '已过期 · 等待删除';
+
+  @override
+  String get storyStateExpiredManual => '已过期 · 自动删除已关闭';
+
+  @override
+  String get storyStateDeleted => '已删除';
+
+  @override
+  String get storyStateKept => '已保留 · 不删除文件';
+
+  @override
+  String get storyStateFailed => '无法删除';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return '未得到确认：$servers';
+  }
+
+  @override
+  String get storyKeep => '保留';
+
+  @override
+  String get storyDeleteWhenExpired => '过期后删除';
+
+  @override
+  String get storyAskAgain => '再次请求';
+
+  @override
+  String get storyCheckFiles => '检查文件';
+
+  @override
+  String get storyCheckGone => '服务器已不再提供这些文件。';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return '仍可在 $servers 访问。';
+  }
+
+  @override
+  String get storyCheckUnclear => '服务器没有给出明确答复。';
 }

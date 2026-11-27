@@ -465,7 +465,11 @@ class _ReelPageState extends ConsumerState<_ReelPage>
               ),
               _RailButton(
                 icon: Icons.send_outlined,
-                onPressed: () => SendToSheet.show(context, reel),
+                onPressed: () => SendToSheet.show(
+                  context,
+                  reel,
+                  onLeaving: () => _controller?.pause(),
+                ),
               ),
               if (isMe)
                 _RailButton(

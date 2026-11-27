@@ -13,6 +13,7 @@ import '../../core/nostr/profile_repository.dart';
 import '../../core/nostr/signer.dart';
 import '../messages/dm_controller.dart' show DmException;
 import '../private/private_delivery.dart';
+import '../stories/story_cleanup.dart';
 import 'deleted_posts.dart';
 import 'moderation_controller.dart';
 
@@ -157,12 +158,26 @@ class PostDeletion {
       return const DeletionReport(failure: DeletionFailure.notAllowed);
     }
     try {
-      return await (post.isPrivate
+      final report = await (post.isPrivate
           ? _deletePrivate(post, auth.signer)
           : _deletePublic(post, auth.signer, me));
+      if (post.isStory && report.ok) _noteStory(post, report);
+      return report;
     } catch (e) {
       return DeletionReport(failure: DeletionFailure.failed, detail: '$e');
     }
+  }
+
+  /// The "story deletion" list says how this one went, too.
+  void _noteStory(MediaPost story, DeletionReport report) {
+    if (_ref.read(authProvider).publicKey != story.author) return;
+    _ref
+        .read(storyCleanupProvider.notifier)
+        .noteDeleted(
+          story,
+          filesGone: report.mediaLeft.isEmpty && report.mediaError == null,
+          mediaLeft: report.mediaLeft,
+        );
   }
 
   Future<DeletionReport> _deletePublic(
@@ -343,8 +358,9 @@ class PostDeletion {
   }
 
   /// Files that a post of [me] other than [excluded] still shows (the same
-  /// photo, posted twice, is one file), or that their profile uses. Content is addressed by
-  /// its hash, so taking such a file down would break that post as well.
+  /// photo, posted twice, is one file), that a story they chose to keep
+  /// shows, or that their profile uses. Content is addressed by its hash, so
+  /// taking such a file down would break that post as well.
   Future<Set<String>> _usedByOtherPosts(Set<String> excluded, String me) async {
     final used = <String>{};
     void note(MediaPost other) {
@@ -355,6 +371,11 @@ class PostDeletion {
 
     final gone = _ref.read(deletedPostsProvider);
     final now = _ref.read(unixClockProvider)();
+    // Expired, so no relay is asked for them: the phone remembers them.
+    final cleanup = _ref.read(storyCleanupProvider.notifier);
+    for (final story in await cleanup.keptStories()) {
+      note(story);
+    }
     final profile = await _profileOf(me);
     for (final url in [?profile?.picture, ?profile?.banner]) {
       if (blobHashOfUrl(url) case final hash?) used.add(hash);

@@ -8,7 +8,8 @@ import 'package:mialuna/core/nostr/event.dart';
 import 'package:mialuna/core/nostr/signer.dart';
 
 /// An in-memory Blossom server (any host name): PUT /upload stores a blob,
-/// GET `/{sha256}` returns it, DELETE `/{sha256}` removes it for the account
+/// GET `/{sha256}` returns it (HEAD says whether it is there), DELETE
+/// `/{sha256}` removes it for the account
 /// that uploaded it. Records what was uploaded and by whom.
 class FakeBlossom {
   final Map<String, Uint8List> blobs = {};
@@ -130,6 +131,15 @@ class FakeBlossom {
       );
     }
     if (request.method == 'DELETE') return _delete(request);
+    if (request.method == 'HEAD') {
+      if (deadHosts.contains(request.url.host)) {
+        throw http.ClientException('connection refused');
+      }
+      final hash = request.url.pathSegments.isEmpty
+          ? ''
+          : request.url.pathSegments.last.split('.').first;
+      return http.Response('', blobs.containsKey(hash) ? 200 : 404);
+    }
     if (request.method == 'GET') {
       final hash = request.url.pathSegments.isEmpty
           ? ''

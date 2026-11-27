@@ -8,6 +8,7 @@ import '../stories/story_text_editor.dart';
 import '../private/close_friends.dart';
 import '../private/close_friends_screen.dart';
 import '../settings/settings_controller.dart';
+import '../stories/story_cleanup.dart';
 import 'create_controller.dart';
 import 'editor/image_editor_screen.dart';
 
@@ -237,6 +238,13 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
     final auth = ref.watch(authProvider);
     final friends = ref.watch(closeFriendsProvider);
     final theme = Theme.of(context);
+    final tagByDefault = ref.watch(
+      settingsProvider.select((s) => s.addMialunaHashtag),
+    );
+    final addTag = state.mialunaTag ?? tagByDefault;
+    final public = state.audience == Audience.public;
+    final deleteStory =
+        !(state.keepStory ?? !ref.watch(deleteExpiredStoriesProvider));
 
     // The composer is the truth: a caption changed elsewhere (a story shared
     // from the Home rail, a reset after publishing, the draft read late) shows
@@ -377,6 +385,11 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
             ),
           ),
           const SizedBox(height: 16),
+          if (state.isPreparing)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator()),
+            ),
           if (state.media.isNotEmpty)
             SizedBox(
               height: 110,
@@ -521,11 +534,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                   state.audience == Audience.closeFriends
                       ? context.l10n.privatePostNote
                       : context.l10n.willPublishAs(
-                          state.finalCaption(
-                            addMialunaTag: ref
-                                .watch(settingsProvider)
-                                .addMialunaHashtag,
-                          ),
+                          state.finalCaption(addMialunaTag: addTag),
                         ),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.outline,
@@ -544,6 +553,25 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                 color: theme.colorScheme.outline,
               ),
             ),
+          ],
+          if (public) ...[
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.tag),
+              title: Text(context.l10n.addMialunaHashtag),
+              value: addTag,
+              onChanged: ref.read(composerProvider.notifier).setMialunaTag,
+            ),
+            if (state.mode == ComposerMode.story)
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.auto_delete_outlined),
+                title: Text(context.l10n.storyDeleteAfterDay),
+                subtitle: Text(context.l10n.storyDeleteAfterDayNote),
+                value: deleteStory,
+                onChanged: (delete) =>
+                    ref.read(composerProvider.notifier).setKeepStory(!delete),
+              ),
           ],
           SwitchListTile(
             contentPadding: EdgeInsets.zero,

@@ -1875,4 +1875,87 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Επιλέξτε φωτογραφία για επεξεργασία';
+
+  @override
+  String get addToStory => 'Προσθήκη στην ιστορία σου';
+
+  @override
+  String get viewPost => 'Προβολή ανάρτησης';
+
+  @override
+  String get storyFromPostFailed =>
+      'Δεν ήταν δυνατή η προεπισκόπηση αυτής της ανάρτησης.';
+
+  @override
+  String get storyDeleteAfterDay => 'Διαγραφή μετά από 24 ώ.';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Ανενεργό: η φωτογραφία ή το βίντεο μένουν στον διακομιστή πολυμέσων σου όταν χαθεί η ιστορία.';
+
+  @override
+  String get storyHistory => 'Διαγραφή ιστοριών';
+
+  @override
+  String get storyHistoryNote =>
+      'Διάλεξε για κάθε ιστορία όταν την κοινοποιείς και δες εδώ τι διαγράφηκε.';
+
+  @override
+  String get storyHistoryExplain =>
+      'Η διαγραφή είναι αίτημα: relays και διακομιστές πολυμέσων μπορούν να το αγνοήσουν. Ο «Έλεγχος αρχείων» ρωτά τον διακομιστή αν τα διαθέτει ακόμη.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'Εδώ θα εμφανίζονται οι ιστορίες σου και τι απέγιναν.';
+
+  @override
+  String get storyStateLive => 'Ενεργή · θα διαγραφεί όταν λήξει';
+
+  @override
+  String get storyStateLiveManual =>
+      'Ενεργή · η αυτόματη διαγραφή είναι κλειστή';
+
+  @override
+  String get storyStateWaiting => 'Έληξε · αναμένει διαγραφή';
+
+  @override
+  String get storyStateExpiredManual =>
+      'Έληξε · η αυτόματη διαγραφή είναι κλειστή';
+
+  @override
+  String get storyStateDeleted => 'Διαγράφηκε';
+
+  @override
+  String get storyStateKept => 'Διατηρείται · τα αρχεία δεν διαγράφονται';
+
+  @override
+  String get storyStateFailed => 'Δεν ήταν δυνατή η διαγραφή';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Χωρίς επιβεβαίωση από: $servers';
+  }
+
+  @override
+  String get storyKeep => 'Διατήρηση';
+
+  @override
+  String get storyDeleteWhenExpired => 'Διαγραφή όταν λήξει';
+
+  @override
+  String get storyAskAgain => 'Νέο αίτημα';
+
+  @override
+  String get storyCheckFiles => 'Έλεγχος αρχείων';
+
+  @override
+  String get storyCheckGone => 'Ο διακομιστής δεν διαθέτει πια αυτά τα αρχεία.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Ακόμη διαθέσιμα στο $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear => 'Ο διακομιστής δεν έδωσε σαφή απάντηση.';
 }

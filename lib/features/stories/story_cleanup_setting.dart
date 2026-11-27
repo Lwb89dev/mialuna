@@ -5,6 +5,7 @@ import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/signer.dart';
 import '../../l10n/strings.dart';
 import 'story_cleanup.dart';
+import 'story_history_screen.dart';
 
 /// Settings: whether expired stories are taken down from the relays and the
 /// media servers. With Amber or a remote signer, which would have to approve
@@ -51,6 +52,14 @@ class StoryCleanupSetting extends ConsumerWidget {
               child: Text(context.l10n.storyCleanupNow),
             ),
           ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.history),
+          title: Text(context.l10n.storyHistory),
+          subtitle: Text(context.l10n.storyHistoryNote),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => StoryHistoryScreen.open(context),
+        ),
       ],
     );
   }

@@ -34,6 +34,33 @@ Kind 1418 is in the regular range (NIP-01): relays store it like any note.
 * Optional: `title`, `published_at`, `duration` (seconds), `t` (hashtags),
   `content-warning` (NIP-36) and `story-text` (texts laid over the picture, see
   [nostr-compatibility.md](nostr-compatibility.md)).
+* Optional: `story-keep`, `q` and `story-card`, described below.
+
+## A story that shows a post
+
+The picture of the story is itself the preview (a card with the post), so a
+client that knows nothing of these tags still shows it. Two tags make it open:
+
+```json
+["q", "<event id of the post>", "wss://relay…", "<its author>"],
+["story-card", "0.1200,0.1800,0.7600,0.6400"]
+```
+
+`q` is the NIP-18 quote tag. `story-card` is the part of the picture the preview
+covers, as `left,top,width,height` fractions of its width and height; a tap
+there opens the post. A story never carries `p` tags for this: on a
+close-friends story they are its audience.
+
+## A story to keep
+
+```json
+["story-keep", "true"]
+```
+
+The author does not mean to delete this story when it expires: their other
+devices must not send a deletion request for it, nor delete its files. Readers
+ignore it, and the story is still over after 24 hours. Without the tag, each
+device of the author follows its own setting.
 
 ## Reading
 
@@ -48,9 +75,9 @@ Kind 1418 is in the regular range (NIP-01): relays store it like any note.
 
 ## Deleting
 
-NIP-40 only works on relays that honour it. Once a story has expired, the
-author's client should send a NIP-09 request (`e` = the story, `k` = `1418`)
-and delete its files from the media servers (BUD-02). See
+NIP-40 only works on relays that honour it. Once a story has expired, unless it
+is to be kept, the author's client should send a NIP-09 request (`e` = the
+story, `k` = `1418`) and delete its files from the media servers (BUD-02). See
 [PRIVACY.md](../PRIVACY.md) for when Mialuna does this and what it cannot
 guarantee.
 

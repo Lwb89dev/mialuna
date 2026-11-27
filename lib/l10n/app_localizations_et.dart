@@ -1861,4 +1861,87 @@ class AppLocalizationsEt extends AppLocalizations {
 
   @override
   String get choosePhotoToEdit => 'Vali muudetav foto';
+
+  @override
+  String get addToStory => 'Lisa oma loosse';
+
+  @override
+  String get viewPost => 'Vaata postitust';
+
+  @override
+  String get storyFromPostFailed =>
+      'Sellest postitusest ei saanud eelvaadet teha.';
+
+  @override
+  String get storyDeleteAfterDay => 'Kustuta 24 h järel';
+
+  @override
+  String get storyDeleteAfterDayNote =>
+      'Väljas: foto või video jääb sinu meediaserverisse ka siis, kui lugu on kadunud.';
+
+  @override
+  String get storyHistory => 'Lugude kustutamine';
+
+  @override
+  String get storyHistoryNote =>
+      'Vali iga loo puhul jagamisel ja vaata siit, mis on kustutatud.';
+
+  @override
+  String get storyHistoryExplain =>
+      'Kustutamine on palve: releed ja meediaserverid võivad seda eirata. „Kontrolli faile“ küsib serverilt, kas ta neid veel jagab.';
+
+  @override
+  String get storyHistoryEmpty =>
+      'Siia ilmuvad sinu lood ja see, mis neist sai.';
+
+  @override
+  String get storyStateLive => 'Nähtav · kustutatakse aegumisel';
+
+  @override
+  String get storyStateLiveManual =>
+      'Nähtav · automaatne kustutamine on väljas';
+
+  @override
+  String get storyStateWaiting => 'Aegunud · ootab kustutamist';
+
+  @override
+  String get storyStateExpiredManual =>
+      'Aegunud · automaatne kustutamine on väljas';
+
+  @override
+  String get storyStateDeleted => 'Kustutatud';
+
+  @override
+  String get storyStateKept => 'Alles hoitud · faile ei kustutata';
+
+  @override
+  String get storyStateFailed => 'Ei õnnestunud kustutada';
+
+  @override
+  String storyFilesNotConfirmed(Object servers) {
+    return 'Kinnitamata: $servers';
+  }
+
+  @override
+  String get storyKeep => 'Hoia alles';
+
+  @override
+  String get storyDeleteWhenExpired => 'Kustuta aegumisel';
+
+  @override
+  String get storyAskAgain => 'Küsi uuesti';
+
+  @override
+  String get storyCheckFiles => 'Kontrolli faile';
+
+  @override
+  String get storyCheckGone => 'Server ei jaga neid faile enam.';
+
+  @override
+  String storyCheckOnline(Object servers) {
+    return 'Endiselt võrgus: $servers.';
+  }
+
+  @override
+  String get storyCheckUnclear => 'Server ei andnud selget vastust.';
 }

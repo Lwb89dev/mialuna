@@ -39,13 +39,17 @@ Mialuna implements and with which conventions.
   Kind 1 events are never requested or rendered as posts, and stories (kind
   1418) are only ever requested by the story rail.
 - **#mialuna**: media posts created in Mialuna carry `["t","mialuna"]` and
-  the `#mialuna` suffix in the caption (never in comments or reactions).
-  Posts from other clients without the hashtag remain visible.
+  the `#mialuna` suffix in the caption (never in comments or reactions), unless
+  the person turned it off in Settings or for that post. Posts without the
+  hashtag, from here or from other clients, remain visible.
 - **Stories**: kind `1418` with NIP-40 24h expiration and NIP-32 label
   `["L","mialuna.story"]` / `["l","story","mialuna.story"]`, one photo or video
   each; specified in [stories.md](stories.md). Convention documented until
   broader standards emerge; clients that do not know the kind show nothing.
   The kind 20/22 stories of 0.25 and earlier are still read.
+- **A story that shows a post** carries a NIP-18 `q` tag and `story-card`,
+  and **a story to keep** carries `story-keep`; see
+  [stories.md](stories.md).
 - **Texts over stories** (Instagram-style text stickers): a story may carry up
   to 8 tags `["story-text", "<json>"]`. They are *not* baked into the picture,
   so the `#hashtags` in them stay tappable. The JSON is
