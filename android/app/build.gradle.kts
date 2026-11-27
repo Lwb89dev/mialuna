@@ -74,6 +74,29 @@ android {
     }
 }
 
+// Flutter writes the project's absolute path into the app (libapp.so), so an
+// APK built in a home directory names its owner. A release signed with the real
+// key is the kind that gets published: it has to come from tool/build_release.sh,
+// which builds from a neutral path. MIALUNA_LOCAL_RELEASE=1 allows a build that
+// stays on this machine (`flutter run --release`).
+if (hasReleaseKey && System.getenv("MIALUNA_LOCAL_RELEASE") != "1") {
+    val projectPath = rootProject.projectDir.canonicalPath
+    val namesItsOwner =
+        projectPath.contains(System.getProperty("user.home")) ||
+            projectPath.contains(System.getProperty("user.name"))
+    tasks.matching { it.name == "preReleaseBuild" }.configureEach {
+        doFirst {
+            if (namesItsOwner) {
+                throw GradleException(
+                    "This release would carry the path $projectPath. Build it with " +
+                        "tool/build_release.sh, or set MIALUNA_LOCAL_RELEASE=1 for a " +
+                        "build you will not publish.",
+                )
+            }
+        }
+    }
+}
+
 kotlin {
     compilerOptions {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17

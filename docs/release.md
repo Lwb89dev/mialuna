@@ -45,12 +45,25 @@ flutter build apk --debug
    signed with the debug key and Gradle warns: fine to try an APK, never to
    publish one.
 
-4. Build (code shrinking with R8 is on; keep the symbols to read crashes):
+4. Build with the release script (Linux, needs `bubblewrap`), never with a
+   plain `flutter build`:
 
    ```bash
-   flutter build appbundle --release --obfuscate --split-debug-info=build/symbols
-   flutter build apk --release --obfuscate --split-debug-info=build/symbols
+   tool/build_release.sh            # build/release/mialuna-<version>.apk
+   tool/build_release.sh appbundle  # the same, as an .aab
    ```
+
+   Flutter writes the project's absolute path into the app, `--obfuscate` or
+   not, which would publish the builder's home directory. The script builds a
+   copy of the project as `/mnt/mialuna`, then runs `tool/check_release.py`,
+   which refuses a package holding another project path, your home directory or
+   user name, or a word listed in `tool/private_words.txt` (one per line, not
+   committed). Publish only the file it names. As a safety net, Gradle stops a
+   release signed with the real key from a path that names you;
+   `MIALUNA_LOCAL_RELEASE=1 flutter run --release` is for builds that stay on
+   your machine.
+
+   Code shrinking with R8 is on; keep `build/symbols` to read crashes.
 
    The debug build installs next to the release one (`app.mialuna.social.debug`,
    labelled "Mialuna Debug") and, unlike release, may talk plain HTTP to

@@ -1,5 +1,7 @@
 # Miscellaneous
 .env
+# Words tool/check_release.py refuses to find in a release.
+/tool/private_words.txt
 *.class
 *.log
 *.pyc
