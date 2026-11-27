@@ -10,6 +10,7 @@ import '../../../app/providers.dart';
 import '../../../core/auth/auth_controller.dart';
 import '../../../core/nostr/models/media_event.dart';
 import '../../../core/text/clip.dart';
+import '../../../core/theme/mialuna_motion.dart';
 import '../../../l10n/strings.dart';
 import '../../comments/comments_sheet.dart';
 import '../../explore/hashtag_link.dart';
@@ -64,7 +65,7 @@ class PostCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+            padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
             child: Row(
               children: [
                 ProfileAvatar(pubkey: post.author, radius: 18),
@@ -105,7 +106,9 @@ class PostCard extends ConsumerWidget {
                             ),
                           PostTime(
                             createdAt: post.createdAt,
-                            style: theme.textTheme.bodySmall,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ),
@@ -209,7 +212,11 @@ class PostCard extends ConsumerWidget {
                   )
                 else
                   IconButton(
-                    icon: Icon(saved ? Icons.bookmark : Icons.bookmark_border),
+                    icon: AnimatedSelectionIcon(
+                      selected: saved,
+                      icon: Icons.bookmark_border,
+                      selectedIcon: Icons.bookmark,
+                    ),
                     tooltip: saved
                         ? context.l10n.removeFromSaved
                         : context.l10n.save,
@@ -503,9 +510,21 @@ class _PostMediaState extends ConsumerState<PostMedia> {
                   color: Colors.black54,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  '${_page + 1}/${media.length}',
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                child: AnimatedSwitcher(
+                  duration: MialunaMotion.duration(
+                    context,
+                    MialunaMotion.quick,
+                  ),
+                  child: Text(
+                    '${_page + 1}/${media.length}',
+                    key: ValueKey(_page),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -519,13 +538,18 @@ class _PostMediaState extends ConsumerState<PostMedia> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     for (var i = 0; i < media.length; i++)
-                      Container(
-                        width: 6,
+                      AnimatedContainer(
+                        duration: MialunaMotion.duration(context),
+                        curve: MialunaMotion.curve,
+                        width: i == _page ? 16 : 6,
                         height: 6,
                         margin: const EdgeInsets.symmetric(horizontal: 2),
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: i == _page ? Colors.white : Colors.white38,
+                          borderRadius: BorderRadius.circular(3),
+                          color: i == _page ? Colors.white : Colors.white54,
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black26, blurRadius: 3),
+                          ],
                         ),
                       ),
                   ],

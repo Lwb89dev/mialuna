@@ -10,6 +10,7 @@ import '../features/onboarding/login_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/reels/reels_screen.dart';
+import '../core/theme/mialuna_motion.dart';
 import '../l10n/strings.dart';
 import 'providers.dart';
 
@@ -129,36 +130,63 @@ class _MialunaShellState extends ConsumerState<MialunaShell> {
       },
       child: Scaffold(
         body: shell,
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: shell.currentIndex,
-          onTap: _onTap,
-          items: [
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.home_outlined),
-              activeIcon: const Icon(Icons.home),
-              label: context.l10n.tabHome,
+        bottomNavigationBar: DecoratedBox(
+          position: DecorationPosition.foreground,
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant
+                    .withValues(alpha: 0.45),
+                width: 0.5,
+              ),
             ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.explore_outlined),
-              activeIcon: const Icon(Icons.explore),
-              label: context.l10n.tabDiscover,
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.add_circle_outline),
-              activeIcon: const Icon(Icons.add_circle),
-              label: context.l10n.tabCreate,
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.play_circle_outline),
-              activeIcon: const Icon(Icons.play_circle),
-              label: context.l10n.tabReels,
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.person_outline),
-              activeIcon: const Icon(Icons.person),
-              label: context.l10n.tabProfile,
-            ),
-          ],
+          ),
+          child: BottomNavigationBar(
+            currentIndex: shell.currentIndex,
+            onTap: _onTap,
+            items: [
+              BottomNavigationBarItem(
+                icon: AnimatedSelectionIcon(
+                  selected: shell.currentIndex == 0,
+                  icon: Icons.home_outlined,
+                  selectedIcon: Icons.home,
+                ),
+                label: context.l10n.tabHome,
+              ),
+              BottomNavigationBarItem(
+                icon: AnimatedSelectionIcon(
+                  selected: shell.currentIndex == 1,
+                  icon: Icons.explore_outlined,
+                  selectedIcon: Icons.explore,
+                ),
+                label: context.l10n.tabDiscover,
+              ),
+              BottomNavigationBarItem(
+                icon: AnimatedSelectionIcon(
+                  selected: shell.currentIndex == 2,
+                  icon: Icons.add_circle_outline,
+                  selectedIcon: Icons.add_circle,
+                ),
+                label: context.l10n.tabCreate,
+              ),
+              BottomNavigationBarItem(
+                icon: AnimatedSelectionIcon(
+                  selected: shell.currentIndex == 3,
+                  icon: Icons.play_circle_outline,
+                  selectedIcon: Icons.play_circle,
+                ),
+                label: context.l10n.tabReels,
+              ),
+              BottomNavigationBarItem(
+                icon: AnimatedSelectionIcon(
+                  selected: shell.currentIndex == 4,
+                  icon: Icons.person_outline,
+                  selectedIcon: Icons.person,
+                ),
+                label: context.l10n.tabProfile,
+              ),
+            ],
+          ),
         ),
       ),
     );

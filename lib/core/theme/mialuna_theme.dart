@@ -29,6 +29,8 @@ abstract final class MialunaTheme {
         backgroundColor: MialunaColors.warmOffWhite,
         foregroundColor: MialunaColors.midnightNavy,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: false,
       ),
     );
@@ -52,6 +54,8 @@ abstract final class MialunaTheme {
         backgroundColor: MialunaColors.darkCharcoal,
         foregroundColor: MialunaColors.moonlightCream,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: false,
       ),
     );
@@ -63,16 +67,58 @@ abstract final class MialunaTheme {
     visualDensity: VisualDensity.adaptivePlatformDensity,
     cardTheme: CardThemeData(
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: scheme.brightness == Brightness.dark
+          ? Color.alphaBlend(
+              scheme.onSurface.withValues(alpha: 0.035),
+              scheme.surface,
+            )
+          : scheme.surfaceContainerLow,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: scheme.outlineVariant.withValues(alpha: 0.4),
+          width: 0.5,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: scheme.surface,
+      selectedColor: scheme.primary.withValues(alpha: 0.08),
+      side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      labelStyle: TextStyle(
+        fontWeight: FontWeight.w500,
+        color: scheme.onSurface,
+      ),
+    ),
+    dividerTheme: DividerThemeData(
+      color: scheme.outlineVariant.withValues(alpha: 0.45),
+      thickness: 0.5,
+      space: 1,
+    ),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: scheme.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       clipBehavior: Clip.antiAlias,
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
       type: BottomNavigationBarType.fixed,
+      backgroundColor: scheme.surface,
+      elevation: 0,
       selectedItemColor: scheme.primary,
       unselectedItemColor: scheme.outline,
       showUnselectedLabels: false,
       showSelectedLabels: false,
     ),
-    snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    ),
   );
 }

@@ -13,6 +13,7 @@ import '../../core/nostr/models/media_event.dart';
 import '../../core/nostr/nip19.dart';
 import '../../core/nostr/relay_pool.dart';
 import '../../core/text/hashtags.dart';
+import '../../core/theme/mialuna_motion.dart';
 import '../../l10n/strings.dart';
 import '../feed/feed_controller.dart';
 import '../feed/widgets/inline_video.dart';
@@ -296,11 +297,15 @@ class _ExploreFeedState extends ConsumerState<_ExploreFeed> {
     ref.listen(tabReselectProvider, (_, event) {
       if (event != null && event.branch == 1 && widget.initialQuery == null) {
         if (_scroll.hasClients) {
-          _scroll.animateTo(
-            0,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
+          if (MediaQuery.disableAnimationsOf(context)) {
+            _scroll.jumpTo(0);
+          } else {
+            _scroll.animateTo(
+              0,
+              duration: const Duration(milliseconds: 300),
+              curve: MialunaMotion.curve,
+            );
+          }
         }
         _refresh();
       }
@@ -347,6 +352,11 @@ class _ExploreFeedState extends ConsumerState<_ExploreFeed> {
               borderSide: BorderSide.none,
             ),
             filled: true,
+            fillColor: theme.colorScheme.surfaceContainerLow,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
             isDense: true,
           ),
           textInputAction: TextInputAction.search,
@@ -492,7 +502,7 @@ class PostThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final item = post.media.first;
-    return GestureDetector(
+    return MialunaPressable(
       onTap: onTap,
       child: Stack(
         fit: StackFit.expand,

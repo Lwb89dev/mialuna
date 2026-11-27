@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../core/nostr/models/media_event.dart';
+import '../../../core/theme/mialuna_motion.dart';
 import '../../../l10n/strings.dart';
 import '../../settings/settings_controller.dart';
 
@@ -181,11 +182,15 @@ class _NostrImageState extends ConsumerState<NostrImage> {
       );
     }
     if (frame != null) _reportSize(provider);
-    final animate = !_shown && !wasSynchronouslyLoaded;
+    final animate =
+        !_shown &&
+        !wasSynchronouslyLoaded &&
+        !MediaQuery.disableAnimationsOf(context);
     _shown = true;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: animate ? 0.0 : 1.0, end: 1.0),
-      duration: const Duration(milliseconds: 150),
+      duration: MialunaMotion.duration(context),
+      curve: MialunaMotion.curve,
       builder: (_, opacity, child) => Opacity(opacity: opacity, child: child),
       child: child,
     );

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/models/media_event.dart';
+import '../../core/theme/mialuna_motion.dart';
 import '../../l10n/strings.dart';
 import '../feed/widgets/post_card.dart' show closeFriendsGreen;
 import '../profile/profile_widgets.dart';
@@ -90,7 +91,7 @@ class StoriesRail extends ConsumerWidget {
     final label = Theme.of(context).textTheme.labelSmall;
     final line = MediaQuery.textScalerOf(context).scale(label?.fontSize ?? 11);
     return SizedBox(
-      height: 12 + 66 + 4 + (line * 1.5).ceilToDouble(),
+      height: 16 + 66 + 6 + (line * 1.5).ceilToDouble(),
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -148,10 +149,10 @@ class _AddStory extends StatelessWidget {
     return Semantics(
       button: true,
       label: l10n.storyAddSemantics,
-      child: GestureDetector(
+      child: MialunaPressable(
         onTap: () => StoryComposerScreen.show(context),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
           child: SizedBox(
             width: StoriesRail._itemWidth,
             child: Column(
@@ -167,7 +168,7 @@ class _AddStory extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   hasStories ? l10n.storyNew : l10n.storyYourStory,
                   maxLines: 1,
@@ -221,16 +222,16 @@ class _StoryCircle extends StatelessWidget {
       label: isOwn
           ? context.l10n.storyOwnRailLabel(group.stories.length, label)
           : context.l10n.storiesRailLabel(label),
-      child: GestureDetector(
+      child: MialunaPressable(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
           child: SizedBox(
             width: StoriesRail._itemWidth,
             child: Column(
               children: [
                 StoryRing(segments: segments, child: _avatar()),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 _name(context, theme),
               ],
             ),

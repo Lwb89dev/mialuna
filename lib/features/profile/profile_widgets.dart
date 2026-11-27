@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/nostr/profile_repository.dart';
+import '../../core/theme/mialuna_motion.dart';
 import 'profile_screen.dart';
 
 /// Opens the profile of [pubkey] on top of the current screen.
@@ -60,7 +61,7 @@ class ProfileAvatar extends ConsumerWidget {
           : null,
     );
     if (!tappable && onTap == null) return avatar;
-    return GestureDetector(
+    return MialunaPressable(
       onTap: onTap ?? () => _open(context, ref),
       child: avatar,
     );

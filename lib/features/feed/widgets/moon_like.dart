@@ -81,7 +81,17 @@ class _MoonLikeIconState extends State<MoonLikeIcon>
   @override
   void didUpdateWidget(MoonLikeIcon old) {
     super.didUpdateWidget(old);
-    if (widget.liked && !old.liked) _pulse.forward(from: 0);
+    if (widget.liked &&
+        !old.liked &&
+        !MediaQuery.disableAnimationsOf(context)) {
+      _pulse.forward(from: 0);
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) _pulse.reset();
   }
 
   @override
@@ -129,6 +139,8 @@ class _MoonLikeIconState extends State<MoonLikeIcon>
                   _moonAsset,
                   width: size,
                   height: size,
+                  cacheWidth: (size * MediaQuery.devicePixelRatioOf(context))
+                      .ceil(),
                   fit: BoxFit.cover,
                   filterQuality: FilterQuality.medium,
                   gaplessPlayback: true,
@@ -203,7 +215,16 @@ class _MoonBurstState extends State<MoonBurst>
   @override
   void didUpdateWidget(MoonBurst old) {
     super.didUpdateWidget(old);
-    if (widget.trigger != old.trigger) _c.forward(from: 0);
+    if (widget.trigger != old.trigger &&
+        !MediaQuery.disableAnimationsOf(context)) {
+      _c.forward(from: 0);
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) _c.reset();
   }
 
   @override
@@ -214,6 +235,7 @@ class _MoonBurstState extends State<MoonBurst>
 
   @override
   Widget build(BuildContext context) {
+    if (MediaQuery.disableAnimationsOf(context)) return const SizedBox.shrink();
     return IgnorePointer(
       child: Center(
         child: AnimatedBuilder(
@@ -250,6 +272,8 @@ class _MoonBurstState extends State<MoonBurst>
             ),
             child: Image.asset(
               _moonAsset,
+              cacheWidth: (widget.size * MediaQuery.devicePixelRatioOf(context))
+                  .ceil(),
               fit: BoxFit.cover,
               filterQuality: FilterQuality.medium,
               excludeFromSemantics: true,
