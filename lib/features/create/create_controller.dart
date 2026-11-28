@@ -271,9 +271,11 @@ class ComposerController extends Notifier<ComposerState> {
     try {
       final card = await ref.read(postCardRendererProvider)(post);
       if (session != _session) return;
+      final pool = ref.read(relayPoolProvider);
       final hints = relayHints(
         ref.read(outboxProvider).writeRelays(post.author, max: 2),
-        ref.read(relayPoolProvider).writeRelays,
+        pool.writeRelays,
+        seenOn: pool.seenOn(post.id),
       );
       state = state.copyWith(
         isPreparing: false,

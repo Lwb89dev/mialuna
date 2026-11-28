@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -17,6 +18,8 @@ import 'package:mialuna/core/nostr/signer.dart';
 import 'package:mialuna/core/storage/local_cache.dart';
 import 'package:mialuna/core/theme/mialuna_theme.dart';
 import 'package:mialuna/features/private/private_delivery.dart';
+import 'package:mialuna/features/profile/profile_screen.dart';
+import 'package:mialuna/features/profile/profile_widgets.dart';
 import 'package:mialuna/features/social/post_deletion.dart';
 import 'package:mialuna/features/stories/stories_controller.dart';
 import 'package:mialuna/features/stories/story_receipts.dart';
@@ -35,14 +38,18 @@ class _FixedAuth extends AuthController {
 /// to bytes is a picture that loads, to null one that does not.
 class _Media extends PrivateMediaService {
   final Map<String, Uint8List?> pictures;
-  _Media(this.pictures) : super(http.Client());
+
+  /// When set, a picture that cannot be downloaded only says so once this
+  /// completes (a slow server giving up).
+  final Future<void>? failLater;
+  _Media(this.pictures, {this.failLater}) : super(http.Client());
 
   @override
-  Future<Uint8List> imageBytes(MediaItem item, {bool preview = false}) {
+  Future<Uint8List> imageBytes(MediaItem item, {bool preview = false}) async {
     final bytes = pictures[item.url];
-    return bytes == null
-        ? Future.error(StateError('cannot be downloaded'))
-        : Future.value(bytes);
+    if (bytes != null) return bytes;
+    await failLater;
+    throw StateError('cannot be downloaded');
   }
 }
 
@@ -160,6 +167,7 @@ void main() {
     String? author,
     PostDeletion? deletion,
     bool realReporter = false,
+    Future<void>? failLater,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -168,7 +176,9 @@ void main() {
           relayPoolProvider.overrideWithValue(RelayPool(const [])),
           localCacheProvider.overrideWithValue(LocalCache(directory: tmp)),
           authProvider.overrideWith(() => _FixedAuth(as ?? _viewer)),
-          privateMediaProvider.overrideWithValue(_Media(pictures)),
+          privateMediaProvider.overrideWithValue(
+            _Media(pictures, failLater: failLater),
+          ),
           if (deletion != null)
             postDeletionProvider.overrideWithValue(deletion),
           privateDeliveryProvider.overrideWith((ref) {
@@ -271,6 +281,75 @@ void main() {
       await finish(tester);
     },
   );
+
+  testWidgets(
+    "tapping who posted the story opens their profile, and the story waits",
+    (tester) async {
+      final story = _story(_author, 'https://x.example/ok');
+      await open(tester, [story], {'https://x.example/ok': _picture()});
+      await watch(tester, const Duration(seconds: 1));
+
+      await tester.tap(find.byType(AuthorName));
+      await tester.pumpAndSettle(const Duration(milliseconds: 100));
+      final profile = find.byWidgetPredicate(
+        (w) => w is ProfileScreen && w.pubkey == _author,
+      );
+      expect(profile, findsOneWidget);
+
+      // Long enough for the story to have run out, had it kept going.
+      await watch(tester, const Duration(seconds: 8));
+      expect(profile, findsOneWidget);
+      expect(
+        find.byType(StoryViewerScreen, skipOffstage: false),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle(const Duration(milliseconds: 100));
+      expect(profile, findsNothing);
+      expect(find.byType(StoryViewerScreen), findsOneWidget);
+      await finish(tester);
+    },
+  );
+
+  testWidgets(
+    'a story that fails under the profile closes the viewer, not the profile',
+    (tester) async {
+      // Its picture never loads: the viewer gives up on it by itself, while
+      // the profile is open over it.
+      final giveUp = Completer<void>();
+      final story = _story(_author, 'https://x.example/broken');
+      await open(
+        tester,
+        [story],
+        {'https://x.example/broken': null},
+        failLater: giveUp.future,
+      );
+      await tester.tap(find.byType(AuthorName));
+      await tester.pumpAndSettle(const Duration(milliseconds: 100));
+      expect(find.byType(ProfileScreen), findsOneWidget);
+
+      giveUp.complete();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await watch(tester, const Duration(seconds: 2));
+
+      expect(find.byType(ProfileScreen), findsOneWidget);
+      expect(find.byType(StoryViewerScreen, skipOffstage: false), findsNothing);
+      await finish(tester);
+    },
+  );
+
+  testWidgets('tapping the avatar does the same', (tester) async {
+    final story = _story(_author, 'https://x.example/ok');
+    await open(tester, [story], {'https://x.example/ok': _picture()});
+
+    await tester.tap(find.byType(ProfileAvatar));
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    expect(find.byType(ProfileScreen), findsOneWidget);
+    await finish(tester);
+  });
 
   testWidgets('Cancel keeps the story playing and deletes nothing', (
     tester,

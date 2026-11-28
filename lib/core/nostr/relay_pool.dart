@@ -136,9 +136,12 @@ class RelayPool {
   final Map<String, _Entry> _entries = {};
   final Map<String, _Sub> _subs = {};
   final Map<String, String> _verified = {};
+
+  /// The first relay each delivered event came from (see [seenOn]).
+  final Map<String, String> _seenOn = {};
   final _statusController =
       StreamController<Map<String, RelayConnectionState>>.broadcast();
-  final List<(_Sub, NostrEvent)> _queue = [];
+  final List<(_Sub, NostrEvent, String)> _queue = [];
   final Map<String, Future<bool>> _authInFlight = {};
   Timer? _flushTimer;
   int _counter = 0;
@@ -242,7 +245,7 @@ class RelayPool {
 
   _Entry _createEntry(String url, RelayConfig? config) {
     final relay = Relay(url)
-      ..onEvent = ((subId, event) => _onEvent(subId, event))
+      ..onEvent = ((subId, event) => _onEvent(url, subId, event))
       ..onEose = ((subId) => _onEose(url, subId))
       ..onClosed = ((subId, message) => _onClosed(url, subId, message))
       ..onAuthChallenge = ((challenge) => _onAuthChallenge(url))
@@ -382,21 +385,28 @@ class RelayPool {
   static String _fingerprint(NostrEvent event) =>
       sha256.convert(utf8.encode(jsonEncode(event.toJson()))).toString();
 
-  void _onEvent(String subId, NostrEvent event) {
+  /// A relay that really handed out the event [eventId] (in this session),
+  /// to tell others where to find it: better than a guess at its author's
+  /// relays, which may not carry it at all.
+  String? seenOn(String eventId) => _seenOn[eventId];
+
+  void _onEvent(String url, String subId, NostrEvent event) {
     final sub = _subs[subId];
     if (sub == null || sub.seen.contains(event.id)) return;
     if (event.isExpired()) return;
     if (!sub.filters.any((f) => f.matches(event))) return;
     if (!verifySignatures || _verified[event.id] == _fingerprint(event)) {
-      _deliver(sub, event);
+      _deliver(sub, event, url);
       return;
     }
     sub.pending++;
-    _queue.add((sub, event));
+    _queue.add((sub, event, url));
     _flushTimer ??= Timer(const Duration(milliseconds: 30), _flushQueue);
   }
 
-  void _deliver(_Sub sub, NostrEvent event) {
+  void _deliver(_Sub sub, NostrEvent event, String url) {
+    if (_seenOn.length > 8000) _seenOn.clear();
+    _seenOn.putIfAbsent(event.id, () => url);
     if (sub.controller.isClosed || !sub.seen.add(event.id)) return;
     sub.controller.add(event);
   }
@@ -407,7 +417,7 @@ class RelayPool {
     final batch = List.of(_queue);
     _queue.clear();
     final unique = <String, NostrEvent>{};
-    for (final (_, e) in batch) {
+    for (final (_, e, _) in batch) {
       unique.putIfAbsent(_fingerprint(e), () => e);
     }
     final toVerify = [
@@ -441,11 +451,11 @@ class RelayPool {
       if (good.contains(entry.key)) _verified[entry.value.id] = entry.key;
     }
     final touched = <_Sub>{};
-    for (final (sub, event) in batch) {
+    for (final (sub, event, url) in batch) {
       sub.pending--;
       touched.add(sub);
       if (valid.contains(_fingerprint(event)) && _subs.containsKey(sub.id)) {
-        _deliver(sub, event);
+        _deliver(sub, event, url);
       }
     }
     for (final sub in touched) {

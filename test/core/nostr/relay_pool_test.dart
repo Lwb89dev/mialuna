@@ -92,6 +92,23 @@ void main() {
       expect(events, hasLength(1));
     });
 
+    test('remembers which relay really handed an event out', () async {
+      final a = await startRelay();
+      final b = await startRelay();
+      final event = await signed(alice, content: 'only on b');
+      b.add(event);
+      final pool = RelayPool([RelayConfig(a.url), RelayConfig(b.url)]);
+      addTearDown(pool.dispose);
+
+      expect(pool.seenOn(event.id), isNull);
+      await collect(
+        pool.subscribe([
+          const NostrFilter(kinds: [20]),
+        ]),
+      );
+      expect(pool.seenOn(event.id), b.url);
+    });
+
     test('events with a bad signature are dropped', () async {
       final relay = await startRelay();
       final good = await signed(alice, content: 'good');

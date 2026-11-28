@@ -5,6 +5,28 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.28.0] — 2026-11-28 — Stories on profiles
+
+### Added
+- **A profile shows its stories.** While someone has stories up, their
+  profile picture has the same ring as in the Home rail, divided into one part
+  per story, new ones coloured and seen ones grey. Tapping it plays them. This
+  works for people you do not follow too.
+- **Tapping who posted a story opens their profile.** The picture and the name
+  at the top of the story viewer now open the profile; the story waits and goes
+  on when you come back.
+
+### Fixed
+- **A story that shares a post could say "Content unavailable"** when the post
+  lived on only one of its author's relays, and not one of the first three.
+  Mialuna now looks on up to eight of the author's relays.
+- Sharing a post (into a story or in a message) now points to a relay the post
+  was really read from, instead of a guess at its author's relays that might
+  not carry it.
+- If a story ran out or failed to load while a screen opened from it (a
+  profile, a shared post) was on top, closing the viewer took that screen
+  away instead.
+
 ## [0.27.0] — 2026-11-27 — Share posts into your story
 
 ### Added

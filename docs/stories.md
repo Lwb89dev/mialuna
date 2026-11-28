@@ -51,6 +51,11 @@ covers, as `left,top,width,height` fractions of its width and height; a tap
 there opens the post. A story never carries `p` tags for this: on a
 close-friends story they are its audience.
 
+The relay in `q` should be one the post was actually read from: a guess at the
+author's relays can name one that does not carry it. Readers look there, on
+the author's NIP-65 write relays (all of them, up to eight, not just the first
+few) and on their own.
+
 ## A story to keep
 
 ```json
@@ -72,6 +77,8 @@ device of the author follows its own setting.
   an earlier one ends it earlier, a missing, malformed or later one does not
   extend it. One dated more than ten minutes in the future is not shown.
 * A story is only shown as a story: not in feeds, profile grids or search.
+  A profile shows that its owner has stories up with a ring around the
+  picture, as in the Home rail, whether you follow them or not.
 
 ## Deleting
 

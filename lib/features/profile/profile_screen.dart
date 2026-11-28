@@ -16,6 +16,7 @@ import '../../core/nostr/nip19.dart';
 import '../../core/nostr/profile_repository.dart';
 import '../../core/nostr/relay_pool.dart';
 import '../../core/nostr/signer.dart';
+import '../../core/theme/mialuna_motion.dart';
 import '../../l10n/strings.dart';
 import '../explore/explore_screen.dart';
 import '../feed/widgets/post_card.dart';
@@ -25,7 +26,12 @@ import '../settings/settings_screen.dart';
 import '../social/deleted_posts.dart';
 import '../social/follow_controller.dart';
 import '../social/moderation_controller.dart';
+import '../stories/profile_stories.dart';
+import '../stories/stories_controller.dart';
+import '../stories/stories_rail.dart' show storySegment;
 import '../stories/story_history_screen.dart';
+import '../stories/story_ring.dart';
+import '../stories/story_viewer.dart';
 import 'edit_profile_screen.dart';
 import 'profile_widgets.dart';
 
@@ -378,7 +384,7 @@ class _ProfileHeader extends ConsumerWidget {
         children: [
           Row(
             children: [
-              ProfileAvatar(pubkey: pubkey, radius: 40, tappable: false),
+              _StoryAvatar(pubkey: pubkey),
               const SizedBox(width: 24),
               Expanded(
                 child: Row(
@@ -521,6 +527,60 @@ class _ProfileHeader extends ConsumerWidget {
         context,
       ).showSnackBar(SnackBar(content: Text(context.l10n.followUpdateFailed)));
     }
+  }
+}
+
+/// The profile picture; with a ring, as in the Home rail, while the person
+/// has stories up, and then a tap plays them.
+class _StoryAvatar extends ConsumerWidget {
+  final String pubkey;
+  const _StoryAvatar({required this.pubkey});
+
+  static const _radius = 40.0;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final avatar = ProfileAvatar(
+      pubkey: pubkey,
+      radius: _radius,
+      tappable: false,
+    );
+    final group = ref.watch(profileStoriesProvider(pubkey));
+    // The same room with or without a ring: the header does not jump when
+    // the stories arrive.
+    const size = _radius * 2 + 12;
+    if (group == null) {
+      return SizedBox.square(
+        dimension: size,
+        child: Center(child: avatar),
+      );
+    }
+    final seen = ref.watch(seenStoriesProvider);
+    final unseen = group.stories.any((s) => !seen.contains(s.id));
+    final l10n = context.l10n;
+    return Semantics(
+      button: true,
+      label: l10n.storiesRailLabel(
+        unseen ? l10n.storiesStateUnseen : l10n.storiesStateSeen,
+      ),
+      child: MialunaPressable(
+        onTap: () => Navigator.of(context, rootNavigator: true).push(
+          MaterialPageRoute(
+            fullscreenDialog: true,
+            builder: (_) => StoryViewerScreen(groups: [group]),
+          ),
+        ),
+        child: StoryRing(
+          size: size,
+          strokeWidth: 3,
+          segments: [
+            for (final s in group.stories)
+              storySegment(s, seen: seen.contains(s.id)),
+          ],
+          child: avatar,
+        ),
+      ),
+    );
   }
 }
 

@@ -19,6 +19,7 @@ import '../feed/widgets/nostr_image.dart';
 import '../feed/widgets/post_card.dart' show PostScreen, closeFriendsGreen;
 import '../messages/send_to_sheet.dart';
 import '../messages/share_utils.dart';
+import '../profile/profile_screen.dart';
 import '../profile/profile_widgets.dart';
 import '../social/delete_post_flow.dart';
 import '../social/moderation_controller.dart';
@@ -228,7 +229,19 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
     } else if (_groupIndex < widget.groups.length - 1) {
       _pageController.nextPage(duration: _transition, curve: Curves.easeOut);
     } else {
+      _close();
+    }
+  }
+
+  /// The viewer goes away, even from under a screen opened over it (the
+  /// author's profile, the post a story shows): a plain pop would take that
+  /// screen instead.
+  void _close() {
+    final route = ModalRoute.of(context);
+    if (route == null || route.isCurrent) {
       Navigator.of(context).pop();
+    } else if (route.isActive) {
+      Navigator.of(context).removeRoute(route);
     }
   }
 
@@ -318,6 +331,18 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
         context,
       ).showSnackBar(SnackBar(content: Text(context.l10n.contentUnavailable)));
     }
+    if (mounted) _setPaused(false);
+  }
+
+  /// The profile of whoever posted the story, over the viewer; the story
+  /// waits, and goes on when you come back.
+  Future<void> _openAuthor() async {
+    _setPaused(true);
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ProfileScreen(pubkey: _group.author),
+      ),
+    );
     if (mounted) _setPaused(false);
   }
 
@@ -532,20 +557,43 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
             right: 4,
             child: Row(
               children: [
-                ProfileAvatar(
-                  pubkey: _group.author,
-                  radius: 16,
-                  tappable: false,
-                ),
-                const SizedBox(width: 8),
+                // Who posted it: a tap opens their profile.
                 Expanded(
-                  child: AuthorName(
-                    pubkey: _group.author,
-                    tappable: false,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      shadows: [Shadow(blurRadius: 4, color: Colors.black54)],
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Semantics(
+                      button: true,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: _openAuthor,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ProfileAvatar(
+                              pubkey: _group.author,
+                              radius: 16,
+                              tappable: false,
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: AuthorName(
+                                pubkey: _group.author,
+                                tappable: false,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  shadows: [
+                                    Shadow(
+                                      blurRadius: 4,
+                                      color: Colors.black54,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),

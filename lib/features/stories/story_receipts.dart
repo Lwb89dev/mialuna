@@ -57,10 +57,12 @@ class StoryViewReceipts extends Notifier<bool> {
   Future<void> _load(Completer<void> done) async {
     try {
       final prefs = await ref.read(sharedPreferencesLoader)();
+      // Gone while it was read (the app closing, another account).
+      if (!ref.mounted) return;
       if (!_chosen) state = prefs.getBool(_key) ?? defaultValue;
     } catch (_) {
       // The saved choice cannot be read: fail closed.
-      if (!_chosen) state = false;
+      if (ref.mounted && !_chosen) state = false;
     } finally {
       if (!done.isCompleted) done.complete();
     }
